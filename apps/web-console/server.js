@@ -122,9 +122,11 @@ const server = http.createServer((req, res) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`[UrSafe Coordination Hub] Running at http://localhost:${PORT}`);
-  console.log(`[Offline Mode] Web console active with zero cloud dependencies.`);
-});
+if (require.main === module) {
+  server.listen(PORT, () => {
+    console.log(`[UrSafe Coordination Hub] Running at http://localhost:${PORT}`);
+    console.log(`[Offline Mode] Web console active with zero cloud dependencies.`);
+  });
+}
 
-module.exports = server;
+module.exports = { server, ServerState };
