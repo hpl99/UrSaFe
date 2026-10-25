@@ -245,3 +245,220 @@ def test_full_incident_and_rescue_lifecycle(api_server):
     assert audit_data["status"] == "CHAIN_INTACT"
     assert audit_data["verified"] is True
     assert audit_data["chain_length"] >= 8
+
+
+def test_state_machine_transition_close_and_reopen(api_server):
+    # Authenticate Authority
+    _, auth_login = make_request(
+        f"{api_server}/api/v1/auth/login",
+        method="POST",
+        data={"username": "authority_rajesh", "password": "Password123!"}
+    )
+    auth_token = auth_login["session"]["token"]
+
+    # 1. Create an emergency
+    status, sos_data = make_request(
+        f"{api_server}/api/v1/emergencies",
+        method="POST",
+        data={
+            "category": "MEDICAL",
+            "urgency": "CRITICAL",
+            "latitude": 28.6508,
+            "longitude": 77.2300,
+            "victim_count": 1,
+            "description": "Severe heat stroke in crowded bazaar",
+            "status": "SOS_CREATED"
+        },
+        token=auth_token
+    )
+    assert status == 201
+    inc_id = sos_data["incident"]["id"]
+
+    # 2. Transition through state machine
+    status, trans_data = make_request(
+        f"{api_server}/api/v1/emergencies/{inc_id}/transition",
+        method="POST",
+        data={
+            "new_state": "RESPONDER_ASSIGNED",
+            "reason": "Dispatched ALS Medic Unit",
+            "device_id": "ble-tablet-01"
+        },
+        token=auth_token
+    )
+    assert status == 200
+    assert trans_data["incident"]["status"] == "RESPONDER_ASSIGNED"
+    assert trans_data["transition_event"]["new_state"] == "RESPONDER_ASSIGNED"
+
+    # 3. Transition to VERIFIED
+    status, verif_data = make_request(
+        f"{api_server}/api/v1/emergencies/{inc_id}/transition",
+        method="POST",
+        data={"new_state": "VERIFIED", "reason": "Patient treated and stable"},
+        token=auth_token
+    )
+    assert status == 200
+    assert verif_data["incident"]["status"] == "VERIFIED"
+
+    # 4. Close incident
+    status, close_data = make_request(
+        f"{api_server}/api/v1/emergencies/{inc_id}/close",
+        method="POST",
+        data={"reason": "Case fully verified and documented"},
+        token=auth_token
+    )
+    assert status == 200
+    assert close_data["incident"]["status"] == "CLOSED"
+
+    # 5. Verify Timeline contains all events
+    status, timeline = make_request(f"{api_server}/api/v1/emergencies/{inc_id}/timeline")
+    assert status == 200
+    assert len(timeline) >= 4
+    assert timeline[0]["to_status"] == "SOS_CREATED"
+    assert timeline[-1]["to_status"] == "CLOSED"
+
+    # 6. Reopen incident
+    status, reopen_data = make_request(
+        f"{api_server}/api/v1/emergencies/{inc_id}/reopen",
+        method="POST",
+        data={"reason": "Patient relapse reported by bystander"},
+        token=auth_token
+    )
+    assert status == 200
+    assert reopen_data["incident"]["status"] == "REOPENED"
+
+
+def test_evidence_validation_and_duplicate_detection(api_server):
+    # Authenticate Responder
+    _, resp_login = make_request(
+        f"{api_server}/api/v1/auth/login",
+        method="POST",
+        data={"username": "responder_vikram", "password": "Password123!"}
+    )
+    resp_token = resp_login["session"]["token"]
+
+    inc_id = "inc-2026-001"
+
+    # 1. Invalid MIME type should be rejected
+    bad_mime_status, bad_mime_data = make_request(
+        f"{api_server}/api/v1/incidents/{inc_id}/evidence",
+        method="POST",
+        data={
+            "mime_type": "application/x-executable",
+            "file_name": "malicious.exe",
+            "file_data_base64": "ZXhlY3V0YWJsZQ=="
+        },
+        token=resp_token
+    )
+    assert bad_mime_status == 400
+    assert "Invalid file type" in bad_mime_data["error"]
+
+    # 2. Valid image upload
+    import base64
+    test_image_b64 = base64.b64encode(f"TEST_IMAGE_PAYLOAD_{time.time()}".encode()).decode()
+    status, evd_data = make_request(
+        f"{api_server}/api/v1/incidents/{inc_id}/evidence",
+        method="POST",
+        data={
+            "mime_type": "image/png",
+            "file_name": "flood_scene_02.png",
+            "file_data_base64": test_image_b64,
+            "description": "Water level gauge reading 1.8 meters"
+        },
+        token=resp_token
+    )
+    assert status == 201
+    assert "sha256_hash" in evd_data["evidence"]
+
+    # 3. Duplicate content upload should be rejected with 409 Conflict
+    dup_status, dup_data = make_request(
+        f"{api_server}/api/v1/incidents/{inc_id}/evidence",
+        method="POST",
+        data={
+            "mime_type": "image/png",
+            "file_name": "flood_scene_duplicate.png",
+            "file_data_base64": test_image_b64
+        },
+        token=resp_token
+    )
+    assert dup_status == 409
+    assert "Duplicate evidence detected" in dup_data["error"]
+
+
+def test_emergency_history_and_active_separation(api_server):
+    # Fetch active emergencies
+    status_act, active_cases = make_request(f"{api_server}/api/v1/emergencies?active=true")
+    assert status_act == 200
+    for case in active_cases:
+        assert case["status"] not in ("VERIFIED", "CLOSED", "CANCELLED")
+
+    # Fetch historical emergencies
+    status_hist, history_cases = make_request(f"{api_server}/api/v1/emergencies?history=true")
+    assert status_hist == 200
+    for case in history_cases:
+        assert case["status"] in ("VERIFIED", "CLOSED", "CANCELLED")
+
+
+def test_locations_and_device_presence(api_server):
+    _, resp_login = make_request(
+        f"{api_server}/api/v1/auth/login",
+        method="POST",
+        data={"username": "responder_vikram", "password": "Password123!"}
+    )
+    resp_token = resp_login["session"]["token"]
+
+    # 1. Post real location
+    status, loc_res = make_request(
+        f"{api_server}/api/v1/locations",
+        method="POST",
+        data={
+            "latitude": 19.0782,
+            "longitude": 72.8791,
+            "accuracy_m": 4.1,
+            "speed": 2.5,
+            "provider": "GPS_FUSED"
+        },
+        token=resp_token
+    )
+    assert status == 201
+    assert loc_res["location"]["accuracy_m"] == 4.1
+
+    # 2. Get live locations
+    status_get, live_locs = make_request(f"{api_server}/api/v1/locations")
+    assert status_get == 200
+    assert "responders" in live_locs
+    assert "incidents" in live_locs
+
+    # 3. Connect Bluetooth Device
+    status_dev, dev_res = make_request(
+        f"{api_server}/api/v1/devices/connect",
+        method="POST",
+        data={
+            "device_id": "ble-ursafe-vikram-01",
+            "hardware_model": "UrSafe Mobile BLE Node",
+            "role": "RESPONDER"
+        },
+        token=resp_token
+    )
+    assert status_dev == 200
+    assert dev_res["connection_state"] == "CONNECTED"
+
+    # 4. Heartbeat
+    status_hb, hb_res = make_request(
+        f"{api_server}/api/v1/devices/heartbeat",
+        method="POST",
+        data={
+            "device_id": "ble-ursafe-vikram-01",
+            "battery_level": 84,
+            "rssi_dbm": -59
+        },
+        token=resp_token
+    )
+    assert status_hb == 200
+    assert hb_res["status"] == "HEARTBEAT_ACK"
+
+    # 5. Query categorized devices
+    status_devs, devs_data = make_request(f"{api_server}/api/v1/devices")
+    assert status_devs == 200
+    assert "categorized" in devs_data
+    assert "ursafe_devices" in devs_data["categorized"]
+    assert "other_devices" in devs_data["categorized"]
