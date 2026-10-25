@@ -3,949 +3,970 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UrSafe — Real Offline-First Emergency Communication Platform</title>
-  <link rel="stylesheet" href="styles.css">
-  <!-- Real Geographic Mapping (Leaflet) with offline vector fallback -->
+  <title>HEPN Mesh — Hyper-local Emergency P2P Network</title>
+  
+  <!-- Google Fonts: Fraunces (Serif Display), Plus Jakarta Sans (UI), JetBrains Mono (Telemetry) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Iconify Lucide Icons -->
+  <script src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js"></script>
+  
+  <!-- Leaflet Geographic Mapping -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  
+  <!-- HEPN Warm Compassion Theme Stylesheet -->
+  <link rel="stylesheet" href="styles.css?v=3">
 </head>
-<body class="ursafe-dark">
+<body class="hepn-theme">
+
+  <!-- Ambient Backdrop Glows -->
+  <div class="ambient-blob-1"></div>
+  <div class="ambient-blob-2"></div>
 
   <!-- ========================================================================= -->
-  <!-- 1. MANDATORY AUTHENTICATION GATEKEEPER SCREEN (SECTION 12)                -->
-  <!-- Displayed when user is unauthenticated. Operational views are hidden.     -->
+  <!-- LEVEL 1: GLOBAL HEADER                                                    -->
   <!-- ========================================================================= -->
-  <section id="screen-auth-gateway" class="auth-gateway-screen">
-    <div class="auth-card">
-      <div class="auth-header">
-        <div class="brand-badge">⚡ URSAFE</div>
-        <h1>Emergency Command & Field Access</h1>
-        <p class="auth-sub">Secure multi-role disaster coordination platform. Zero central server dependency required for local mesh operations.</p>
+  <header class="global-header">
+    <div class="brand-section" id="btn-brand-home" title="Go to Overview">
+      <div class="brand-logo-icon">
+        <iconify-icon icon="lucide:heart-handshake" class="text-2xl"></iconify-icon>
       </div>
-
-      <!-- Quick Role Testing Selectors (For immediate evaluation of all 4 roles) -->
-      <div class="quick-auth-section">
-        <span class="section-title">One-Click Authenticated Role Access</span>
-        <div class="quick-role-buttons">
-          <button class="btn-quick-login" data-username="citizen_priya" data-role="CITIZEN">
-            <span class="role-icon">👤</span>
-            <div class="role-meta">
-              <strong>Priya Sharma</strong>
-              <span class="role-tag tag-citizen">CITIZEN / HELP SEEKER</span>
-            </div>
-          </button>
-
-          <button class="btn-quick-login" data-username="responder_vikram" data-role="RESPONDER">
-            <span class="role-icon">🚑</span>
-            <div class="role-meta">
-              <strong>Capt. Vikram Singh</strong>
-              <span class="role-tag tag-responder">TACTICAL RESPONDER (NDRF)</span>
-            </div>
-          </button>
-
-          <button class="btn-quick-login" data-username="authority_rajesh" data-role="AUTHORITY">
-            <span class="role-icon">🎖️</span>
-            <div class="role-meta">
-              <strong>Commander Rajesh Kumar</strong>
-              <span class="role-tag tag-authority">INCIDENT COMMAND (SDMA)</span>
-            </div>
-          </button>
-
-          <button class="btn-quick-login" data-username="admin_system" data-role="ADMIN">
-            <span class="role-icon">⚙️</span>
-            <div class="role-meta">
-              <strong>System Administrator</strong>
-              <span class="role-tag tag-admin">SECURITY & FLEET CONFIG</span>
-            </div>
-          </button>
-        </div>
-      </div>
-
-      <div class="auth-divider"><span>OR LOG IN WITH VERIFIED CREDENTIALS</span></div>
-
-      <!-- Standard Login Form -->
-      <form id="form-login" class="auth-form">
-        <div class="form-row">
-          <label for="login-username">Username or Email</label>
-          <input type="text" id="login-username" class="input-text" placeholder="e.g. responder_vikram" required>
-        </div>
-        <div class="form-row">
-          <label for="login-password">Password</label>
-          <input type="password" id="login-password" class="input-text" value="Password123!" required>
-        </div>
-        <div id="login-error-msg" class="error-msg hidden"></div>
-        <button type="submit" id="btn-submit-login" class="btn-primary btn-full">
-          Authenticate & Retrieve Bearer Token
-        </button>
-      </form>
-    </div>
-  </section>
-
-  <!-- ========================================================================= -->
-  <!-- 2. MAIN APPLICATION PORTAL (Mounted only after authentication)             -->
-  <!-- ========================================================================= -->
-  <div id="screen-main-app" class="app-layout hidden">
-    
-    <!-- Operational Mode Banner -->
-    <div id="env-banner" class="env-banner dev-banner">
-      <div class="banner-content">
-        <span class="banner-badge" id="env-badge-text">DEVELOPMENT / SIMULATION MODE</span>
-        <span class="banner-msg" id="env-msg-text">Simulated radios, test users, and synthetic incidents are permitted with explicit [SIMULATION] labels.</span>
-        <button id="btn-toggle-env" class="btn-banner-action" title="Switch Environment">Switch to PRODUCTION MODE</button>
+      <div class="brand-titles">
+        <span class="brand-name">HEPN Mesh</span>
+        <span class="brand-sub">EMERGENCY PROTOCOL v4.1</span>
       </div>
     </div>
 
-    <!-- Top Global Header -->
-    <header class="app-header">
-      <div class="header-left">
-        <div class="brand">
-          <span class="brand-icon">⚡</span>
-          <div class="brand-titles">
-            <span class="brand-name">URSAFE</span>
-            <span class="brand-tagline">CASCADE26 DISASTER PLATFORM</span>
-          </div>
-        </div>
-
-        <!-- Real Connectivity Status Diagnostics Bar (Section 8) -->
-        <div class="connectivity-bar">
-          <div class="conn-item" id="conn-internet" title="Internet Connectivity">
-            <span class="conn-dot online"></span>
-            <span class="conn-label">NET: <strong id="val-internet">ONLINE</strong></span>
-          </div>
-          <div class="conn-item" id="conn-gps" title="Device Hardware GNSS">
-            <span class="conn-dot checking"></span>
-            <span class="conn-label">GPS: <strong id="val-gps">ACQUIRING...</strong></span>
-          </div>
-          <div class="conn-item" id="conn-ble" title="Bluetooth Radio Link">
-            <span class="conn-dot offline"></span>
-            <span class="conn-label">RADIO: <strong id="val-radio">DISCONNECTED</strong></span>
-          </div>
-          <div class="conn-item" id="conn-outbox" title="Offline SQLite Outbox Backlog">
-            <span class="conn-label">OUTBOX: <strong id="val-outbox">0 PENDING</strong></span>
-          </div>
-        </div>
-      </div>
-
-      <div class="header-right">
-        <!-- "Where Am I?" Fast Location Trigger (Section 7, 24) -->
-        <button id="btn-where-am-i" class="btn-header-action" title="View Current Location Status">
-          <span class="btn-icon">📍</span> Where Am I?
-        </button>
-
-        <!-- Connection Center (Section 19) -->
-        <button id="btn-connection-center" class="btn-header-action" title="Open Hardware Connection Center">
-          <span class="btn-icon">📡</span> Connection Center
-        </button>
-
-        <!-- System Health (Section 11) -->
-        <button id="btn-system-health" class="btn-header-action" title="Open System Health Dashboard">
-          <span class="btn-icon">🩺</span> System Health
-        </button>
-
-        <!-- Authenticated Role & User Badge -->
-        <div class="user-profile-badge">
-          <div class="profile-info">
-            <span class="profile-name" id="user-display-name">Capt. Vikram Singh</span>
-            <span class="role-pill pill-responder" id="user-display-role">RESPONDER</span>
-          </div>
-          <button id="btn-logout" class="btn-micro btn-logout" title="Log out of session">Logout</button>
-        </div>
-      </div>
-    </header>
-
-    <!-- Role-Based Navigation Bar (Section 13) -->
-    <nav class="role-nav" id="role-navigation-bar">
-      <div class="nav-tabs" id="role-nav-tabs">
-        <!-- Dynamically rendered based on active role -->
-      </div>
-      <div class="nav-meta">
-        <span class="active-role-desc" id="role-description-text">Authorized Tactical Field Responder Portal</span>
-      </div>
+    <!-- Navigation Portal Tabs -->
+    <nav class="nav-portal-tabs" id="portal-navigation">
+      <button class="nav-tab-btn active" data-target="view-landing" id="tab-landing">Overview</button>
+      <button class="nav-tab-btn" data-target="view-victim" id="tab-victim">Victim Portal</button>
+      <button class="nav-tab-btn" data-target="view-responder" id="tab-responder">Responder Portal</button>
+      <button class="nav-tab-btn" data-target="view-dashboard" id="tab-dashboard">Global Dashboard</button>
     </nav>
 
-    <!-- Main Viewport -->
-    <main class="main-content" id="main-viewport">
+    <!-- Header Actions & Telemetry -->
+    <div class="header-actions">
+      <!-- Live Radio Node Capsule -->
+      <div class="node-telemetry-capsule" id="header-node-capsule">
+        <iconify-icon icon="lucide:radio"></iconify-icon>
+        <span id="header-node-stats">NODE: Local 868MHz // Peers: 04 // RSSI: -72dBm</span>
+      </div>
 
-      <!-- ===================================================================== -->
-      <!-- VIEW 1: CITIZEN / HELP SEEKER EXPERIENCE (SECTION 11, 13, 25)          -->
-      <!-- ===================================================================== -->
-      <section id="view-citizen" class="portal-view">
-        <div class="citizen-layout">
-          <!-- Left Column: Panic SOS & Progression Stepper -->
-          <div class="citizen-col-primary">
-            <div class="card card-sos-trigger">
-              <div class="card-header">
-                <h2>Emergency Assistance (SOS)</h2>
-                <span class="badge badge-offline-ready">100% OFFLINE CAPABLE</span>
+      <!-- Live / Training Mode Toggle -->
+      <div class="mode-toggle-group">
+        <button class="btn-mode active-live" id="btn-mode-live">LIVE</button>
+        <button class="btn-mode inactive" id="btn-mode-train">TRAINING</button>
+      </div>
+
+      <!-- Quick Action Tools -->
+      <button class="quick-tool-btn" id="btn-where-am-i" title="Hardware GNSS: Where Am I?">
+        <iconify-icon icon="lucide:map-pin"></iconify-icon>
+      </button>
+      <button class="quick-tool-btn" id="btn-connection-center" title="Hardware Connection Center">
+        <iconify-icon icon="lucide:cpu"></iconify-icon>
+      </button>
+      <button class="quick-tool-btn" id="btn-system-health" title="System Health Probes">
+        <iconify-icon icon="lucide:activity"></iconify-icon>
+      </button>
+
+      <!-- Authenticated User Profile Pill -->
+      <div class="user-badge-pill" id="user-profile-badge" title="Switch User Role">
+        <div class="user-avatar-circle" id="user-avatar-initials">PS</div>
+        <div class="user-meta">
+          <span class="user-name-text" id="user-display-name">Priya Sharma</span>
+          <span class="user-role-label" id="user-display-role">CITIZEN</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================================================= -->
+  <!-- LEVEL 2: SUB-HEADER TELEMETRY TICKER BAR                                  -->
+  <!-- ========================================================================= -->
+  <div class="sub-header-bar">
+    <div class="sub-header-left">
+      <span class="diamond-tag">🔶</span>
+      <span id="sub-breadcrumb-text">HEPN / DISASTER COORDINATION NETWORK | PEER-TO-PEER ENCRYPTED LINK</span>
+    </div>
+    <div class="sub-header-right">
+      <span>BATTERY RESERVE: <strong id="val-battery-reserve">84%</strong></span>
+      <span>PACKET QUEUE: <strong id="val-packet-queue">00</strong></span>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- LEVEL 3: MAIN VIEWPORT WITH 4 WORKABLE PAGES                              -->
+  <!-- ========================================================================= -->
+  <main class="main-viewport" id="main-viewport">
+
+    <!-- ======================================================================= -->
+    <!-- PAGE 1: OVERVIEW / LANDING PAGE                                         -->
+    <!-- ======================================================================= -->
+    <section id="view-landing" class="view-screen active">
+      <div class="landing-grid">
+        <div class="landing-left">
+          <div class="node-count-badge">
+            <span class="node-pulse-dot"></span>
+            <span>12,408 Neighbor-Nodes Active Worldwide</span>
+          </div>
+
+          <h1 class="landing-title">Help is just a neighbor away.</h1>
+          
+          <p class="landing-subhead">
+            When cells go dark, we light the way. A decentralized mesh network that connects people who need help with people who can give it—no internet required.
+          </p>
+
+          <!-- Split Dual Action Cards -->
+          <div class="split-cta-container">
+            <a href="#victim" class="split-card need-help" id="btn-landing-need-help">
+              <div class="split-card-content">
+                <div class="split-card-icon">
+                  <iconify-icon icon="lucide:hand-helping"></iconify-icon>
+                </div>
+                <div class="split-card-titles">
+                  <h3>I need help</h3>
+                  <p>Broadcast distress signal</p>
+                </div>
               </div>
-              <p class="card-sub">Triggers an immediate authenticated life-safety beacon. Transmitted locally via LoRa radio mesh even during total grid blackout.</p>
+              <iconify-icon icon="lucide:chevron-right" class="chevron-arrow"></iconify-icon>
+            </a>
 
-              <div class="sos-form">
-                <div class="form-row">
-                  <label for="sos-category">Emergency Category</label>
-                  <select id="sos-category" class="input-select">
-                    <option value="FLOOD">🌊 Flash Flood / Rising Waters</option>
-                    <option value="FIRE">🔥 Wildfire / Building Fire</option>
-                    <option value="COLLAPSE">🏚️ Structural Collapse / Trapped</option>
-                    <option value="MEDICAL">🚑 Critical Medical / Trauma</option>
-                    <option value="OTHER">⚠️ General Emergency</option>
-                  </select>
+            <a href="#responder" class="split-card can-respond" id="btn-landing-can-respond">
+              <div class="split-card-content">
+                <div class="split-card-icon">
+                  <iconify-icon icon="lucide:shield-check"></iconify-icon>
                 </div>
-
-                <div class="form-row">
-                  <label for="sos-victims">People in Danger</label>
-                  <input type="number" id="sos-victims" class="input-text" min="1" max="50" value="1">
+                <div class="split-card-titles">
+                  <h3>I can respond</h3>
+                  <p>Accept local tasks</p>
                 </div>
+              </div>
+              <iconify-icon icon="lucide:chevron-right" class="chevron-arrow"></iconify-icon>
+            </a>
+          </div>
 
-                <div class="form-row">
-                  <label for="sos-notes">Immediate Details / Landmark</label>
-                  <textarea id="sos-notes" class="input-textarea" rows="2" placeholder="e.g. Trapped on 1st floor roof, power lines down, infant present"></textarea>
+          <!-- Quick Authenticated Role Testing Selector -->
+          <div class="quick-role-eval">
+            <span>One-Click Authenticated Role Access</span>
+            <div class="quick-role-tags">
+              <button class="role-switch-btn" data-role="citizen_priya">👤 Priya Sharma (Civilian)</button>
+              <button class="role-switch-btn" data-role="responder_vikram">🚑 Capt. Vikram (NDRF Responder)</button>
+              <button class="role-switch-btn" data-role="authority_rajesh">🎖️ Cmdr. Rajesh (Incident Command)</button>
+              <button class="role-switch-btn" data-role="admin_system">⚙️ System Admin</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="landing-right">
+          <div class="hero-image-frame">
+            <img src="assets/community_hands_hero.jpg" alt="Community Hands with Red Paint" id="hero-hands-image">
+            <div class="hero-image-overlay">
+              <span class="hero-overlay-tag">100% OFF-GRID READY</span>
+              <p class="hero-overlay-text">Autonomous mesh radios preserve life-safety communications when electrical grids fail.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================= -->
+    <!-- PAGE 2: VICTIM PORTAL (EMERGENCY DISTRESS SOS)                          -->
+    <!-- ======================================================================= -->
+    <section id="view-victim" class="view-screen">
+      <div class="victim-layout">
+        
+        <!-- Left Column: 1. Verify Location -->
+        <div class="victim-col-location">
+          <div class="step-heading-row">
+            <div class="step-num-circle">1</div>
+            <h2 class="step-title">Verify Location</h2>
+          </div>
+          <p class="step-subtext">Responders will use these coordinates. Drag the pin if your location isn't precise.</p>
+
+          <!-- Radar Location Box with Concentric Circles -->
+          <div class="location-radar-box">
+            <!-- Top Badges -->
+            <div class="radar-top-badges">
+              <div class="badge-gps-lock">
+                <span class="dot-green"></span>
+                <span>GPS LOCK</span>
+              </div>
+              <div class="badge-pos-accuracy">
+                <span>YOUR POSITION (±4.5m)</span>
+              </div>
+            </div>
+            
+            <div class="badge-lat-lon-chip" id="cit-radar-coords-chip">
+              N 19°07'60" E 72°87'77"
+            </div>
+
+            <!-- Concentric Distance Radar Circles Overlay & SVG Coverage Polygon -->
+            <div class="radar-rings-overlay">
+              <svg viewBox="0 0 440 440" style="position:absolute; width:100%; height:100%; pointer-events:none;">
+                <line x1="220" y1="0" x2="220" y2="440" stroke="#E8DCC2" stroke-width="1" stroke-dasharray="4,4" />
+                <line x1="0" y1="220" x2="440" y2="220" stroke="#E8DCC2" stroke-width="1" stroke-dasharray="4,4" />
+                <line x1="65" y1="65" x2="375" y2="375" stroke="#E8DCC2" stroke-width="0.8" stroke-dasharray="2,4" />
+                <line x1="65" y1="375" x2="375" y2="65" stroke="#E8DCC2" stroke-width="0.8" stroke-dasharray="2,4" />
+                <polygon points="120,40 380,80 410,290 320,380 90,340 50,180" fill="none" stroke="#D1C4A5" stroke-width="1.5" stroke-dasharray="6,4" />
+              </svg>
+              <div class="radar-ring ring-1"></div>
+              <div class="radar-ring ring-2"></div>
+              <div class="radar-ring ring-3"></div>
+            </div>
+
+            <!-- Leaflet Interactive Canvas -->
+            <div id="victim-radar-map" class="radar-map-canvas"></div>
+
+            <!-- Center YOU Marker Pin -->
+            <div class="radar-center-marker" id="victim-marker-pin">
+              <div class="marker-you-pill">● YOU</div>
+              <div class="marker-pin-head"></div>
+            </div>
+
+            <!-- Nearby Relay Node -->
+            <div class="radar-relay-node">
+              <span class="relay-green-dot"></span>
+              <span>RELAY N-07 (680m)</span>
+            </div>
+
+            <!-- Floating Bottom Card Over Map -->
+            <div class="radar-bottom-float-card">
+              <div>
+                <span class="pos-title-label">LOCKED POSITION</span>
+                <span class="pos-coords-val" id="val-victim-locked-coords">19.0760° N, 72.8777° E</span>
+              </div>
+              <button class="btn-adjust-pin" id="btn-trigger-adjust-pin">
+                <iconify-icon icon="lucide:sliders"></iconify-icon>
+                <span>Tap to adjust pin</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Local Mesh Health Card -->
+          <div class="card-mesh-health">
+            <div class="mesh-health-info">
+              <iconify-icon icon="lucide:radio-tower" class="mesh-health-icon"></iconify-icon>
+              <div class="mesh-health-text">
+                <h4>Local Mesh Health</h4>
+                <p>4 Peer Hops to Emergency Ops HQ</p>
+              </div>
+            </div>
+            <span class="badge-optimal">OPTIMAL</span>
+          </div>
+        </div>
+
+        <!-- Right Column: 2. Broadcast Emergency Signal -->
+        <div class="victim-col-form">
+          <div class="victim-form-card">
+            <div class="victim-form-header">
+              <div class="step-heading-row" style="margin-bottom:0;">
+                <div class="step-num-circle">2</div>
+                <h2 class="step-title">Broadcast Emergency Signal</h2>
+              </div>
+              <div class="broadcast-power-icon" title="P2P Emergency Beacon Active">
+                <iconify-icon icon="lucide:power"></iconify-icon>
+              </div>
+            </div>
+            <p class="step-subtext">Complete as much as possible. This data stays local to your mesh (P2P encrypted).</p>
+
+            <!-- Emergency Situation Details Textarea -->
+            <div class="form-label-row">
+              <span class="form-field-title">Emergency Situation Details</span>
+              <span class="char-counter-text" id="situation-char-count">82 / 240 chars (LoRa Packet Optimized)</span>
+            </div>
+            <textarea id="sos-situation-input" class="lora-textarea" maxlength="240" placeholder="Describe hazards, floor level, trapped persons, or medical urgency...">Ground floor is flooded, we are on the roof. One elderly male needs oxygen supply.</textarea>
+
+            <!-- Triage Severity Level (3 Selectable Cards) -->
+            <div class="form-label-row">
+              <span class="form-field-title">Triage Severity Level</span>
+            </div>
+            <div class="severity-cards-grid">
+              <!-- Critical Card -->
+              <div class="sev-card-option critical-card" data-severity="CRITICAL">
+                <div class="sev-icon-row">
+                  <iconify-icon icon="lucide:alert-triangle"></iconify-icon>
+                  <span class="status-dot-indicator"></span>
                 </div>
+                <span class="sev-label-bold">CRITICAL</span>
+                <span class="sev-sub-desc">Life-Safety</span>
+              </div>
 
-                <button id="btn-trigger-sos" class="btn-giant-sos">
-                  <span class="sos-icon">🚨</span>
-                  <span class="sos-title">BROADCAST EMERGENCY SOS</span>
-                  <span class="sos-sub">Creates local cryptographic envelope & transmits over mesh</span>
+              <!-- Urgent Card (Selected by default) -->
+              <div class="sev-card-option urgent-card selected-urgent" data-severity="URGENT">
+                <div class="sev-icon-row">
+                  <iconify-icon icon="lucide:clock"></iconify-icon>
+                  <iconify-icon icon="lucide:check-circle-2" class="sev-check-badge"></iconify-icon>
+                </div>
+                <span class="sev-label-bold">URGENT</span>
+                <span class="sev-sub-desc">&lt; 2 Hours</span>
+              </div>
+
+              <!-- Minor Card -->
+              <div class="sev-card-option minor-card" data-severity="MINOR">
+                <div class="sev-icon-row">
+                  <iconify-icon icon="lucide:activity"></iconify-icon>
+                  <span class="status-dot-indicator"></span>
+                </div>
+                <span class="sev-label-bold">MINOR</span>
+                <span class="sev-sub-desc">Stable</span>
+              </div>
+            </div>
+
+            <!-- Medical Factors (Select all that apply) -->
+            <div class="form-label-row">
+              <span class="form-field-title">Medical Factors (Select all that apply)</span>
+              <span class="sub-caption-paramedic">Aids Paramedic Unit</span>
+            </div>
+            <div class="medical-pills-wrap" id="medical-pills-container">
+              <button type="button" class="med-pill-btn" data-med="Diabetes">Diabetes</button>
+              <button type="button" class="med-pill-btn" data-med="Heart Cond.">Heart Cond.</button>
+              <button type="button" class="med-pill-btn active" data-med="Asthma">
+                <iconify-icon icon="lucide:check"></iconify-icon>
+                <span>Asthma</span>
+              </button>
+              <button type="button" class="med-pill-btn" data-med="Pregnant">Pregnant</button>
+              <button type="button" class="med-pill-btn" data-med="Mobility Impaired">Mobility Impaired</button>
+              <button type="button" class="med-pill-btn" data-med="Allergies">Allergies</button>
+            </div>
+
+            <!-- Additional Specific Needs (Checkbox Cards) -->
+            <div class="additional-needs-grid">
+              <label class="need-checkbox-card" id="card-need-water">
+                <div class="need-content">
+                  <iconify-icon icon="lucide:droplet" style="color:#0284C7; font-size:18px;"></iconify-icon>
+                  <span>Potable Water Needed</span>
+                </div>
+                <input type="checkbox" id="chk-need-water" class="need-checkbox">
+              </label>
+
+              <label class="need-checkbox-card" id="card-need-power">
+                <div class="need-content">
+                  <iconify-icon icon="lucide:zap" style="color:#D97706; font-size:18px;"></iconify-icon>
+                  <span>Power / Battery Depleted</span>
+                </div>
+                <input type="checkbox" id="chk-need-power" class="need-checkbox">
+              </label>
+            </div>
+
+            <!-- Primary SOS Broadcast CTA Button -->
+            <button type="button" class="btn-broadcast-distress" id="btn-submit-distress-signal">
+              <iconify-icon icon="lucide:radio" style="font-size: 22px;"></iconify-icon>
+              <span>Broadcast Distress Signal (P2P Radio)</span>
+              <iconify-icon icon="lucide:arrow-right" style="font-size: 20px;"></iconify-icon>
+            </button>
+
+            <div class="security-footnote">
+              <iconify-icon icon="lucide:lock"></iconify-icon>
+              <span>Encrypted locally with AES-256 GCM. Transmitted over 868MHz LoRa mesh.</span>
+            </div>
+
+            <!-- Real-Time SOS Progression Stepper (Dynamic on SOS broadcast) -->
+            <div class="sos-progression-panel hidden" id="sos-progression-box">
+              <div class="progression-header">
+                <h4>Live Emergency Lifecycle</h4>
+                <span class="status-live-pill reported" id="sos-live-pill">REPORTED // QUEUED</span>
+              </div>
+              <div class="stepper-horizontal">
+                <div class="step-node completed" id="st-1">
+                  <div class="step-bubble">1</div>
+                  <span class="step-node-text">Reported</span>
+                </div>
+                <div class="step-node current" id="st-2">
+                  <div class="step-bubble">2</div>
+                  <span class="step-node-text">Stored</span>
+                </div>
+                <div class="step-node" id="st-3">
+                  <div class="step-bubble">3</div>
+                  <span class="step-node-text">Queued</span>
+                </div>
+                <div class="step-node" id="st-4">
+                  <div class="step-bubble">4</div>
+                  <span class="step-node-text">Radio TX</span>
+                </div>
+                <div class="step-node" id="st-5">
+                  <div class="step-bubble">5</div>
+                  <span class="step-node-text">Dispatched</span>
+                </div>
+                <div class="step-node" id="st-6">
+                  <div class="step-bubble">6</div>
+                  <span class="step-node-text">Accepted</span>
+                </div>
+                <div class="step-node" id="st-7">
+                  <div class="step-bubble">7</div>
+                  <span class="step-node-text">En Route</span>
+                </div>
+                <div class="step-node" id="st-8">
+                  <div class="step-bubble">8</div>
+                  <span class="step-node-text">On Scene</span>
+                </div>
+                <div class="step-node" id="st-9">
+                  <div class="step-bubble">9</div>
+                  <span class="step-node-text">Submitted</span>
+                </div>
+                <div class="step-node" id="st-10">
+                  <div class="step-bubble">10</div>
+                  <span class="step-node-text">Verified</span>
+                </div>
+              </div>
+
+              <!-- Citizen Dual Confirmation Co-Sign Desk -->
+              <div class="dual-confirm-desk hidden" id="citizen-dual-confirm-desk">
+                <h5>Rescue Team Arrival Confirmation</h5>
+                <p>Responder Capt. Vikram has submitted an on-scene evacuation report. Please co-sign with your local key to finalize verified clearance.</p>
+                <button type="button" class="btn-dual-confirm" id="btn-citizen-cosign">
+                  <iconify-icon icon="lucide:check-circle"></iconify-icon>
+                  <span>Confirm Rescue & Co-Sign Receipt</span>
                 </button>
               </div>
             </div>
 
-            <!-- Real-Time SOS Progression Lifecycle Stepper (Section 25) -->
-            <div class="card card-sos-progression" id="citizen-progression-card">
-              <div class="card-header">
-                <h3>Live Emergency Status Lifecycle</h3>
-                <span class="status-badge" id="citizen-active-status-badge">NO ACTIVE SOS</span>
-              </div>
-              <p class="card-sub">Every state transition is verified by cryptographic receipts across the mesh.</p>
+          </div>
+        </div>
+      </div>
+    </section>
 
-              <div class="progression-stepper" id="progression-stepper">
-                <div class="step" data-step="REPORTED">
-                  <div class="step-marker">1</div>
-                  <div class="step-info"><span class="step-title">SOS Created</span><span class="step-time" id="time-step-1">--:--:--</span></div>
-                </div>
-                <div class="step" data-step="STORED_LOCALLY">
-                  <div class="step-marker">2</div>
-                  <div class="step-info"><span class="step-title">Saved Locally (SQLite)</span><span class="step-time" id="time-step-2">--:--:--</span></div>
-                </div>
-                <div class="step" data-step="QUEUED">
-                  <div class="step-marker">3</div>
-                  <div class="step-info"><span class="step-title">Queued in Priority Outbox</span><span class="step-time" id="time-step-3">--:--:--</span></div>
-                </div>
-                <div class="step" data-step="TRANSMITTING">
-                  <div class="step-marker">4</div>
-                  <div class="step-info"><span class="step-title">Transmitting over LoRa</span><span class="step-time" id="time-step-4">--:--:--</span></div>
-                </div>
-                <div class="step" data-step="DISPATCHED">
-                  <div class="step-marker">5</div>
-                  <div class="step-info"><span class="step-title">Responder Dispatched</span><span class="step-time" id="time-step-5">--:--:--</span></div>
-                </div>
-                <div class="step" data-step="ACCEPTED">
-                  <div class="step-marker">6</div>
-                  <div class="step-info"><span class="step-title">Mission Accepted by Unit</span><span class="step-time" id="time-step-6">--:--:--</span></div>
-                </div>
-                <div class="step" data-step="EN_ROUTE">
-                  <div class="step-marker">7</div>
-                  <div class="step-info"><span class="step-title">Unit En Route</span><span class="step-time" id="time-step-7">--:--:--</span></div>
-                </div>
-                <div class="step" data-step="ON_SCENE">
-                  <div class="step-marker">8</div>
-                  <div class="step-info"><span class="step-title">Arrived on Scene</span><span class="step-time" id="time-step-8">--:--:--</span></div>
-                </div>
-                <div class="step" data-step="RESCUE_SUBMITTED">
-                  <div class="step-marker">9</div>
-                  <div class="step-info"><span class="step-title">Rescue Submitted (Evidence Attached)</span><span class="step-time" id="time-step-9">--:--:--</span></div>
-                </div>
-                <div class="step" data-step="VERIFIED">
-                  <div class="step-marker">10</div>
-                  <div class="step-info"><span class="step-title">Verified & Recorded</span><span class="step-time" id="time-step-10">--:--:--</span></div>
-                </div>
+    <!-- ======================================================================= -->
+    <!-- PAGE 3: RESPONDER PORTAL (TACTICAL MESH TRIAGE)                         -->
+    <!-- ======================================================================= -->
+    <section id="view-responder" class="view-screen">
+      <div class="responder-layout">
+        
+        <!-- Left Tactical Sidebar -->
+        <aside class="responder-sidebar-stack">
+          <!-- Navigation Menu Card -->
+          <div class="sidebar-menu-card">
+            <a class="sidebar-nav-item active" id="subtab-active-tasks">
+              <div class="sidebar-item-left">
+                <iconify-icon icon="lucide:clipboard-list"></iconify-icon>
+                <span>Active Tasks</span>
               </div>
+              <span class="badge-counter-dark" id="val-active-tasks-count">4</span>
+            </a>
+            <a class="sidebar-nav-item" id="subtab-tactical-map">
+              <div class="sidebar-item-left">
+                <iconify-icon icon="lucide:map"></iconify-icon>
+                <span>Tactical Mesh Map</span>
+              </div>
+              <iconify-icon icon="lucide:chevron-right" style="opacity:0.5;"></iconify-icon>
+            </a>
+            <a class="sidebar-nav-item" id="subtab-nearby-responders">
+              <div class="sidebar-item-left">
+                <iconify-icon icon="lucide:users"></iconify-icon>
+                <span>Nearby Responders</span>
+              </div>
+              <span class="badge-counter-dark">12</span>
+            </a>
+            <a class="sidebar-nav-item" id="subtab-my-credentials">
+              <div class="sidebar-item-left">
+                <iconify-icon icon="lucide:award"></iconify-icon>
+                <span>My Credentials</span>
+              </div>
+              <iconify-icon icon="lucide:badge-check" style="color:var(--accent-green);"></iconify-icon>
+            </a>
+          </div>
 
-              <!-- Citizen Dual Confirmation Box -->
-              <div id="citizen-dual-confirm-box" class="dual-confirm-box hidden">
-                <h4>Responder Submitted Rescue Report</h4>
-                <p>Please confirm that rescue personnel have arrived and provided assistance.</p>
-                <button id="btn-citizen-confirm-rescue" class="btn-primary">Confirm Rescue & Co-Sign Receipt</button>
+          <!-- Mesh Sync Status Card -->
+          <div class="mesh-sync-card">
+            <div class="sync-header-row">
+              <div class="sync-status-indicator">
+                <span class="green-dot"></span>
+                <span>MESH SYNC ACTIVE</span>
+              </div>
+              <span class="badge-lqi">99.4% LQI</span>
+            </div>
+            <p class="sync-body-text">Connected to 12 local nodes via distributed P2P multi-hop relay.</p>
+            <div class="sync-metrics-grid">
+              <div class="sync-metric-cell">
+                <span class="sync-metric-k">HOP METRIC</span>
+                <span class="sync-metric-v">HOP: 02</span>
+              </div>
+              <div class="sync-metric-cell">
+                <span class="sync-metric-k">SYNC EPOCH</span>
+                <span class="sync-metric-v">171804.8s</span>
               </div>
             </div>
           </div>
 
-          <!-- Right Column: Location & History -->
-          <div class="citizen-col-secondary">
-            <div class="card card-location">
-              <div class="card-header">
-                <h3>Where Am I? (Your Position)</h3>
-                <span class="badge" id="citizen-gps-pill">GPS ACTIVE</span>
-              </div>
-              <div class="location-details">
-                <div class="coord-item">
-                  <span class="coord-label">Latitude:</span>
-                  <span class="coord-val" id="cit-lat">19.0760° N</span>
-                </div>
-                <div class="coord-item">
-                  <span class="coord-label">Longitude:</span>
-                  <span class="coord-val" id="cit-lon">72.8777° E</span>
-                </div>
-                <div class="coord-item">
-                  <span class="coord-label">GPS Accuracy:</span>
-                  <span class="coord-val" id="cit-acc">±4.5 meters</span>
-                </div>
-                <div class="coord-item">
-                  <span class="coord-label">Last GPS Fix:</span>
-                  <span class="coord-val" id="cit-fix-time">Just now</span>
-                </div>
-              </div>
-              <button id="btn-refresh-cit-gps" class="btn-secondary btn-full">Refresh Hardware GPS Fix</button>
+          <!-- Filter & Kit Selection Card -->
+          <div class="filter-sidebar-card">
+            <div class="filter-section-title-row">
+              <span>URGENCY LEVEL</span>
+              <button class="btn-filter-reset" id="btn-reset-urg-filter">Reset</button>
+            </div>
+            <div class="urgency-filter-grid">
+              <button class="btn-urg-filter active" data-filter="ALL">All (4)</button>
+              <button class="btn-urg-filter" data-filter="CRITICAL">Critical <span style="color:var(--accent-red)">●</span></button>
+              <button class="btn-urg-filter" data-filter="URGENT">Urgent <span style="color:var(--accent-amber)">●</span></button>
+              <button class="btn-urg-filter" data-filter="STABLE">Stable <span style="color:var(--accent-green)">●</span></button>
             </div>
 
-            <div class="card card-history">
-              <div class="card-header">
-                <h3>My Emergency History</h3>
+            <div class="filter-section-title-row" style="margin-top:14px;">
+              <span>SKILL & KIT FILTERS</span>
+            </div>
+            <div class="skill-kit-list">
+              <label class="skill-checkbox-row">
+                <input type="checkbox" checked id="chk-kit-trauma">
+                <span>Trauma Kit Qualified</span>
+              </label>
+              <label class="skill-checkbox-row">
+                <input type="checkbox" checked id="chk-kit-evac">
+                <span>Evacuation Transport</span>
+              </label>
+              <label class="skill-checkbox-row">
+                <input type="checkbox" id="chk-kit-oxygen">
+                <span>Oxygen / Respiratory</span>
+              </label>
+              <label class="skill-checkbox-row">
+                <input type="checkbox" id="chk-kit-coldchain">
+                <span>Cold-chain Pharma</span>
+              </label>
+            </div>
+
+            <div class="sidebar-telemetry-foot">
+              <span>BATTERY: 84%</span>
+              <span>TX: 22 dBm</span>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Main Responder Canvas -->
+        <div class="responder-main-canvas">
+          <!-- Top: Map Viewport Box -->
+          <div class="map-viewport-card">
+            <div class="viewport-header-capsule">
+              <iconify-icon icon="lucide:radar"></iconify-icon>
+              <span>MAP VIEWPORT // GRID SECTOR 4-BETA | OFF-GRID VECTOR TILE</span>
+            </div>
+
+            <!-- Tactical Mesh SVG Vector Canvas -->
+            <div class="mesh-vector-canvas" id="mesh-vector-canvas">
+              <svg class="svg-mesh-network" viewBox="0 0 800 220" preserveAspectRatio="none">
+                <!-- Dashed emerald mesh links -->
+                <line x1="176" y1="84" x2="352" y2="140" stroke="#10B981" stroke-width="1.8" stroke-dasharray="6,4" stroke-opacity="0.8" />
+                <line x1="352" y1="140" x2="528" y2="70" stroke="#10B981" stroke-width="1.8" stroke-dasharray="6,4" stroke-opacity="0.8" />
+                <line x1="352" y1="140" x2="656" y2="158" stroke="#10B981" stroke-width="1.8" stroke-dasharray="6,4" stroke-opacity="0.8" />
+                <line x1="528" y1="70" x2="656" y2="158" stroke="#10B981" stroke-width="1.5" stroke-dasharray="4,4" stroke-opacity="0.4" />
+                
+                <!-- Link distance markers text -->
+                <text x="440" y="98" fill="#10B981" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="700">0.4 KM</text>
+                <text x="500" y="165" fill="#10B981" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="700">1.2 KM</text>
+              </svg>
+
+              <!-- Node R-01 -->
+              <div class="mesh-node-marker node-r01">
+                <span class="node-chip-label">NODE: R-01</span>
+                <span class="status-dot-indicator" style="background:var(--accent-green); margin-top:3px;"></span>
               </div>
-              <div class="incident-list-compact" id="citizen-history-list">
-                <div class="loading-state">Loading emergency history...</div>
+
+              <!-- Node YOU (Sector 4) -->
+              <div class="mesh-node-marker node-you">
+                <span class="node-chip-label">YOU: SECTOR 4</span>
+                <iconify-icon icon="lucide:compass" style="color:var(--accent-orange); font-size:18px; margin-top:2px;"></iconify-icon>
               </div>
+
+              <!-- Incident Node #8293 -->
+              <div class="mesh-node-marker node-inc-8293">
+                <span class="node-chip-label">● 0.4 KM #8293</span>
+                <iconify-icon icon="lucide:alert-circle" style="color:var(--accent-red); font-size:18px; margin-top:2px;"></iconify-icon>
+              </div>
+
+              <!-- Incident Node #4102 -->
+              <div class="mesh-node-marker node-inc-4102">
+                <span class="node-chip-label">● 1.2 KM #4102</span>
+                <iconify-icon icon="lucide:alert-triangle" style="color:var(--accent-amber); font-size:18px; margin-top:2px;"></iconify-icon>
+              </div>
+            </div>
+
+            <!-- Viewport Bottom Controls -->
+            <div class="map-viewport-controls">
+              <span class="map-scale-metric">SCALE: 1:5000 ⎯⎯⎯ 500m</span>
+              <div class="map-action-tools">
+                <button class="btn-map-control" id="btn-zoom-in" title="Zoom in">＋</button>
+                <button class="btn-map-control" id="btn-zoom-out" title="Zoom out">－</button>
+                <button class="btn-map-control" id="btn-recenter-geo" title="Recenter Location">
+                  <iconify-icon icon="lucide:crosshair"></iconify-icon>
+                </button>
+                <button class="btn-map-control" id="btn-fullscreen-map">
+                  <iconify-icon icon="lucide:maximize"></iconify-icon>
+                  <span>View Fullscreen Map</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom: Active Triage Queue -->
+          <div class="triage-queue-section">
+            <div class="queue-section-header">
+              <div class="queue-title-row">
+                <h2>Active Triage Queue</h2>
+                <span class="incidents-count-caption" id="val-queue-count-label">4 INCIDENTS NEARBY</span>
+              </div>
+              <div class="queue-controls-right">
+                <button class="btn-filter-proximity" id="btn-filter-prox">
+                  <iconify-icon icon="lucide:navigation"></iconify-icon>
+                  <span>Filter by Proximity</span>
+                </button>
+                <select class="select-sort-queue" id="sel-queue-sort">
+                  <option value="dist">Sort: Distance (ASC)</option>
+                  <option value="urgency">Sort: Urgency (CRIT First)</option>
+                  <option value="time">Sort: Timestamp (Newest)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Triage Cards Stream Container -->
+            <div class="triage-cards-list" id="triage-cards-container">
+              <!-- Dynamically populated or seeded matching screenshots -->
             </div>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <!-- ===================================================================== -->
-      <!-- VIEW 2: VOLUNTEER / RESPONDER EXPERIENCE (SECTION 12, 13, 26, 27)      -->
-      <!-- ===================================================================== -->
-      <section id="view-responder" class="portal-view">
-        <div class="responder-layout">
-          <!-- Sidebar: Passport & Availability -->
-          <div class="responder-sidebar">
-            <!-- W3C Responder Passport Card (Section 15) -->
-            <div class="card card-passport">
-              <div class="card-header">
-                <h3>W3C Responder Passport</h3>
-                <span class="badge badge-success" id="resp-passport-status">VERIFIED OFFLINE</span>
+    <!-- ======================================================================= -->
+    <!-- PAGE 4: GLOBAL DASHBOARD (NETWORK ORCHESTRATION & ALL REQUESTS)         -->
+    <!-- ======================================================================= -->
+    <section id="view-dashboard" class="view-screen">
+      <div class="orchestration-layout">
+        
+        <!-- Left Admin Command Rail -->
+        <aside class="admin-left-rail">
+          <div class="admin-nav-stack">
+            <a class="admin-nav-link active" data-view="dashboard">
+              <iconify-icon icon="lucide:layout-dashboard"></iconify-icon>
+              <span>Dashboard</span>
+            </a>
+            <a class="admin-nav-link" data-view="incidents">
+              <iconify-icon icon="lucide:alert-octagon"></iconify-icon>
+              <span>Incidents</span>
+            </a>
+            <a class="admin-nav-link" data-view="responders">
+              <iconify-icon icon="lucide:shield"></iconify-icon>
+              <span>Responders</span>
+            </a>
+            <a class="admin-nav-link" data-view="map">
+              <iconify-icon icon="lucide:map-pin"></iconify-icon>
+              <span>Network Map</span>
+            </a>
+            <a class="admin-nav-link" data-view="analytics">
+              <iconify-icon icon="lucide:bar-chart-2"></iconify-icon>
+              <span>Analytics</span>
+            </a>
+            <a class="admin-nav-link" data-view="settings">
+              <iconify-icon icon="lucide:settings"></iconify-icon>
+              <span>Settings</span>
+            </a>
+          </div>
+
+          <div class="admin-operator-card">
+            <div class="operator-info-row">
+              <div class="operator-avatar">
+                <span>A1</span>
+                <span class="operator-online-dot"></span>
               </div>
-              <div class="passport-body">
-                <div class="pass-field">
-                  <span class="pass-label">Holder Name:</span>
-                  <span class="pass-val" id="pass-name">Capt. Vikram Singh</span>
+              <div class="operator-titles">
+                <h4>Admin-01</h4>
+                <p>CENTRAL SYSTEM</p>
+              </div>
+            </div>
+            <button class="btn-admin-signout" id="btn-admin-logout">Sign Out</button>
+          </div>
+        </aside>
+
+        <!-- Orchestration Main Area -->
+        <div class="orchestration-main">
+          <!-- Top Telemetry Header -->
+          <div class="top-telemetry-header">
+            <h1>Network Orchestration</h1>
+          </div>
+
+          <!-- 4 Telemetry Metrics Horizontal Strip -->
+          <div class="metrics-horizontal-strip">
+            <div class="metric-strip-card">
+              <span class="metric-label-mono">MESH INTEGRITY</span>
+              <div class="metric-val-large">
+                <span id="metric-integrity-val">94.2%</span>
+              </div>
+              <div class="metric-progress-line">
+                <div class="metric-progress-fill" style="width: 94.2%;"></div>
+              </div>
+            </div>
+
+            <div class="metric-strip-card">
+              <span class="metric-label-mono">ACTIVE NODES</span>
+              <div class="metric-val-large">
+                <span id="metric-nodes-val">128</span>
+                <iconify-icon icon="lucide:radio" style="font-size:18px; color:var(--text-muted);"></iconify-icon>
+              </div>
+            </div>
+
+            <div class="metric-strip-card">
+              <span class="metric-label-mono">AVG BATTERY</span>
+              <div class="metric-val-large">
+                <span id="metric-battery-val">76%</span>
+                <iconify-icon icon="lucide:battery-charging" style="font-size:18px; color:var(--accent-orange);"></iconify-icon>
+              </div>
+            </div>
+
+            <div class="metric-strip-card">
+              <span class="metric-label-mono">SIGNAL QUALITY</span>
+              <div class="metric-val-large">
+                <span style="font-size:20px; color:var(--accent-green);">High / Stable</span>
+                <iconify-icon icon="lucide:signal" style="font-size:18px; color:var(--accent-green);"></iconify-icon>
+              </div>
+            </div>
+          </div>
+
+          <!-- Central Map Box + Telemetry Rails -->
+          <div class="orchestration-center-grid">
+            <!-- Center Map Box -->
+            <div class="center-map-box">
+              <svg class="svg-orchestration-overlay" viewBox="0 0 700 380" preserveAspectRatio="none" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:10; pointer-events:none;">
+                <polygon points="270,110 390,130 360,260 250,230" fill="rgba(239, 68, 68, 0.12)" stroke="#EF4444" stroke-width="1.8" stroke-dasharray="5,5" />
+                <polygon points="460,190 540,200 520,290 440,270" fill="rgba(245, 158, 11, 0.08)" stroke="#F59E0B" stroke-width="1.5" stroke-dasharray="4,4" />
+                <line x1="270" y1="180" x2="330" y2="150" stroke="#10B981" stroke-width="1.8" stroke-dasharray="4,4" />
+                <line x1="330" y1="150" x2="410" y2="190" stroke="#10B981" stroke-width="1.8" stroke-dasharray="4,4" />
+                <circle cx="480" cy="240" r="5" fill="#EF4444" />
+                <circle cx="510" cy="245" r="4" fill="#EF4444" />
+                <circle cx="330" cy="150" r="4.5" fill="#10B981" />
+                <circle cx="270" cy="180" r="4.5" fill="#10B981" />
+              </svg>
+
+              <!-- Floating Clusters Card -->
+              <div class="floating-cluster-badge-card">
+                <span class="cluster-card-title">INCIDENT CLUSTERS</span>
+                <div class="cluster-stat-item">
+                  <div class="cluster-stat-left">
+                    <span class="status-dot-indicator" style="background:var(--accent-red);"></span>
+                    <span>High Severity</span>
+                  </div>
+                  <strong>12</strong>
                 </div>
-                <div class="pass-field">
-                  <span class="pass-label">Organization:</span>
-                  <span class="pass-val" id="pass-org">National Disaster Response Force (NDRF)</span>
+                <div class="cluster-stat-item">
+                  <div class="cluster-stat-left">
+                    <span class="status-dot-indicator" style="background:var(--accent-amber);"></span>
+                    <span>Urgent Needed</span>
+                  </div>
+                  <strong>28</strong>
                 </div>
-                <div class="pass-field">
-                  <span class="pass-label">Badge Number:</span>
-                  <span class="pass-val" id="pass-badge">NDRF-B-108</span>
+                <div class="cluster-stat-item">
+                  <div class="cluster-stat-left">
+                    <span class="status-dot-indicator" style="background:var(--accent-green);"></span>
+                    <span>Mesh Secure</span>
+                  </div>
+                  <strong>88</strong>
                 </div>
-                <div class="pass-field">
-                  <span class="pass-label">Specialization:</span>
-                  <span class="pass-val" id="pass-spec">MEDICAL_ALS</span>
-                </div>
-                <div class="pass-field">
-                  <span class="pass-label">Authorized Capabilities:</span>
-                  <div class="caps-tags" id="pass-caps">
-                    <span class="cap-tag">ALS_TRIAGE</span>
-                    <span class="cap-tag">WATER_RESCUE</span>
-                    <span class="cap-tag">DRONE_RECON</span>
+              </div>
+
+              <!-- Floating Status Capsule -->
+              <div class="floating-status-capsule">
+                <span class="capsule-dot-live"></span>
+                <span>SYNCING PROTOCOL V2.4</span>
+                <span>|</span>
+                <span>LAST HEAL: 42s AGO</span>
+                <span>|</span>
+                <span>48 RELAYS ACTIVE</span>
+              </div>
+            </div>
+
+            <!-- Right Telemetry Rails -->
+            <div class="telemetry-rail-stack">
+              <!-- Incidents by Priority Widget -->
+              <div class="rail-widget-card">
+                <h4 class="rail-widget-title">Incidents by Priority</h4>
+                <div class="priority-count-bars">
+                  <div class="priority-bar-item">
+                    <span>CRITICAL</span>
+                    <strong style="color:var(--accent-red);">12</strong>
+                  </div>
+                  <div class="priority-bar-item">
+                    <span>URGENT</span>
+                    <strong style="color:var(--accent-amber);">28</strong>
+                  </div>
+                  <div class="priority-bar-item">
+                    <span>STANDARD</span>
+                    <strong style="color:var(--accent-green);">02</strong>
                   </div>
                 </div>
-                <div class="pass-field">
-                  <span class="pass-label">Digital Signature:</span>
-                  <span class="pass-hash" id="pass-sig">ed25519:78a1bc4... (Valid)</span>
+                <div class="rail-widget-foot">
+                  <span>Total Unresolved</span>
+                  <strong>42</strong>
                 </div>
               </div>
-            </div>
 
-            <!-- Availability Status Toggle -->
-            <div class="card card-availability">
-              <div class="card-header">
-                <h3>Availability Status</h3>
-                <span class="status-indicator online" id="resp-avail-indicator"></span>
-              </div>
-              <div class="avail-buttons">
-                <button class="btn-avail active" data-status="ONLINE">AVAILABLE</button>
-                <button class="btn-avail" data-status="BUSY">BUSY</button>
-                <button class="btn-avail" data-status="OFFLINE">OFFLINE</button>
-              </div>
-            </div>
-
-            <!-- "You Are Here" Navigation Status (Section 24) -->
-            <div class="card card-nav-status">
-              <div class="card-header">
-                <h3>You Are Here</h3>
-                <span class="badge" id="resp-nav-gps-pill">GPS LOCK</span>
-              </div>
-              <div class="location-details">
-                <div class="coord-item">
-                  <span class="coord-label">Current Position:</span>
-                  <span class="coord-val" id="resp-lat-lon">19.0780° N, 72.8790° E</span>
-                </div>
-                <div class="coord-item">
-                  <span class="coord-label">Distance to Case:</span>
-                  <span class="coord-val text-highlight" id="resp-dist-assigned">320 meters (SE)</span>
+              <!-- Responder Load Gauge -->
+              <div class="rail-widget-card">
+                <h4 class="rail-widget-title">Responder Load</h4>
+                <div class="circle-gauge-container">
+                  <div class="circular-gauge">
+                    <span class="gauge-val-center">75%</span>
+                  </div>
+                  <span class="gauge-sub-caption">OCCUPIED</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Main Center: Assigned Case & Evidence Desk -->
-          <div class="responder-main">
-            <!-- Active Mission Assignment Card -->
-            <div class="card card-assignment" id="card-active-assignment">
-              <div class="card-header">
-                <h2>Assigned Emergency Mission</h2>
-                <span class="urgency-pill pill-critical" id="resp-inc-urgency">CRITICAL</span>
-              </div>
-
-              <div id="resp-assignment-content">
-                <div class="inc-details-grid">
-                  <div>
-                    <span class="label">Incident ID:</span>
-                    <strong id="resp-inc-id">inc-2026-001</strong>
-                  </div>
-                  <div>
-                    <span class="label">Category:</span>
-                    <strong id="resp-inc-category">FLOOD</strong>
-                  </div>
-                  <div>
-                    <span class="label">Victims in Danger:</span>
-                    <strong id="resp-inc-victims">4 people (incl. 1 infant)</strong>
-                  </div>
-                  <div>
-                    <span class="label">Location Description:</span>
-                    <span id="resp-inc-loc">S V Road, Near Milan Subway, Santacruz West</span>
-                  </div>
-                </div>
-
-                <div class="mission-actions">
-                  <button id="btn-resp-accept" class="btn-action btn-accept">Accept Mission</button>
-                  <button id="btn-resp-enroute" class="btn-action btn-enroute">Mark En Route</button>
-                  <button id="btn-resp-onscene" class="btn-action btn-onscene">Mark On Scene</button>
-                </div>
+          <!-- Bottom: RECENT NETWORK ACTIVITY LOG (Master All Requests Feed) -->
+          <div class="activity-log-card">
+            <div class="activity-log-header">
+              <h3>RECENT NETWORK ACTIVITY LOG</h3>
+              <div class="log-actions-bar">
+                <input type="text" id="log-search-input" class="input-search-log" placeholder="Search Incident ID, type...">
+                <button class="btn-export-log" id="btn-export-log-csv">
+                  <iconify-icon icon="lucide:download"></iconify-icon>
+                  <span>EXPORT LOGS</span>
+                </button>
               </div>
             </div>
 
-            <!-- Rescue Evidence & Structured Report Submission (Section 27) -->
-            <div class="card card-evidence-desk">
-              <div class="card-header">
-                <h3>Rescue Evidence & Structured Report</h3>
-                <span class="badge badge-required">MANDATORY FOR CLEARANCE</span>
-              </div>
-              <p class="card-sub">Authorities require cryptographic proof of rescue. Single-button claims without evidence are strictly rejected.</p>
-
-              <div class="evidence-workflow-grid">
-                <!-- Photo Upload / Camera Capture with SHA-256 Check -->
-                <div class="evidence-upload-box">
-                  <h4>1. Attach On-Scene Photo / Evidence</h4>
-                  <input type="file" id="evidence-file-input" accept="image/*" class="file-picker">
-                  <div class="file-meta" id="file-meta-box">
-                    <span>No file selected</span>
-                  </div>
-                  <div class="hash-preview" id="hash-preview-box">
-                    SHA-256 Hash: <code id="file-sha256-val">--</code>
-                  </div>
-                </div>
-
-                <!-- Structured Rescue Report Form -->
-                <div class="evidence-report-box">
-                  <h4>2. Structured Rescue Summary</h4>
-                  <div class="form-row">
-                    <label for="report-outcome">Rescue Outcome</label>
-                    <select id="report-outcome" class="input-select">
-                      <option value="RESCUED">RESCUED (All victims evacuated safely)</option>
-                      <option value="TRANSFERRED">TRANSFERRED (Handed over to ALS hospital)</option>
-                      <option value="FALSE_ALARM">FALSE ALARM (No victims found)</option>
-                      <option value="FATALITY">FATALITY (Casualties reported)</option>
-                    </select>
-                  </div>
-                  <div class="form-row">
-                    <label for="report-patients">Patients Treated / Transported</label>
-                    <input type="number" id="report-patients" class="input-text" value="4" min="0">
-                  </div>
-                  <div class="form-row">
-                    <label for="report-notes">On-Scene Tactical & Clinical Notes</label>
-                    <textarea id="report-notes" class="input-textarea" rows="2" placeholder="Describe stabilization, watercraft evacuation, and victim handover details"></textarea>
-                  </div>
-
-                  <button id="btn-submit-rescue-report" class="btn-primary btn-full">
-                    <span class="btn-icon">✍️</span> Sign & Submit Rescue Report to Authority
-                  </button>
-                </div>
-              </div>
+            <div class="table-responsive-container">
+              <table class="hepn-table">
+                <thead>
+                  <tr>
+                    <th>TIMESTAMP</th>
+                    <th>INCIDENT ID</th>
+                    <th>TYPE</th>
+                    <th>STATUS</th>
+                    <th>RESPONDER</th>
+                    <th>RESOLUTION</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-activity-log">
+                  <!-- Populated dynamically via backend API & WebSocket -->
+                </tbody>
+              </table>
             </div>
           </div>
+
         </div>
-      </section>
+      </div>
+    </section>
 
-      <!-- ===================================================================== -->
-      <!-- VIEW 3: AUTHORITY COMMAND CENTER (SECTION 13, 22, 29)                  -->
-      <!-- ===================================================================== -->
-      <section id="view-authority" class="portal-view">
-        <div class="authority-layout">
-          <!-- Authority Sub-Navigation Tabs -->
-          <div class="authority-subnav">
-            <button class="subnav-btn active" data-sub="sub-overview">Overview</button>
-            <button class="subnav-btn" data-sub="sub-map">Real Geographic Map</button>
-            <button class="subnav-btn" data-sub="sub-incidents">Incidents Queue (<span id="auth-inc-count">2</span>)</button>
-            <button class="subnav-btn" data-sub="sub-dispatch">Dispatch Desk</button>
-            <button class="subnav-btn" data-sub="sub-verification">Rescue Verification (<span id="auth-verify-count">1</span>)</button>
-            <button class="subnav-btn" data-sub="sub-credentials">Responder Passports</button>
-            <button class="subnav-btn" data-sub="sub-audit">Flight Recorder</button>
-          </div>
+  </main>
 
-          <!-- Authority Tab 1: Overview -->
-          <div id="sub-overview" class="auth-sub-view active">
-            <div class="kpi-grid">
-              <div class="kpi-card">
-                <span class="kpi-val" id="kpi-active-incidents">2</span>
-                <span class="kpi-label">Active Emergencies</span>
-                <span class="kpi-source">Source: SQLite WAL (Live)</span>
-              </div>
-              <div class="kpi-card">
-                <span class="kpi-val" id="kpi-online-responders">1</span>
-                <span class="kpi-label">Available Responders</span>
-                <span class="kpi-source">Source: Responder DB</span>
-              </div>
-              <div class="kpi-card">
-                <span class="kpi-val" id="kpi-pending-verifications">1</span>
-                <span class="kpi-label">Pending Verifications</span>
-                <span class="kpi-source">Source: Evidence Store</span>
-              </div>
-              <div class="kpi-card">
-                <span class="kpi-val" id="kpi-audit-length">3</span>
-                <span class="kpi-label">Flight Recorder Events</span>
-                <span class="kpi-source">Status: Merkle Intact</span>
-              </div>
-            </div>
-
-            <div class="card">
-              <div class="card-header">
-                <h3>Recent Operational Incidents</h3>
-              </div>
-              <div class="table-container">
-                <table class="data-table" id="table-overview-incidents">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Category</th>
-                      <th>Urgency</th>
-                      <th>Location</th>
-                      <th>Status</th>
-                      <th>Assigned Unit</th>
-                    </tr>
-                  </thead>
-                  <tbody id="tbody-overview-incidents">
-                    <!-- Populated dynamically -->
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <!-- Authority Tab 2: Real Geographic Map (Section 22, 23) -->
-          <div id="sub-map" class="auth-sub-view">
-            <div class="map-container-wrapper">
-              <div class="map-controls-bar">
-                <div class="map-legend">
-                  <span class="legend-item"><span class="dot dot-critical"></span> Critical SOS</span>
-                  <span class="legend-item"><span class="dot dot-high"></span> High SOS</span>
-                  <span class="legend-item"><span class="dot dot-responder"></span> Responder Unit</span>
-                  <span class="legend-item"><span class="dot dot-hazard"></span> Hazard Zone</span>
-                </div>
-                <div class="map-actions">
-                  <button id="btn-recenter-map" class="btn-micro">Center on Command</button>
-                  <button id="btn-toggle-hazards" class="btn-micro">Toggle Hazard Zones</button>
-                </div>
-              </div>
-              <div id="real-geo-map" class="geo-map-canvas"></div>
-            </div>
-          </div>
-
-          <!-- Authority Tab 3: Incidents Full Queue -->
-          <div id="sub-incidents" class="auth-sub-view">
-            <div class="card">
-              <div class="card-header">
-                <h3>Emergency Incidents Queue</h3>
-                <div class="filter-controls">
-                  <select id="filter-incident-status" class="input-select-sm">
-                    <option value="">All Statuses</option>
-                    <option value="REPORTED">Reported</option>
-                    <option value="DISPATCHED">Dispatched</option>
-                    <option value="ACCEPTED">Accepted</option>
-                    <option value="ON_SCENE">On Scene</option>
-                    <option value="RESCUE_SUBMITTED">Rescue Submitted</option>
-                    <option value="VERIFIED">Verified</option>
-                  </select>
-                </div>
-              </div>
-              <div class="table-container">
-                <table class="data-table" id="table-incidents-full">
-                  <thead>
-                    <tr>
-                      <th>Incident ID</th>
-                      <th>Category</th>
-                      <th>Urgency</th>
-                      <th>Location / GPS</th>
-                      <th>Victims</th>
-                      <th>Status</th>
-                      <th>Assigned Responder</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody id="tbody-incidents-full">
-                    <!-- Populated dynamically -->
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <!-- Authority Tab 4: Dispatch Desk -->
-          <div id="sub-dispatch" class="auth-sub-view">
-            <div class="dispatch-grid">
-              <div class="card">
-                <div class="card-header">
-                  <h3>1. Select Incident for Dispatch</h3>
-                </div>
-                <div class="dispatch-incident-list" id="dispatch-incidents-list">
-                  <!-- Populated dynamically -->
-                </div>
-              </div>
-
-              <div class="card">
-                <div class="card-header">
-                  <h3>2. Select Qualified Responder Unit</h3>
-                </div>
-                <div class="dispatch-responder-list" id="dispatch-responders-list">
-                  <!-- Populated dynamically -->
-                </div>
-                <div class="card-footer">
-                  <button id="btn-execute-dispatch" class="btn-primary btn-full" disabled>
-                    Dispatch Selected Unit to Incident
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Authority Tab 5: Evidence & Rescue Verification Desk (Section 28, 29) -->
-          <div id="sub-verification" class="auth-sub-view">
-            <div class="card">
-              <div class="card-header">
-                <h3>Rescue Evidence Review & Verification</h3>
-                <span class="badge badge-warning">AUDITED DECISION</span>
-              </div>
-              <div id="verification-review-container">
-                <div class="empty-state">No rescue reports currently awaiting authority verification.</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Authority Tab 6: Responder Passports -->
-          <div id="sub-credentials" class="auth-sub-view">
-            <div class="card">
-              <div class="card-header">
-                <h3>W3C Responder Credentials & Revocation</h3>
-              </div>
-              <div class="table-container">
-                <table class="data-table" id="table-credentials">
-                  <thead>
-                    <tr>
-                      <th>Credential ID</th>
-                      <th>Holder</th>
-                      <th>Issuer</th>
-                      <th>Role Authorized</th>
-                      <th>Capabilities</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody id="tbody-credentials">
-                    <!-- Populated dynamically -->
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <!-- Authority Tab 7: Flight Recorder Audit Chain -->
-          <div id="sub-audit" class="auth-sub-view">
-            <div class="card">
-              <div class="card-header">
-                <h3>Flight Recorder SHA-256 Tamper-Evident Audit Chain</h3>
-                <span class="badge badge-success" id="audit-chain-badge">CHAIN VERIFIED (0 TAMPERING)</span>
-              </div>
-              <div class="table-container">
-                <table class="data-table" id="table-audit-chain">
-                  <thead>
-                    <tr>
-                      <th>Event ID</th>
-                      <th>Timestamp</th>
-                      <th>Actor</th>
-                      <th>Action</th>
-                      <th>Object</th>
-                      <th>Event Hash</th>
-                      <th>Previous Hash</th>
-                    </tr>
-                  </thead>
-                  <tbody id="tbody-audit-chain">
-                    <!-- Populated dynamically -->
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ===================================================================== -->
-      <!-- VIEW 4: SYSTEM ADMINISTRATOR PORTAL (SECTION 13)                       -->
-      <!-- ===================================================================== -->
-      <section id="view-admin" class="portal-view">
-        <div class="admin-layout">
-          <div class="card">
-            <div class="card-header">
-              <h2>System Security & Mode Configuration</h2>
-            </div>
-            <div class="admin-grid">
-              <div class="admin-section">
-                <h3>Operational Mode</h3>
-                <p>Enforce strict hardware and real GPS constraints or allow development simulation.</p>
-                <div class="mode-selector">
-                  <label class="radio-label">
-                    <input type="radio" name="admin-mode" value="DEVELOPMENT" checked id="radio-mode-dev">
-                    <strong>DEVELOPMENT MODE:</strong> Permitted synthetic hazards, test users, and simulated radio links (labeled [SIMULATION]).
-                  </label>
-                  <label class="radio-label">
-                    <input type="radio" name="admin-mode" value="PRODUCTION" id="radio-mode-prod">
-                    <strong>PRODUCTION MODE:</strong> Strict real-hardware-only. Rejects mock telemetry. Requires real GPS and authenticated devices.
-                  </label>
-                </div>
-              </div>
-
-              <div class="admin-section">
-                <h3>User Accounts & RBAC Roles</h3>
-                <div class="table-container">
-                  <table class="data-table">
-                    <thead>
-                      <tr>
-                        <th>Username</th>
-                        <th>Full Name</th>
-                        <th>Role</th>
-                        <th>Organization</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody id="tbody-admin-users">
-                      <!-- Populated dynamically -->
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ===================================================================== -->
-      <!-- VIEW 5: CONNECTION CENTER SCREEN (SECTION 19)                         -->
-      <!-- ===================================================================== -->
-      <section id="view-connection-center" class="portal-view">
-        <div class="connection-center-layout">
-          <div class="conn-grid">
-            <!-- YOU Card -->
-            <div class="card conn-card">
-              <div class="card-header">
-                <h3>YOU (Operator Identity)</h3>
-                <span class="role-pill pill-responder" id="cc-role-pill">RESPONDER</span>
-              </div>
-              <div class="conn-details">
-                <div class="detail-row"><span class="k">Account:</span> <strong id="cc-account-name">Rahul</strong></div>
-                <div class="detail-row"><span class="k">Role:</span> <strong id="cc-role-name">RESPONDER</strong></div>
-                <div class="detail-row"><span class="k">Device:</span> <span id="cc-device-model">Web Client / Android</span></div>
-                <div class="detail-row"><span class="k">UrSafe ID:</span> <code>USR-82A1</code></div>
-                <div class="detail-row"><span class="k">GPS:</span> <span class="badge badge-success" id="cc-gps-status">● AVAILABLE</span></div>
-                <div class="detail-row"><span class="k">Bluetooth:</span> <span class="badge badge-success" id="cc-ble-status">● ON</span></div>
-                <div class="detail-row"><span class="k">Internet:</span> <span class="badge badge-danger" id="cc-net-status">○ OFFLINE</span></div>
-              </div>
-            </div>
-
-            <!-- CONNECTED RADIO Card -->
-            <div class="card conn-card">
-              <div class="card-header">
-                <h3>CONNECTED RADIO</h3>
-                <span class="badge" id="cc-radio-badge">DISCONNECTED</span>
-              </div>
-              <div id="cc-radio-body">
-                <div class="no-radio-box" id="cc-no-radio-box">
-                  <h4>NO RADIO CONNECTED</h4>
-                  <p>Bluetooth is ON. No compatible UrSafe or Meshtastic emergency radio is currently connected.</p>
-                  <div class="no-radio-actions">
-                    <button id="btn-cc-scan-ble" class="btn-primary">Scan Bluetooth Radios</button>
-                    <button id="btn-cc-connect-usb" class="btn-secondary">Connect USB Serial</button>
-                    <button id="btn-cc-attach-sim" class="btn-tertiary">Attach [SIMULATION] Radio</button>
-                  </div>
-                </div>
-
-                <div class="radio-connected-box hidden" id="cc-radio-connected-box">
-                  <div class="detail-row"><span class="k">Name:</span> <strong id="cc-radio-name">URSAFE-RADIO-01</strong></div>
-                  <div class="detail-row"><span class="k">Hardware:</span> <span id="cc-radio-hw">Heltec V3 (SX1262 LoRa)</span></div>
-                  <div class="detail-row"><span class="k">Transport:</span> <span id="cc-radio-transport">BLE GATT</span></div>
-                  <div class="detail-row"><span class="k">Status:</span> <span class="badge badge-success" id="cc-radio-status">● READY</span></div>
-                  <div class="detail-row"><span class="k">RSSI:</span> <span id="cc-radio-rssi">-65 dBm</span></div>
-                  <div class="detail-row"><span class="k">Battery:</span> <span id="cc-radio-batt">91%</span></div>
-                  <div class="detail-row"><span class="k">Last Packet:</span> <span id="cc-radio-last-pkt">4 sec ago</span></div>
-                  <button id="btn-cc-disconnect-radio" class="btn-secondary btn-full" style="margin-top:10px;">Disconnect Radio</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- MESH & OUTBOX Card -->
-            <div class="card conn-card">
-              <div class="card-header">
-                <h3>MESH & OUTBOX STATUS</h3>
-              </div>
-              <div class="conn-details">
-                <div class="detail-row"><span class="k">Reachable Mesh Nodes:</span> <strong id="cc-mesh-nodes">3</strong></div>
-                <div class="detail-row"><span class="k">Last Mesh Packet:</span> <span id="cc-mesh-last-pkt">4 sec ago</span></div>
-                <div class="detail-row"><span class="k">Pending Outbox Messages:</span> <strong id="cc-outbox-pending">0</strong></div>
-                <div class="detail-row"><span class="k">Failed Outbox Transmissions:</span> <span>0</span></div>
-                <div class="detail-row"><span class="k">Sync Status:</span> <span class="badge badge-success">SYNCED</span></div>
-              </div>
-              <button id="btn-cc-open-diag" class="btn-secondary btn-full" style="margin-top:14px;">Open Low-Level Bluetooth Diagnostics</button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ===================================================================== -->
-      <!-- VIEW 6: SYSTEM HEALTH SCREEN (SECTION 11)                             -->
-      <!-- ===================================================================== -->
-      <section id="view-system-health" class="portal-view">
-        <div class="system-health-layout">
-          <div class="card">
-            <div class="card-header">
-              <h2>URSAFE SYSTEM HEALTH & DEPENDENCY CONSOLE</h2>
-              <button id="btn-refresh-health" class="btn-micro">Refresh Health Probes</button>
-            </div>
-            <div class="health-grid">
-              <div class="health-row">
-                <span class="health-name">API GATEWAY</span>
-                <span class="health-status status-healthy" id="sh-api">● HEALTHY</span>
-              </div>
-              <div class="health-row">
-                <span class="health-name">DATABASE (SQLITE WAL / POSTGRES)</span>
-                <span class="health-status status-healthy" id="sh-db">● CONNECTED</span>
-              </div>
-              <div class="health-row">
-                <span class="health-name">AUTHENTICATION & RBAC</span>
-                <span class="health-status status-healthy" id="sh-auth">● AVAILABLE</span>
-              </div>
-              <div class="health-row">
-                <span class="health-name">WEBSOCKET REAL-TIME STREAM</span>
-                <span class="health-status status-healthy" id="sh-ws">● CONNECTED</span>
-              </div>
-              <div class="health-row">
-                <span class="health-name">SYNC SERVICE & DATA MULE ENGINE</span>
-                <span class="health-status status-healthy" id="sh-sync">● RUNNING</span>
-              </div>
-              <div class="health-row">
-                <span class="health-name">MESH GATEWAY (LORA SX1262)</span>
-                <span class="health-status status-healthy" id="sh-mesh">● CONNECTED</span>
-              </div>
-              <div class="health-row">
-                <span class="health-name">BLUETOOTH ADAPTER</span>
-                <span class="health-status status-healthy" id="sh-ble">● ENABLED</span>
-              </div>
-              <div class="health-row">
-                <span class="health-name">HARDWARE GPS (GNSS)</span>
-                <span class="health-status status-healthy" id="sh-gps">● AVAILABLE</span>
-              </div>
-              <div class="health-row">
-                <span class="health-name">LAST SERVER REPLICATION SYNC</span>
-                <span class="health-timestamp" id="sh-sync-time">Just now</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ===================================================================== -->
-      <!-- VIEW 7: BLUETOOTH DIAGNOSTICS SCREEN (SECTION 20)                     -->
-      <!-- ===================================================================== -->
-      <section id="view-bluetooth-diagnostics" class="portal-view">
-        <div class="card">
-          <div class="card-header">
-            <h2>Bluetooth Low Energy (BLE) Field Diagnostics</h2>
-            <button id="btn-refresh-ble-diag" class="btn-micro">Poll GATT State</button>
-          </div>
-          <div class="diag-table-container">
-            <table class="data-table">
-              <tbody>
-                <tr><td>Adapter State</td><td><strong id="bld-adapter">ON / AVAILABLE</strong></td></tr>
-                <tr><td>BLUETOOTH_SCAN Runtime Permission</td><td><span class="badge badge-success">GRANTED</span></td></tr>
-                <tr><td>BLUETOOTH_CONNECT Runtime Permission</td><td><span class="badge badge-success">GRANTED</span></td></tr>
-                <tr><td>BLE Scanner Status</td><td><span id="bld-scanner">IDLE</span></td></tr>
-                <tr><td>Paired Physical Devices</td><td><span id="bld-paired">URSAFE-RADIO-01 (Heltec V3)</span></td></tr>
-                <tr><td>Connected Device GATT State</td><td><strong id="bld-gatt">DISCONNECTED</strong></td></tr>
-                <tr><td>Primary Service UUID</td><td><code>6e400001-b5a3-f393-e0a9-e50e24dcca9e (Nordic UART)</code></td></tr>
-                <tr><td>Negotiated MTU</td><td><span id="bld-mtu">247 bytes</span></td></tr>
-                <tr><td>Current RSSI</td><td><span id="bld-rssi">-- dBm</span></td></tr>
-                <tr><td>Last Disconnect Reason</td><td><span id="bld-disconnect">None</span></td></tr>
-                <tr><td>Last Error Code</td><td><code>0x00 (SUCCESS)</code></td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-    </main>
+  <!-- ========================================================================= -->
+  <!-- LEVEL 4: PERSISTENT BOTTOM TELEMETRY TICKER BAR                           -->
+  <!-- ========================================================================= -->
+  <div class="global-bottom-ticker">
+    <div class="ticker-left">
+      <span class="ticker-status-dot"></span>
+      <span id="ticker-sync-status">HEPN PEER-ROUTER v2.4.19  •  CHANNEL: LORA-MESH-US915  •  GATEWAY: B-77 RADIO TOWER (RELAY)</span>
+    </div>
+    <div class="ticker-right">
+      <span>PACKETS RX/TX: <strong id="val-packet-rxtx">14,892 / 814</strong></span>
+      <span>LAST SYNC: <strong id="val-last-sync-time">1s AGO</strong></span>
+      <button class="btn-mesh-ping" id="btn-trigger-mesh-ping">
+        <iconify-icon icon="lucide:refresh-cw"></iconify-icon>
+        <span>Mesh Ping</span>
+      </button>
+    </div>
   </div>
 
   <!-- ========================================================================= -->
-  <!-- MODAL: "WHERE AM I?" COMPREHENSIVE GNSS REPORT (SECTION 7, 24)            -->
+  <!-- MODAL 1: "WHERE AM I?" HARDWARE GNSS REPORT                               -->
   <!-- ========================================================================= -->
   <div id="modal-where-am-i" class="modal-backdrop hidden">
     <div class="modal-card">
       <div class="modal-header">
-        <h3>Where Am I? — Real Hardware Location</h3>
-        <button class="modal-close" id="btn-close-where-am-i">✕</button>
+        <h3>Where Am I? — Hardware GNSS Fix</h3>
+        <button class="btn-modal-close" data-close="modal-where-am-i">✕</button>
       </div>
       <div class="modal-body">
-        <div class="gps-info-grid">
-          <div class="gps-cell">
-            <span class="gps-title">GPS Status</span>
-            <strong id="diag-gps-status" class="text-success">ACTIVE LOCK</strong>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px;">
+          <div style="background:#FAF6ED; padding:12px; border-radius:12px; border:1px solid var(--border-color);">
+            <span style="font-family:var(--font-mono); font-size:10px; color:var(--text-muted); display:block;">GNSS STATUS</span>
+            <strong style="color:var(--accent-green); font-size:15px;">ACTIVE HARDWARE LOCK</strong>
           </div>
-          <div class="gps-cell">
-            <span class="gps-title">Latitude</span>
-            <strong id="diag-gps-lat">19.076000° N</strong>
+          <div style="background:#FAF6ED; padding:12px; border-radius:12px; border:1px solid var(--border-color);">
+            <span style="font-family:var(--font-mono); font-size:10px; color:var(--text-muted); display:block;">ACCURACY RADIUS</span>
+            <strong style="font-size:15px;">±4.2 meters</strong>
           </div>
-          <div class="gps-cell">
-            <span class="gps-title">Longitude</span>
-            <strong id="diag-gps-lon">72.877700° E</strong>
+          <div style="background:#FAF6ED; padding:12px; border-radius:12px; border:1px solid var(--border-color);">
+            <span style="font-family:var(--font-mono); font-size:10px; color:var(--text-muted); display:block;">LATITUDE</span>
+            <strong id="modal-lat" style="font-family:var(--font-mono); font-size:13.5px;">19.076000° N</strong>
           </div>
-          <div class="gps-cell">
-            <span class="gps-title">Accuracy Radius</span>
-            <strong id="diag-gps-acc">±4.2 meters</strong>
-          </div>
-          <div class="gps-cell">
-            <span class="gps-title">Altitude</span>
-            <strong id="diag-gps-alt">14 meters MSL</strong>
-          </div>
-          <div class="gps-cell">
-            <span class="gps-title">Last Hardware Fix</span>
-            <strong id="diag-gps-time">Just now</strong>
+          <div style="background:#FAF6ED; padding:12px; border-radius:12px; border:1px solid var(--border-color);">
+            <span style="font-family:var(--font-mono); font-size:10px; color:var(--text-muted); display:block;">LONGITUDE</span>
+            <strong id="modal-lon" style="font-family:var(--font-mono); font-size:13.5px;">72.877700° E</strong>
           </div>
         </div>
+        <p style="font-size:12.5px; color:var(--text-secondary); line-height:1.4;">
+          Coordinates are retrieved directly from the device's hardware GNSS receiver via <code>navigator.geolocation</code>. Coordinates are never fabricated or simulated in production.
+        </p>
+      </div>
+    </div>
+  </div>
 
-        <div class="diag-note">
-          <p>Location is retrieved directly from the device's hardware GNSS receiver via <code>navigator.geolocation</code>. Coordinates are never fabricated.</p>
+  <!-- ========================================================================= -->
+  <!-- MODAL 2: RESPONDER INCIDENT DOSSIER & EVIDENCE DESK                       -->
+  <!-- ========================================================================= -->
+  <div id="modal-responder-dossier" class="modal-backdrop hidden">
+    <div class="modal-card" style="max-width: 620px;">
+      <div class="modal-header">
+        <h3 id="modal-incident-title">Severe Hemorrhage / Marcus Chen</h3>
+        <button class="btn-modal-close" data-close="modal-responder-dossier">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <span class="badge-priority-pill critical" id="modal-priority-pill">HIGH PRIORITY</span>
+          <span class="incident-id-tag" id="modal-incident-id">ID: #8293-A</span>
+        </div>
+
+        <p id="modal-incident-desc" style="font-size:14px; color:var(--text-primary); line-height:1.5; margin-bottom:16px;">
+          Blunt thoracic trauma following ceiling collapse. Pressure dressing applied by bystander, active bleeding reported.
+        </p>
+
+        <!-- Mission Action Progression Buttons -->
+        <div style="display:flex; gap:10px; margin-bottom:20px;">
+          <button class="btn-accept-task" id="btn-modal-accept" style="flex:1;">
+            <iconify-icon icon="lucide:check-circle"></iconify-icon>
+            <span>Accept Mission</span>
+          </button>
+          <button class="btn-view-details" id="btn-modal-enroute" style="flex:1;">
+            <iconify-icon icon="lucide:navigation"></iconify-icon>
+            <span>Mark En Route</span>
+          </button>
+          <button class="btn-view-details" id="btn-modal-onscene" style="flex:1;">
+            <iconify-icon icon="lucide:map-pin"></iconify-icon>
+            <span>Mark On Scene</span>
+          </button>
+        </div>
+
+        <!-- Rescue Evidence Desk (Mandatory for clearance) -->
+        <div style="background:#FAF6ED; border:1px solid var(--border-color); border-radius:16px; padding:18px;">
+          <h4 style="font-size:14px; font-weight:700; margin-bottom:8px;">Rescue Evidence & Cryptographic Proof</h4>
+          <p style="font-size:12px; color:var(--text-secondary); margin-bottom:12px;">Authorities require cryptographic proof of rescue. Attach photo to calculate SHA-256 integrity hash.</p>
+          
+          <input type="file" id="evidence-file-picker" accept="image/*" style="margin-bottom:10px;">
+          
+          <div class="hash-display-box" id="evidence-hash-display">
+            SHA-256 Hash: <code>Waiting for photo evidence...</code>
+          </div>
+
+          <div style="margin-bottom:12px;">
+            <label style="display:block; font-size:12px; font-weight:700; margin-bottom:4px;">Rescue Outcome</label>
+            <select id="modal-rescue-outcome" class="select-sort-queue" style="width:100%;">
+              <option value="RESCUED">RESCUED (All victims stabilized and evacuated)</option>
+              <option value="TRANSFERRED">TRANSFERRED (Handed over to trauma clinic)</option>
+              <option value="FALSE_ALARM">FALSE ALARM (No victims found on-scene)</option>
+            </select>
+          </div>
+
+          <button class="btn-broadcast-distress" id="btn-modal-submit-rescue" style="margin-top:12px; padding:12px;">
+            <iconify-icon icon="lucide:file-signature"></iconify-icon>
+            <span>Sign & Submit Rescue Report</span>
+          </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Application Logic -->
-  <script src="app.js"></script>
+  <!-- HEPN Client Logic -->
+  <script src="app.js?v=3"></script>
 </body>
 </html>
