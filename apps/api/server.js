@@ -217,7 +217,7 @@ function handleApiRequest(req, res) {
         db.prepare(`
           INSERT INTO incident_events (id, incident_id, actor_user_id, event_type, from_status, to_status, notes, latitude, longitude, timestamp)
           VALUES (?, ?, ?, 'CREATED', NULL, 'REPORTED', ?, ?, ?, ?)
-        `).run('ievt-' + crypto.randomUUID(), incidentId, reporterId || 'anonymous_citizen', description, latitude, longitude, now);
+        `).run('ievt-' + crypto.randomUUID(), incidentId, reporterId || null, description, latitude, longitude, now);
 
         logAuditEvent('INCIDENT_CREATED', reporterId || 'anonymous', 'SOS_TRIGGERED', incidentId, { category, urgency, latitude, longitude });
 

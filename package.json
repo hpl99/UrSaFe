@@ -8,10 +8,13 @@
     "packages/*"
   ],
   "scripts": {
+    "dev:backend": "node apps/api/server.js",
+    "dev:frontend": "node apps/web-console/server.js",
+    "dev:all": "node apps/web-console/server.js",
+    "dev:web": "node apps/web-console/server.js",
     "test": "npm run test:web && npm run test:python",
     "test:python": "pytest tests/ -v",
     "test:web": "echo \"Running web-console tests...\"",
-    "dev:web": "node apps/web-console/server.js",
     "lint": "echo \"Running monorepo lint checks...\""
   },
   "devDependencies": {
