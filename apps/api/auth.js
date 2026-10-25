@@ -14,7 +14,7 @@ function logAuditEvent(eventType, actorId, action, objectId, payload = {}) {
   const payloadStr = JSON.stringify(payload);
   const payloadHash = crypto.createHash('sha256').update(payloadStr).digest('hex');
 
-  const lastEvent = db.prepare('SELECT current_event_hash FROM audit_events ORDER BY timestamp DESC LIMIT 1').get();
+  const lastEvent = db.prepare('SELECT current_event_hash FROM audit_events ORDER BY rowid DESC LIMIT 1').get();
   const prevHash = lastEvent ? lastEvent.current_event_hash : '0000000000000000000000000000000000000000000000000000000000000000';
   const currentHash = crypto.createHash('sha256').update(prevHash + eventType + actorId + action + objectId + payloadHash + now).digest('hex');
 

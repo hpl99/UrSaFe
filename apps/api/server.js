@@ -1324,7 +1324,7 @@ function handleApiRequest(req, res) {
         const auth = authorizeRoles(session, ['AUTHORITY', 'ADMIN']);
         if (!auth.authorized) return sendJson(auth.status, { error: auth.error });
 
-        const events = db.prepare('SELECT * FROM audit_events ORDER BY timestamp ASC').all();
+        const events = db.prepare('SELECT * FROM audit_events ORDER BY rowid ASC').all();
 
         let chainValid = true;
         let brokenIndex = -1;

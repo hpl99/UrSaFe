@@ -1742,7 +1742,7 @@ async function refreshDeviceRegistry() {
             <div style="display:flex; align-items:center; gap:8px;">
               <span class="device-telemetry-pill">
                 <iconify-icon icon="lucide:activity" style="color:var(--accent-green);"></iconify-icon>
-                LQI 99.4%
+                ${d.lqi != null ? `LQI ${d.lqi}%` : 'LQI N/A'}
               </span>
               ${d.connection_state === 'CONNECTED'
                 ? `<button class="layer-pill" onclick="disconnectDevice('${d.id}')" style="background:#EF4444; color:#fff; border-color:#EF4444;">Disconnect</button>`
