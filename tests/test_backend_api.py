@@ -121,7 +121,7 @@ def test_full_incident_and_rescue_lifecycle(api_server):
         "longitude": 72.8798,
         "victim_count": 3,
         "description": "Rising floodwaters trapped 3 persons on rooftop",
-        "is_simulation": 1
+        "is_simulation": 0
     }
     status, sos_data = make_request(
         f"{api_server}/api/v1/incidents",
@@ -310,7 +310,7 @@ def test_state_machine_transition_close_and_reopen(api_server):
     assert close_data["incident"]["status"] == "CLOSED"
 
     # 5. Verify Timeline contains all events
-    status, timeline = make_request(f"{api_server}/api/v1/emergencies/{inc_id}/timeline")
+    status, timeline = make_request(f"{api_server}/api/v1/emergencies/{inc_id}/timeline", token=auth_token)
     assert status == 200
     assert len(timeline) >= 4
     assert timeline[0]["to_status"] == "SOS_CREATED"
@@ -385,14 +385,21 @@ def test_evidence_validation_and_duplicate_detection(api_server):
 
 
 def test_emergency_history_and_active_separation(api_server):
+    _, auth_login = make_request(
+        f"{api_server}/api/v1/auth/login",
+        method="POST",
+        data={"username": "authority_rajesh", "password": "Password123!"}
+    )
+    auth_token = auth_login["session"]["token"]
+
     # Fetch active emergencies
-    status_act, active_cases = make_request(f"{api_server}/api/v1/emergencies?active=true")
+    status_act, active_cases = make_request(f"{api_server}/api/v1/emergencies?active=true", token=auth_token)
     assert status_act == 200
     for case in active_cases:
         assert case["status"] not in ("VERIFIED", "CLOSED", "CANCELLED")
 
     # Fetch historical emergencies
-    status_hist, history_cases = make_request(f"{api_server}/api/v1/emergencies?history=true")
+    status_hist, history_cases = make_request(f"{api_server}/api/v1/emergencies?history=true", token=auth_token)
     assert status_hist == 200
     for case in history_cases:
         assert case["status"] in ("VERIFIED", "CLOSED", "CANCELLED")
