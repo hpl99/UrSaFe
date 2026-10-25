@@ -20,12 +20,57 @@ const db = new DatabaseSync(DB_PATH);
 db.exec('PRAGMA journal_mode = WAL;');
 db.exec('PRAGMA foreign_keys = ON;');
 
-// Run Initial Migration
-const migrationPath = path.join(__dirname, '../../infrastructure/migrations/001_initial_schema.sql');
-if (fs.existsSync(migrationPath)) {
-  const migrationSql = fs.readFileSync(migrationPath, 'utf8');
-  db.exec(migrationSql);
+// Run Migrations in Order
+const migrationsDir = path.join(__dirname, '../../infrastructure/migrations');
+if (fs.existsSync(migrationsDir)) {
+  const files = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
+  for (const file of files) {
+    const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
+    db.exec(sql);
+  }
 }
+
+// Helper to safely add column if missing
+function safeAddColumn(table, columnDef) {
+  try {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${columnDef};`);
+  } catch (err) {
+    // Ignore duplicate column errors in SQLite
+    if (!err.message.includes('duplicate column name')) {
+      console.warn(`[DB Schema] Column check ${table}: ${err.message}`);
+    }
+  }
+}
+
+// Ensure required columns for full 18-state lifecycle & evidence
+safeAddColumn('incidents', 'address_street TEXT');
+safeAddColumn('incidents', 'address_locality TEXT');
+safeAddColumn('incidents', 'address_city TEXT');
+safeAddColumn('incidents', 'address_postal_code TEXT');
+safeAddColumn('incidents', 'address_country TEXT');
+safeAddColumn('incidents', 'address_resolved_at INTEGER');
+
+safeAddColumn('incident_events', 'actor_role TEXT');
+safeAddColumn('incident_events', 'device_id TEXT');
+safeAddColumn('incident_events', 'reason TEXT');
+safeAddColumn('incident_events', 'evidence_reference TEXT');
+safeAddColumn('incident_events', 'receipt_reference TEXT');
+
+safeAddColumn('evidence', 'uploader_role TEXT');
+safeAddColumn('evidence', 'description TEXT');
+safeAddColumn('evidence', 'verification_status TEXT NOT NULL DEFAULT \'VERIFICATION_PENDING\'');
+safeAddColumn('evidence', 'verified_by_user_id TEXT');
+safeAddColumn('evidence', 'verified_at INTEGER');
+safeAddColumn('evidence', 'rejection_reason TEXT');
+safeAddColumn('evidence', 'storage_reference TEXT');
+
+safeAddColumn('devices', 'protocol_version TEXT DEFAULT \'v1\'');
+safeAddColumn('devices', 'role_advertised TEXT');
+safeAddColumn('devices', 'connected_user_id TEXT');
+safeAddColumn('devices', 'latitude REAL');
+safeAddColumn('devices', 'longitude REAL');
+safeAddColumn('devices', 'accuracy_m REAL');
+safeAddColumn('devices', 'rssi_dbm REAL');
 
 // Password hashing utility using PBKDF2 (100,000 iterations, SHA-512)
 function hashPassword(password, salt = null) {
