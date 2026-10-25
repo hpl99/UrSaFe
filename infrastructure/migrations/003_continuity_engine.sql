@@ -76,12 +76,12 @@ CREATE TABLE IF NOT EXISTS continuity_deduplication (
     processed_at INTEGER NOT NULL
 );
 
--- Seed initial authoritative transports
+-- Seed initial authoritative transports with truthful defaults (DISCONNECTED until detected)
 INSERT OR IGNORE INTO continuity_transports 
 (transport_id, transport_type, display_name, status, is_connected, link_quality, rssi_dbm, snr_db, battery_pct, latency_ms, queue_depth, packets_sent, packets_failed, packets_acked, last_heartbeat)
 VALUES
-('tr-ble-01', 'BLE', 'Bluetooth Low Energy (0xFFF0)', 'CONNECTED', 1, 'EXCELLENT', -58.0, 11.2, 88.0, 32.0, 0, 14, 0, 14, unixepoch()*1000),
-('tr-lora-01', 'MESHTASTIC_LORA', 'Meshtastic SX1262 LoRa (868MHz)', 'CONNECTED', 1, 'GOOD', -74.0, 8.5, 92.0, 145.0, 0, 28, 1, 27, unixepoch()*1000),
-('tr-wifi-01', 'LOCAL_WIFI', 'Local Ad-Hoc Emergency Wi-Fi', 'AVAILABLE', 0, 'MARGINAL', -82.0, NULL, 100.0, 18.0, 0, 0, 0, 0, unixepoch()*1000),
-('tr-cloud-01', 'INTERNET_CLOUD', 'Central Cloud Uplink (Cellular/ISP)', 'DISCONNECTED', 0, 'OFFLINE', NULL, NULL, NULL, 450.0, 0, 8, 2, 6, unixepoch()*1000),
-('tr-mule-01', 'DATA_MULE', 'Store-Carry-Forward Data Mule', 'AVAILABLE', 1, 'GOOD', NULL, NULL, 95.0, 120000.0, 0, 5, 0, 5, unixepoch()*1000);
+('tr-ble-01', 'BLE', 'Bluetooth Low Energy (Native P2P)', 'DISCONNECTED', 0, 'OFFLINE', NULL, NULL, 100.0, 0.0, 0, 0, 0, 0, unixepoch()*1000),
+('tr-lora-01', 'MESHTASTIC_LORA', 'Meshtastic SX1262 LoRa (IN_865)', 'DISCONNECTED', 0, 'OFFLINE', NULL, NULL, 100.0, 0.0, 0, 0, 0, 0, unixepoch()*1000),
+('tr-wifi-01', 'LOCAL_WIFI', 'Local Ad-Hoc Emergency Wi-Fi', 'DISCONNECTED', 0, 'OFFLINE', NULL, NULL, 100.0, 0.0, 0, 0, 0, 0, unixepoch()*1000),
+('tr-cloud-01', 'INTERNET_CLOUD', 'Central Cloud Uplink (Cellular/ISP)', 'DISCONNECTED', 0, 'OFFLINE', NULL, NULL, NULL, 0.0, 0, 0, 0, 0, unixepoch()*1000),
+('tr-mule-01', 'DATA_MULE', 'Store-Carry-Forward Data Mule', 'DISCONNECTED', 0, 'OFFLINE', NULL, NULL, 100.0, 0.0, 0, 0, 0, 0, unixepoch()*1000);

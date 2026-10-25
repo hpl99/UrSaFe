@@ -448,8 +448,43 @@ class RescueContinuityEngine {
       return;
     }
 
-    const transport = this.selectBestTransport(priority);
+    // Training Isolation: SOS messages created in training MUST NEVER be forwarded to real responders or transports
+    let isTraining = false;
+    try {
+      const p = JSON.parse(msg.payload_json);
+      if (p.is_simulation || p.training || p.is_training || msg.recipient_scope === 'TRAINING') {
+        isTraining = true;
+      }
+    } catch (_) {}
+
     const attemptId = 'att-' + crypto.randomUUID();
+
+    if (isTraining) {
+      this.db.prepare(`
+        UPDATE continuity_messages
+        SET current_state = 'DELIVERED',
+            ack_level = 'NONE',
+            last_transport = 'SIMULATION_ISOLATED',
+            last_error = 'TRAINING_MODE_ISOLATED_NOT_FORWARDED',
+            completed_at = ?
+        WHERE message_id = ?
+      `).run(now, messageId);
+
+      this.db.prepare(`
+        INSERT INTO continuity_delivery_attempts (
+          id, message_id, transport, attempt_number, started_at, finished_at,
+          result, error_code, latency_ms, battery_pct
+        ) VALUES (?, ?, 'SIMULATION_ISOLATED', ?, ?, ?, 'TRAINING_RETAINED', 'TRAINING_NOT_FORWARDED', 0, ?)
+      `).run(attemptId, messageId, attemptNumber, now, now, this.batteryLevelPct);
+
+      this.emit('continuity.message.training_isolated', {
+        message_id: messageId,
+        reason: 'TRAINING_MESSAGE_NOT_FORWARDED'
+      });
+      return;
+    }
+
+    const transport = this.selectBestTransport(priority);
 
     if (!transport) {
       // No available transport right now

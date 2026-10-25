@@ -122,7 +122,9 @@ function handleApiRequest(req, res) {
           googleMapsApiKey: key,
           hasGoogleMaps: Boolean(key),
           status: key ? 'CONFIGURED' : 'NOT_CONFIGURED',
-          provider: key ? 'GOOGLE_MAPS' : 'OPENSTREETMAP_OFFLINE'
+          provider: key ? 'GOOGLE_MAPS' : 'OPENSTREETMAP_OFFLINE',
+          isDev: process.env.NODE_ENV !== 'production',
+          region: 'IN_865'
         });
       }
 
@@ -374,6 +376,22 @@ function handleApiRequest(req, res) {
 
         const reporterId = session.userId;
         const reporterRole = session.role || 'CITIZEN';
+        const clientMsgId = body.client_msg_id || body.msg_id || null;
+
+        // Idempotency Check: Same (reporter_user_id, client_msg_id) returns existing record
+        if (clientMsgId) {
+          const existing = db.prepare('SELECT * FROM incidents WHERE reporter_user_id = ? AND client_msg_id = ?').get(reporterId, clientMsgId);
+          if (existing) {
+            return sendJson(200, { message: 'Incident already exists (idempotent deduplication)', incident: existing, deduplicated: true, status_code: 'ALREADY_EXISTS' });
+          }
+        }
+        if (body.id) {
+          const existingById = db.prepare('SELECT * FROM incidents WHERE id = ?').get(body.id);
+          if (existingById) {
+            return sendJson(200, { message: 'Incident already exists (idempotent deduplication)', incident: existingById, deduplicated: true, status_code: 'ALREADY_EXISTS' });
+          }
+        }
+
         const incidentId = body.id || 'inc-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1000);
         const now = Date.now();
 
@@ -384,7 +402,7 @@ function handleApiRequest(req, res) {
         const accuracy = body.accuracy_m != null ? Number(body.accuracy_m) : null;
         const victims = body.victim_count || 1;
         const description = body.description || 'Emergency SOS reported via offline network';
-        const isSimulation = body.is_simulation ? 1 : 0;
+        const isSimulation = (body.is_simulation || body.training) ? 1 : 0;
         const initialStatus = body.status || 'REPORTED'; // 'REPORTED' or 'SOS_CREATED'
         const signature = body.ed25519_signature || 'sig_local_offline_' + now;
 
@@ -394,19 +412,30 @@ function handleApiRequest(req, res) {
 
         const payloadHash = crypto.createHash('sha256').update(incidentId + category + urgency + latitude + longitude + now).digest('hex');
 
-        db.prepare(`
-          INSERT INTO incidents (
-            id, reporter_user_id, category, urgency, latitude, longitude, accuracy_m,
-            location_description, address_street, address_locality, address_city,
-            address_postal_code, address_country, address_resolved_at,
-            victim_count, description, status, ed25519_signature, payload_hash, is_simulation, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
-          incidentId, reporterId, category, urgency, latitude, longitude, accuracy,
-          locationDesc, addr ? addr.street : null, addr ? addr.locality : null, addr ? addr.city : null,
-          addr ? addr.postal_code : null, addr ? addr.country : null, addr ? now : null,
-          victims, description, initialStatus, signature, payloadHash, isSimulation, now, now
-        );
+        try {
+          db.prepare(`
+            INSERT INTO incidents (
+              id, reporter_user_id, client_msg_id, category, urgency, latitude, longitude, accuracy_m,
+              location_description, address_street, address_locality, address_city,
+              address_postal_code, address_country, address_resolved_at,
+              victim_count, description, status, ed25519_signature, payload_hash, is_simulation, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(
+            incidentId, reporterId, clientMsgId, category, urgency, latitude, longitude, accuracy,
+            locationDesc, addr ? addr.street : null, addr ? addr.locality : null, addr ? addr.city : null,
+            addr ? addr.postal_code : null, addr ? addr.country : null, addr ? now : null,
+            victims, description, initialStatus, signature, payloadHash, isSimulation, now, now
+          );
+        } catch (insertErr) {
+          if (insertErr.message && insertErr.message.includes('UNIQUE constraint failed')) {
+            const existingMatch = (clientMsgId && db.prepare('SELECT * FROM incidents WHERE reporter_user_id = ? AND client_msg_id = ?').get(reporterId, clientMsgId))
+              || db.prepare('SELECT * FROM incidents WHERE id = ?').get(incidentId);
+            if (existingMatch) {
+              return sendJson(200, { message: 'Incident already exists (idempotent deduplication)', incident: existingMatch, deduplicated: true, status_code: 'ALREADY_EXISTS' });
+            }
+          }
+          throw insertErr;
+        }
 
         // Record Initial Timeline Event with complete state metadata
         db.prepare(`
@@ -430,6 +459,7 @@ function handleApiRequest(req, res) {
             incident_id: incidentId,
             sender_user_id: reporterId,
             sender_device_id: body.device_id || 'dev-local-01',
+            recipient_scope: isSimulation ? 'TRAINING' : 'BROADCAST',
             message_type: MESSAGE_TYPES.SOS_CREATE,
             priority: PRIORITY.P0_LIFE_CRITICAL,
             payload: {
@@ -440,7 +470,9 @@ function handleApiRequest(req, res) {
               longitude,
               victim_count: victims,
               description,
-              status: initialStatus
+              status: initialStatus,
+              is_simulation: isSimulation,
+              training: Boolean(isSimulation)
             }
           });
         } catch (cErr) {
@@ -461,7 +493,7 @@ function handleApiRequest(req, res) {
 
         const incidentId = transitionMatch[1];
         const body = await parseJsonBody();
-        const nextState = body.new_state || body.to_status;
+        const nextState = body.target_state || body.new_state || body.to_status;
         const reason = body.reason || body.notes || 'State transitioned via operational workflow';
         const deviceId = body.device_id || 'dev-unknown';
         const evidenceRef = body.evidence_reference || null;
@@ -474,8 +506,16 @@ function handleApiRequest(req, res) {
         const incident = db.prepare('SELECT * FROM incidents WHERE id = ?').get(incidentId);
         if (!incident) return sendJson(404, { error: 'Incident not found' });
 
-        // Enforce RBAC on sensitive state transitions
-        if (['VERIFIED', 'CLOSED', 'REOPENED'].includes(nextState)) {
+        if (!nextState || (!LIFECYCLE_STATES.includes(nextState) && !EXCEPTION_STATES.includes(nextState))) {
+          return sendJson(400, { error: `Invalid or missing target state: '${nextState}'` });
+        }
+
+        // Enforce RBAC on state transitions
+        if (session.role === 'CITIZEN') {
+          if (nextState !== 'CANCELLED' || incident.reporter_user_id !== session.userId) {
+            return sendJson(403, { error: 'Forbidden: Citizens are not permitted to trigger operational state transitions' });
+          }
+        } else if (['VERIFIED', 'CLOSED', 'REOPENED'].includes(nextState)) {
           const auth = authorizeRoles(session, ['AUTHORITY', 'ADMIN']);
           if (!auth.authorized) return sendJson(auth.status, { error: auth.error });
         } else if (['MISSION_ACCEPTED', 'EN_ROUTE', 'ARRIVED_ON_SCENE', 'RESCUE_IN_PROGRESS', 'RESCUE_COMPLETED'].includes(nextState)) {
@@ -836,6 +876,11 @@ function handleApiRequest(req, res) {
         const body = await parseJsonBody();
         const now = Date.now();
 
+        const existingReport = db.prepare('SELECT id FROM rescue_reports WHERE incident_id = ?').get(incidentId);
+        if (existingReport) {
+          return sendJson(409, { error: 'Rescue report already submitted for this incident', reportId: existingReport.id });
+        }
+
         const reportId = 'rpt-' + crypto.randomUUID();
         const responderSig = body.responder_signature || 'sig_ed25519_resp_' + session.userId.slice(-6) + '_' + now;
         const victimSig = body.victim_signature || null;
@@ -939,6 +984,10 @@ function handleApiRequest(req, res) {
 
       // 14. Responders List & Profiles
       if (pathname === '/api/v1/responders' && method === 'GET') {
+        const session = authenticateRequest(req);
+        const auth = authorizeRoles(session, ['RESPONDER', 'AUTHORITY', 'ADMIN']);
+        if (!auth.authorized) return sendJson(auth.status, { error: auth.error });
+
         const responders = db.prepare(`
           SELECT u.id, u.full_name, u.phone_number, u.email,
                  rp.badge_number, rp.specialization, rp.availability_status, rp.current_latitude, rp.current_longitude, rp.last_location_time, rp.assigned_incident_id,
@@ -974,6 +1023,10 @@ function handleApiRequest(req, res) {
 
       // 16. Credentials & Responder Passports
       if (pathname === '/api/v1/credentials' && method === 'GET') {
+        const session = authenticateRequest(req);
+        const auth = authorizeRoles(session, ['AUTHORITY', 'ADMIN']);
+        if (!auth.authorized) return sendJson(auth.status, { error: auth.error });
+
         const creds = db.prepare(`
           SELECT c.*, u.full_name, u.username, o.name as issuer_name, o.code as issuer_code
           FROM credentials c
@@ -1199,6 +1252,9 @@ function handleApiRequest(req, res) {
       // 19f. Locations: Get Live Positions
       if (pathname === '/api/v1/locations' && method === 'GET') {
         const session = authenticateRequest(req);
+        const auth = authorizeRoles(session, ['RESPONDER', 'AUTHORITY', 'ADMIN']);
+        if (!auth.authorized) return sendJson(auth.status, { error: auth.error });
+
         const responders = db.prepare(`
           SELECT rp.user_id, rp.current_latitude as latitude, rp.current_longitude as longitude,
                  rp.last_location_time as timestamp, rp.availability_status, rp.badge_number,
@@ -1234,6 +1290,10 @@ function handleApiRequest(req, res) {
 
       // 20. Flight Recorder Audit Chain Verification
       if (pathname === '/api/v1/audit/flight-recorder' && method === 'GET') {
+        const session = authenticateRequest(req);
+        const auth = authorizeRoles(session, ['AUTHORITY', 'ADMIN']);
+        if (!auth.authorized) return sendJson(auth.status, { error: auth.error });
+
         const events = db.prepare('SELECT * FROM audit_events ORDER BY timestamp ASC').all();
 
         let chainValid = true;
@@ -1308,17 +1368,25 @@ function handleApiRequest(req, res) {
 
       // 24. Mesh Nodes & Network Topology
       if (pathname === '/api/v1/mesh' && method === 'GET') {
+        const session = authenticateRequest(req);
+        const auth =  authorizeRoles(session, ['RESPONDER', 'AUTHORITY', 'ADMIN']);
+        if (!auth.authorized) return sendJson(auth.status, { error: auth.error });
+
         const nodes = db.prepare('SELECT * FROM mesh_nodes ORDER BY last_seen_at DESC').all();
         return sendJson(200, {
           active_nodes: nodes.length,
           topology: 'AD_HOC_LORA_MESH',
-          frequency: '868/865 MHz (SX1262)',
+          frequency: '865-867 MHz (SX1262 / IN_865)',
           nodes
         });
       }
 
       // 25. Evidence Records List
       if (pathname === '/api/v1/evidence' && method === 'GET') {
+        const session = authenticateRequest(req);
+        const auth = authorizeRoles(session, ['RESPONDER', 'AUTHORITY', 'ADMIN']);
+        if (!auth.authorized) return sendJson(auth.status, { error: auth.error });
+
         const evd = db.prepare(`
           SELECT e.id, e.incident_id, e.uploader_user_id, e.evidence_type, e.file_name, e.file_size_bytes, e.sha256_hash, e.latitude, e.longitude, e.captured_at, e.created_at,
                  u.full_name as uploader_name, u.role as uploader_role
@@ -1331,6 +1399,10 @@ function handleApiRequest(req, res) {
 
       // 26. Rescue Reports & Receipts List
       if (pathname === '/api/v1/rescue/receipts' && method === 'GET') {
+        const session = authenticateRequest(req);
+        const auth = authorizeRoles(session, ['RESPONDER', 'AUTHORITY', 'ADMIN']);
+        if (!auth.authorized) return sendJson(auth.status, { error: auth.error });
+
         const receipts = db.prepare(`
           SELECT r.*, i.category, i.urgency, i.location_description,
                  u.full_name as responder_name, rp.badge_number,
@@ -1371,12 +1443,20 @@ function handleApiRequest(req, res) {
 
       // 40. Connectivity Cockpit State & Score
       if (pathname === '/api/v1/continuity/cockpit' && method === 'GET') {
+        const session = authenticateRequest(req);
+        const auth = authorizeRoles(session, ['RESPONDER', 'AUTHORITY', 'ADMIN']);
+        if (!auth.authorized) return sendJson(auth.status, { error: auth.error });
+
         const cockpit = continuityEngine.getCockpitState();
         return sendJson(200, cockpit);
       }
 
       // 41. List Continuity Transports
       if (pathname === '/api/v1/continuity/transports' && method === 'GET') {
+        const session = authenticateRequest(req);
+        const auth = authorizeRoles(session, ['RESPONDER', 'AUTHORITY', 'ADMIN']);
+        if (!auth.authorized) return sendJson(auth.status, { error: auth.error });
+
         const transports = db.prepare('SELECT * FROM continuity_transports ORDER BY transport_id ASC').all();
         return sendJson(200, transports);
       }
@@ -1384,6 +1464,10 @@ function handleApiRequest(req, res) {
       // 42. Update Transport State / Diagnostics (Failure Injection)
       const transportStatusMatch = pathname.match(/^\/api\/v1\/continuity\/transports\/([^/]+)\/status$/);
       if (transportStatusMatch && method === 'POST') {
+        const session = authenticateRequest(req);
+        const auth = authorizeRoles(session, ['AUTHORITY', 'ADMIN']);
+        if (!auth.authorized) return sendJson(auth.status, { error: auth.error });
+
         const transportId = transportStatusMatch[1];
         const body = await parseJsonBody();
         const resUpdate = continuityEngine.updateTransport(transportId, body);
@@ -1395,6 +1479,10 @@ function handleApiRequest(req, res) {
 
       // 43. Outbox Inspection (Pending / Active Messages)
       if (pathname === '/api/v1/continuity/outbox' && method === 'GET') {
+        const session = authenticateRequest(req);
+        const auth = authorizeRoles(session, ['AUTHORITY', 'ADMIN']);
+        if (!auth.authorized) return sendJson(auth.status, { error: auth.error });
+
         const outbox = db.prepare(`
           SELECT * FROM continuity_messages
           WHERE current_state IN ('QUEUED', 'SCHEDULED', 'TRANSMITTING', 'RETRY_WAIT', 'DEFERRED')
@@ -1406,6 +1494,10 @@ function handleApiRequest(req, res) {
 
       // 44. Dead Letter Queue Inspection
       if (pathname === '/api/v1/continuity/dead-letter' && method === 'GET') {
+        const session = authenticateRequest(req);
+        const auth = authorizeRoles(session, ['AUTHORITY', 'ADMIN']);
+        if (!auth.authorized) return sendJson(auth.status, { error: auth.error });
+
         const deadLetters = db.prepare(`
           SELECT * FROM continuity_messages
           WHERE current_state = 'DEAD_LETTER'
@@ -1417,6 +1509,10 @@ function handleApiRequest(req, res) {
 
       // 45. List Messages with Filtering
       if (pathname === '/api/v1/continuity/messages' && method === 'GET') {
+        const session = authenticateRequest(req);
+        const auth = authorizeRoles(session, ['RESPONDER', 'AUTHORITY', 'ADMIN']);
+        if (!auth.authorized) return sendJson(auth.status, { error: auth.error });
+
         const urlParams = parsedUrl.searchParams;
         const priorityFilter = urlParams.get('priority');
         const stateFilter = urlParams.get('state');
