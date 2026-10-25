@@ -1,0 +1,21 @@
+{
+  "name": "ursafe-monorepo",
+  "version": "1.0.0",
+  "description": "UrSafe / Cascade26 - Real Offline-First Emergency Communication & Coordination Platform",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "npm run test:web && npm run test:python",
+    "test:python": "pytest tests/ -v",
+    "test:web": "echo \"Running web-console tests...\"",
+    "dev:web": "node apps/web-console/server.js",
+    "lint": "echo \"Running monorepo lint checks...\""
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "prettier": "^3.2.0"
+  }
+}

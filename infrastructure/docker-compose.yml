@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  coordinator-api:
+    build:
+      context: .
+      dockerfile: infrastructure/Dockerfile.api
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - DATABASE_URL=postgresql://ursafe:ursafe_secret@postgres:5432/ursafe_coordination
+      - NODE_ENV=production
+    depends_on:
+      - postgres
+
+  web-console:
+    build:
+      context: .
+      dockerfile: infrastructure/Dockerfile.web
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - API_URL=http://coordinator-api:8000
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=ursafe
+      - POSTGRES_PASSWORD=ursafe_secret
+      - POSTGRES_DB=ursafe_coordination
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:

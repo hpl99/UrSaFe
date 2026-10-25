@@ -1,0 +1,184 @@
+syntax = "proto3";
+
+package ursafe.protocol.v1;
+
+enum Priority {
+  PRIORITY_UNSPECIFIED = 0;
+  PRIORITY_EMERGENCY = 1; // Highest priority: Life-safety SOS, Acceptances
+  PRIORITY_HIGH = 2;      // Hazardous alerts, assignments
+  PRIORITY_ROUTINE = 3;   // Status updates, acknowledgments
+  PRIORITY_TELEMETRY = 4; // Node discovery, battery, link quality
+}
+
+enum MessageType {
+  MESSAGE_TYPE_UNSPECIFIED = 0;
+  
+  // SOS Lifecycle
+  SOS_CREATED = 1;
+  SOS_UPDATED = 2;
+  SOS_CANCELLED = 3;
+  SOS_ACKNOWLEDGED = 4;
+  SOS_ASSIGNED = 5;
+  SOS_ACCEPTED = 6;
+  SOS_DECLINED = 7;
+  
+  // Responder Lifecycle
+  RESPONDER_STATUS = 8;
+  RESPONDER_LOCATION = 9;
+  ARRIVED = 10;
+  RESCUE_STARTED = 11;
+  RESCUE_COMPLETED = 12;
+  RESCUE_RECEIPT = 13;
+  
+  // Credentials & Trust
+  CREDENTIAL_ISSUED = 14;
+  CREDENTIAL_REVOKED = 15;
+  SECURITY_ALERT = 16;
+  
+  // Network & Topology
+  ROUTE_UPDATE = 17;
+  NODE_ANNOUNCEMENT = 18;
+  NODE_STATUS = 19;
+  PARTITION_DETECTED = 20;
+  PARTITION_HEALED = 21;
+  
+  // Hazard & Environment
+  HAZARD_UPDATE = 22;
+  
+  // Synchronization
+  SYNC_REQUEST = 23;
+  SYNC_RESPONSE = 24;
+}
+
+enum DeliveryState {
+  DELIVERY_STATE_UNSPECIFIED = 0;
+  QUEUED_LOCAL = 1;
+  TRANSMITTED_MESH = 2;
+  ACKNOWLEDGED = 3;
+  DELIVERED = 4;
+  EXPIRED = 5;
+  FAILED = 6;
+}
+
+enum EmergencyCategory {
+  EMERGENCY_CATEGORY_UNSPECIFIED = 0;
+  FLOOD = 1;
+  FIRE = 2;
+  MEDICAL = 3;
+  TRAPPED = 4;
+  COLLAPSE = 5;
+  EVACUATION = 6;
+  HAZMAT = 7;
+}
+
+enum UrgencyLevel {
+  URGENCY_LEVEL_UNSPECIFIED = 0;
+  LOW = 1;
+  MEDIUM = 2;
+  HIGH = 3;
+  CRITICAL = 4;
+}
+
+message Location {
+  double latitude = 1;
+  double longitude = 2;
+  float altitude = 3;
+  float accuracy_meters = 4;
+  int64 timestamp = 5;
+}
+
+message EncryptionMetadata {
+  string cipher = 1;           // e.g. "ChaCha20-Poly1305" or "AES-256-GCM"
+  bytes nonce = 2;             // 12-byte or 24-byte nonce
+  string recipient_key_id = 3; // Truncated public key hash or broadcast tag
+  uint32 disclosure_level = 4; // 0 to 4
+}
+
+message MessageEnvelope {
+  string message_id = 1;           // Globally unique 128-bit UUID
+  string sender_id = 2;            // 16-byte hex truncated cryptographic address
+  string recipient_id = 3;         // Unicast address or "BROADCAST"
+  int64 created_at = 4;            // Unix epoch ms
+  int64 expires_at = 5;            // Unix epoch ms
+  Priority priority = 6;
+  MessageType message_type = 7;
+  uint32 sequence = 8;             // Anti-replay sequence
+  uint32 hop_limit = 9;            // Max hops (typically 3-7 for LoRa)
+  string origin = 10;              // Originating node ID
+  string current_hop = 11;          // Relay node ID
+  bytes payload = 12;              // Serialized typed payload or ciphertext
+  string payload_hash = 13;        // SHA-256 hex
+  bytes signature = 14;            // Ed25519 signature (64 bytes)
+  EncryptionMetadata encryption = 15;
+  DeliveryState delivery_state = 16;
+}
+
+message SosCreatedPayload {
+  string emergency_id = 1;
+  EmergencyCategory category = 2;
+  UrgencyLevel urgency = 3;
+  uint32 people_affected = 4;
+  Location location = 5;
+  string text_description = 6;
+  string language = 7;             // "en", "hi", "hinglish"
+  repeated string immediate_needs = 8;
+  float confidence = 9;
+  string source_span = 10;
+}
+
+message SosStatusUpdatePayload {
+  string emergency_id = 1;
+  string responder_id = 2;
+  string action = 3;               // "ACKNOWLEDGE", "ASSIGN", "ACCEPT", "DECLINE", "ARRIVE", "COMPLETE"
+  int64 timestamp = 4;
+  Location responder_location = 5;
+  string note = 6;
+}
+
+message RescueReceiptPayload {
+  string receipt_id = 1;
+  string emergency_id = 2;
+  string victim_id = 3;
+  string responder_id = 4;
+  int64 completed_at = 5;
+  Location location = 6;
+  string outcome = 7;
+  bytes victim_signature = 8;
+  bytes responder_signature = 9;
+  repeated string witness_node_ids = 10;
+}
+
+message ResponderPassportPayload {
+  string credential_id = 1;
+  string issuer_id = 2;
+  string subject_id = 3;
+  repeated string roles = 4;
+  repeated string skills = 5;
+  repeated string certifications = 6;
+  int64 issued_at = 7;
+  int64 expires_at = 8;
+  string status = 9;               // "VERIFIED", "EXPIRED", "REVOKED"
+  bytes issuer_signature = 10;
+}
+
+message HazardPolygonPayload {
+  string hazard_id = 1;
+  string hazard_type = 2;          // "FLOOD", "FIRE", "LANDSLIDE"
+  string status = 3;               // "OBSERVED", "PREDICTED", "REPORTED"
+  float severity = 4;              // 0.0 to 1.0
+  repeated Location vertices = 5;
+  int64 valid_from = 6;
+  int64 valid_until = 7;
+  double expansion_rate_mps = 8;   // expansion speed in meters/second
+  double expansion_direction_deg = 9; // compass heading 0-360
+}
+
+message SyncBundle {
+  string bundle_id = 1;
+  string custodian_id = 2;
+  repeated MessageEnvelope envelopes = 3;
+  int64 created_at = 4;
+  int64 expires_at = 5;
+  bytes bundle_hash = 6;
+  bytes custodian_signature = 7;
+}

@@ -1,0 +1,137 @@
+openapi: 3.0.3
+info:
+  title: UrSafe Central Coordination & Cloud Replication API
+  version: 1.0.0
+  description: >
+    REST and WebSocket endpoints for incident coordination, verifiable credential issuance,
+    asynchronous bundle synchronization, and operational dashboard analytics.
+    Note: Central server is optional; core emergency operations run offline first.
+paths:
+  /api/v1/health:
+    get:
+      summary: Service Health & Mesh Ingress Status
+      responses:
+        '200':
+          description: Service healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "ok" }
+                  timestamp: { type: integer }
+                  active_mesh_nodes: { type: integer }
+                  sync_backlog: { type: integer }
+
+  /api/v1/emergencies:
+    get:
+      summary: Query active emergencies
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: List of emergencies
+    post:
+      summary: Ingest emergency message bundle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageEnvelope'
+      responses:
+        '202':
+          description: Envelope accepted into local outbox / mesh
+
+  /api/v1/sync/bundles:
+    post:
+      summary: Synchronize DTN Data Mule bundle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyncBundle'
+      responses:
+        '200':
+          description: Bundle ingested, returns acknowledged message IDs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bundle_id: { type: string }
+                  accepted_count: { type: integer }
+                  duplicate_count: { type: integer }
+                  rejected_count: { type: integer }
+
+  /api/v1/credentials/issue:
+    post:
+      summary: Issue signed Responder Passport
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CredentialRequest'
+      responses:
+        '201':
+          description: Issued Verifiable Credential
+
+  /api/v1/hazards:
+    get:
+      summary: Get active hazard polygons
+      responses:
+        '200':
+          description: List of observed and predicted hazard polygons
+
+  /api/v1/audit/flight-recorder:
+    get:
+      summary: Fetch tamper-evident audit hash chain
+      responses:
+        '200':
+          description: Ordered cryptographic audit chain
+
+components:
+  schemas:
+    MessageEnvelope:
+      type: object
+      required: [message_id, sender_id, message_type, priority, payload, signature]
+      properties:
+        message_id: { type: string }
+        sender_id: { type: string }
+        recipient_id: { type: string }
+        created_at: { type: integer }
+        expires_at: { type: integer }
+        priority: { type: string, enum: [EMERGENCY, HIGH, ROUTINE, TELEMETRY] }
+        message_type: { type: string }
+        sequence: { type: integer }
+        hop_limit: { type: integer }
+        origin: { type: string }
+        current_hop: { type: string }
+        payload: { type: string }
+        payload_hash: { type: string }
+        signature: { type: string }
+
+    SyncBundle:
+      type: object
+      required: [bundle_id, custodian_id, envelopes]
+      properties:
+        bundle_id: { type: string }
+        custodian_id: { type: string }
+        envelopes:
+          type: array
+          items:
+            $ref: '#/components/schemas/MessageEnvelope'
+
+    CredentialRequest:
+      type: object
+      required: [subject_id, roles, skills]
+      properties:
+        subject_id: { type: string }
+        roles: { type: array, items: { type: string } }
+        skills: { type: array, items: { type: string } }
+        certifications: { type: array, items: { type: string } }
+        validity_days: { type: integer }
