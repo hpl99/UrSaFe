@@ -255,6 +255,12 @@ function handleApiRequest(req, res) {
           params.push(session.userId);
         }
 
+        // Training Isolation: Hide training incidents from operational queue unless explicitly requested
+        const includeTraining = query.training === 'true' || query.is_training === 'true';
+        if (!includeTraining) {
+          conditions.push('(i.is_simulation = 0 OR i.is_simulation IS NULL)');
+        }
+
         if (statusFilter) {
           conditions.push('i.status = ?');
           params.push(statusFilter);
@@ -313,6 +319,11 @@ function handleApiRequest(req, res) {
 
         if (!incident) return sendJson(404, { error: 'Incident not found' });
 
+        // Object-level authorization: Citizens can only inspect their own incident reports
+        if (session && session.role === 'CITIZEN' && incident.reporter_user_id !== session.userId) {
+          return sendJson(403, { error: "Forbidden: Citizens are only permitted to access their own incident reports" });
+        }
+
         const timeline = db.prepare(`
           SELECT e.*, u.full_name as actor_name
           FROM incident_events e
@@ -354,7 +365,14 @@ function handleApiRequest(req, res) {
       // 6c. Incident Timeline Endpoint
       const timelineMatch = normPath.match(/^\/api\/v1\/incidents\/([^/]+)\/timeline$/);
       if (timelineMatch && method === 'GET') {
+        const session = authenticateRequest(req);
+        if (!session) return sendJson(401, { error: 'Authentication required' });
         const incidentId = timelineMatch[1];
+        const incident = db.prepare('SELECT reporter_user_id FROM incidents WHERE id = ?').get(incidentId);
+        if (!incident) return sendJson(404, { error: 'Incident not found' });
+        if (session.role === 'CITIZEN' && incident.reporter_user_id !== session.userId) {
+          return sendJson(403, { error: "Forbidden: Citizens are only permitted to view timeline for their own incidents" });
+        }
         const timeline = db.prepare(`
           SELECT e.*, u.full_name as actor_name
           FROM incident_events e
@@ -376,6 +394,11 @@ function handleApiRequest(req, res) {
 
         const reporterId = session.userId;
         const reporterRole = session.role || 'CITIZEN';
+
+        // Prevent reporter ID spoofing
+        if (body.reporter_user_id && body.reporter_user_id !== session.userId && session.role === 'CITIZEN') {
+          return sendJson(403, { error: 'Forbidden: You cannot submit an incident on behalf of another user ID' });
+        }
         const clientMsgId = body.client_msg_id || body.msg_id || null;
 
         // Idempotency Check: Same (reporter_user_id, client_msg_id) returns existing record
@@ -687,6 +710,10 @@ function handleApiRequest(req, res) {
 
         const incident = db.prepare('SELECT * FROM incidents WHERE id = ?').get(incidentId);
         if (!incident) return sendJson(404, { error: 'Incident not found' });
+
+        if (incident.is_simulation === 1) {
+          return sendJson(400, { error: 'Training incidents cannot be dispatched to operational field responders' });
+        }
 
         const responder = db.prepare("SELECT * FROM users WHERE id = ? AND role = 'RESPONDER'").get(responderId);
         if (!responder) return sendJson(404, { error: 'Responder not found' });

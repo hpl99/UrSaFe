@@ -70,7 +70,8 @@ const DELIVERY_STATE = {
   EXPIRED: 'EXPIRED',
   FAILED: 'FAILED',
   CANCELLED: 'CANCELLED',
-  DEAD_LETTER: 'DEAD_LETTER'
+  DEAD_LETTER: 'DEAD_LETTER',
+  SUPPRESSED_TRAINING: 'SUPPRESSED_TRAINING'
 };
 
 // --- 4. Acknowledgement Levels (Section 10) ---
@@ -79,7 +80,8 @@ const ACK_LEVEL = {
   TRANSPORT_ACK: 'TRANSPORT_ACK',     // Bearer/radio accepted packet
   NODE_ACK: 'NODE_ACK',               // Mesh hop or remote node received packet
   APPLICATION_ACK: 'APPLICATION_ACK', // Recipient UrSafe client parsed packet
-  HUMAN_ACK: 'HUMAN_ACK'              // Human responder/victim took explicit action
+  HUMAN_ACK: 'HUMAN_ACK',             // Human responder/victim took explicit action
+  TRAINING_SUPPRESSED: 'TRAINING_SUPPRESSED' // Explicit training isolation ack level
 };
 
 // --- 5. Transport Types & Priority Orders (Section 16 & 17) ---
@@ -345,6 +347,9 @@ class RescueContinuityEngine {
     const state = msg.current_state;
     const ack = msg.ack_level;
 
+    if (state === DELIVERY_STATE.SUPPRESSED_TRAINING || ack === ACK_LEVEL.TRAINING_SUPPRESSED) {
+      return 'TRAINING DRILL: Message isolated locally; suppressed from network transmission and real dispatch.';
+    }
     if (state === DELIVERY_STATE.ACKNOWLEDGED || ack === ACK_LEVEL.HUMAN_ACK) {
       return 'Responder has acknowledged and verified your emergency.';
     }
@@ -462,8 +467,8 @@ class RescueContinuityEngine {
     if (isTraining) {
       this.db.prepare(`
         UPDATE continuity_messages
-        SET current_state = 'DELIVERED',
-            ack_level = 'NONE',
+        SET current_state = 'SUPPRESSED_TRAINING',
+            ack_level = 'TRAINING_SUPPRESSED',
             last_transport = 'SIMULATION_ISOLATED',
             last_error = 'TRAINING_MODE_ISOLATED_NOT_FORWARDED',
             completed_at = ?
