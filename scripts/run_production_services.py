@@ -42,15 +42,27 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
-    print(f"============================================================")
-    print(f" UrSafe Production Services Supervisor                      ")
+    print("============================================================")
+    print(" UrSafe Production Services Supervisor                      ")
     print(f" Target: {SERVER_SCRIPT}")
     print(f" Port:   http://localhost:{PORT}")
     print(f" Health: {HEALTH_URL}")
-    print(f"============================================================")
+    print("============================================================")
+
+    # Check if an instance is ALREADY running on this port
+    if is_healthy():
+        print(f"\n[✓] UrSafe Coordination Hub is ALREADY RUNNING and healthy on port {PORT}!")
+        print(f"    You can access it directly at: http://localhost:{PORT}")
+        print("    If you want to restart it, stop the existing process first.")
+        print("\nPress Ctrl+C to exit supervisor.")
+        while is_healthy():
+            time.sleep(3)
+        print("[!] Existing instance stopped. Spawning new instance...")
 
     env = os.environ.copy()
     env["PORT"] = str(PORT)
+
+    consecutive_crashes = 0
 
     while True:
         print(f"[*] Starting UrSafe node service on port {PORT}...")
@@ -62,28 +74,34 @@ def main():
             stderr=sys.stderr
         )
 
-        # Wait for service to become healthy
-        healthy = False
-        for _ in range(10):
-            time.sleep(0.5)
-            if is_healthy():
-                healthy = True
-                print(f"[✓] UrSafe Coordination Hub is HEALTHY at {HEALTH_URL}")
-                break
+        # Allow time to bind port
+        time.sleep(1)
 
-        if not healthy and running_process.poll() is not None:
-            print(f"[!] UrSafe service exited immediately with code {running_process.returncode}. Restarting in 2s...")
+        # Check if it died immediately (e.g. port collision)
+        if running_process.poll() is not None:
+            consecutive_crashes += 1
+            exit_code = running_process.returncode
+            if is_healthy():
+                print(f"[✓] Port {PORT} is already in use by an active healthy UrSafe server.")
+                print(f"    Open your browser at: http://localhost:{PORT}")
+                return
+            print(f"[!] UrSafe service failed to start (exit code {exit_code}).")
+            if consecutive_crashes >= 3:
+                print("[!] Multiple startup failures. Port 3000 may be blocked. Exiting.")
+                return
             time.sleep(2)
             continue
 
+        consecutive_crashes = 0
+        print(f"[✓] UrSafe Coordination Hub is running at http://localhost:{PORT}")
+
         # Monitor loop
         while running_process.poll() is None:
-            time.sleep(2)
-            if not is_healthy():
-                print(f"[!] Health check failed at {HEALTH_URL}. Inspecting...")
+            time.sleep(3)
 
-        print(f"[!] UrSafe service died with exit code {running_process.returncode}. Auto-restarting in 1s...")
-        time.sleep(1)
+        exit_code = running_process.returncode
+        print(f"[!] UrSafe service stopped (exit code {exit_code}). Restarting in 2 seconds...")
+        time.sleep(2)
 
 if __name__ == "__main__":
     main()
