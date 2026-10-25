@@ -208,7 +208,17 @@ def test_full_incident_and_rescue_lifecycle(api_server):
     assert status == 201
     assert rpt_data["report"]["verification_status"] == "PENDING"
 
-    # 10. Authority Reviews and Verifies Rescue
+    # 10a. Security check: Citizen attempting to verify rescue directly must be REJECTED (403 Forbidden)
+    unauth_status, unauth_data = make_request(
+        f"{api_server}/api/v1/incidents/{incident_id}/verify-rescue",
+        method="POST",
+        data={"action": "VERIFY", "notes": "Hacker attempt"},
+        token=cit_token
+    )
+    assert unauth_status == 403
+    assert "error" in unauth_data
+
+    # 10b. Authority Reviews and Verifies Rescue
     status, verify_data = make_request(
         f"{api_server}/api/v1/incidents/{incident_id}/verify-rescue",
         method="POST",
@@ -218,6 +228,16 @@ def test_full_incident_and_rescue_lifecycle(api_server):
     assert status == 200
     assert verify_data["incident"]["status"] == "VERIFIED"
     assert verify_data["report"]["verification_status"] == "VERIFIED"
+
+    # 10c. Citizen Co-signs Rescue Receipt (Dual Confirmation)
+    cosign_status, cosign_data = make_request(
+        f"{api_server}/api/v1/incidents/{incident_id}/confirm-rescue",
+        method="POST",
+        data={"victim_signature": "sig_ed25519_priya_cosign_ok"},
+        token=cit_token
+    )
+    assert cosign_status == 200
+    assert cosign_data["report"]["victim_signature"] == "sig_ed25519_priya_cosign_ok"
 
     # 11. Flight Recorder Audit Chain Verification
     status, audit_data = make_request(f"{api_server}/api/v1/audit/flight-recorder")
