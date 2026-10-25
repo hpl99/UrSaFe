@@ -8,6 +8,9 @@
     "packages/*"
   ],
   "scripts": {
+    "dev": "node apps/web-console/server.js",
+    "start": "node apps/web-console/server.js",
+    "doctor": "python scripts/doctor.py",
     "test": "npm run test:web && npm run test:python",
     "test:python": "pytest tests/ -v",
     "test:web": "echo \"Running web-console tests...\"",
