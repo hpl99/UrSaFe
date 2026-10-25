@@ -2940,7 +2940,6 @@ body.ursafe-theme {
 }
 
 /* ========================================================================= */
-<<<<<<< HEAD
 /* PHASE 4: CONNECTIVITY COCKPIT & RESCUE CONTINUITY ENGINE STYLING           */
 /* ========================================================================= */
 
@@ -3266,7 +3265,6 @@ body.ursafe-theme {
   border-color: var(--accent-orange);
 }
 
-=======
 /* GOOGLE MAPS API INTEGRATION BADGES & LAYER SWITCHERS                      */
 /* ========================================================================= */
 .google-maps-badge {
@@ -3341,4 +3339,3 @@ body.ursafe-theme {
   color: #FFFFFF;
   box-shadow: 0 2px 6px rgba(255, 139, 61, 0.35);
 }
->>>>>>> 1909a774eee021b2b653c3728c017ac48de3ff07

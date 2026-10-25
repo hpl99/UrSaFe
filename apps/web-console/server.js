@@ -45,9 +45,6 @@ const server = http.createServer((req, res) => {
   const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost:' + PORT}`);
   const pathname = parsedUrl.pathname;
 
-<<<<<<< HEAD
-  // API requests: Handle locally or proxy if BACKEND_PORT explicitly configured
-=======
   // Dynamic runtime configuration script for frontend
   if (pathname === '/config.js') {
     res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8' });
@@ -55,8 +52,7 @@ const server = http.createServer((req, res) => {
     return res.end(`window.URSAFE_CONFIG = { googleMapsApiKey: ${JSON.stringify(key)} };`);
   }
 
-  // API requests: Proxy to standalone backend on port 4000 if active, otherwise handle locally
->>>>>>> 1909a774eee021b2b653c3728c017ac48de3ff07
+  // API requests: Handle locally or proxy if BACKEND_PORT explicitly configured
   if (pathname.startsWith('/api/')) {
     if (process.env.BACKEND_PORT) {
       const backendPort = process.env.BACKEND_PORT;
