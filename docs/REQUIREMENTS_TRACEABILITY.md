@@ -39,3 +39,16 @@ This matrix establishes bidirectional traceability between system requirements, 
 | **REQ-MOB-002** | Android Responder Application (Passport, Nav) | §2.2 | ADR-015 | `apps/responder-android/` | Android test harnesses | Offline accept & navigate |
 | **REQ-WEB-001** | High-contrast Coordinator Web Console | §2.3 | ADR-016 | `apps/web-console/` | Console verification tests | Full incident operations |
 | **REQ-DTN-001** | Data Mule bundle custody & opportunistic sync | §3 | ADR-005 | `packages/sync/mule.py` | `tests/test_data_mule.py` | Island A to Island B bridge |
+| **REQ-CONT-001** | Durable Outbox (Never Send Before Save) | §5 | ADR-018 | `apps/api/continuity.js`, `infrastructure/migrations/003_continuity_engine.sql` | `tests/test_continuity_engine.py` | Outbox crash recovery |
+| **REQ-CONT-002** | P0 Life Critical Preemption over P1-P5 | §8 | ADR-018 | `apps/api/continuity.js` | `tests/test_continuity_engine.py` | Priority scheduler test |
+| **REQ-CONT-003** | 13-State Delivery FSM | §9 | ADR-018 | `apps/api/continuity.js` | `tests/test_continuity_engine.py` | State progression test |
+| **REQ-CONT-004** | 5-Tier Acknowledgement Semantics | §10 | ADR-018 | `apps/api/continuity.js` | `tests/test_continuity_engine.py` | Explicit ACK verification |
+| **REQ-CONT-005** | Multi-Bearer Selection & Fallback | §16,17 | ADR-018 | `apps/api/continuity.js` | `tests/test_continuity_engine.py` | BLE to LoRa fallback |
+| **REQ-CONT-006** | Bounded Exponential Backoff with Jitter | §19 | ADR-018 | `apps/api/continuity.js` | `tests/test_continuity_engine.py` | Retry storm prevention |
+| **REQ-CONT-007** | Inbound Idempotency & Deduplication | §14 | ADR-018 | `apps/api/continuity.js`, `continuity_deduplication` | `tests/test_continuity_engine.py` | Duplicate packet suppression |
+| **REQ-CONT-008** | Crash Recovery on Startup | §13 | ADR-018 | `apps/api/continuity.js` | `tests/test_continuity_engine.py` | Process kill survival |
+| **REQ-CONT-009** | Battery-Aware Transmission Deferral | §34 | ADR-018 | `apps/api/continuity.js` | `tests/test_continuity_engine.py` | Low-battery preemption |
+| **REQ-CONT-010** | Connectivity Cockpit Real Telemetry | §22-25 | ADR-018 | `apps/web-console/index.html`, `app.js` | `tests/test_continuity_engine.py` | Live cockpit score & states |
+| **REQ-CONT-011** | Failure Injection Controls | §64 | ADR-018 | `apps/api/server.js`, `app.js` | `tests/test_continuity_engine.py` | Bearer toggle failure test |
+| **REQ-CONT-012** | Deterministic Chaos Harness | §66 | ADR-018 | `tests/test_continuity_chaos.py` | `tests/test_continuity_chaos.py` | 50-packet chaos convergence |
+

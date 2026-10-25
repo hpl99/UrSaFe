@@ -45,6 +45,9 @@ const server = http.createServer((req, res) => {
   const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost:' + PORT}`);
   const pathname = parsedUrl.pathname;
 
+<<<<<<< HEAD
+  // API requests: Handle locally or proxy if BACKEND_PORT explicitly configured
+=======
   // Dynamic runtime configuration script for frontend
   if (pathname === '/config.js') {
     res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8' });
@@ -53,23 +56,28 @@ const server = http.createServer((req, res) => {
   }
 
   // API requests: Proxy to standalone backend on port 4000 if active, otherwise handle locally
+>>>>>>> 1909a774eee021b2b653c3728c017ac48de3ff07
   if (pathname.startsWith('/api/')) {
-    const backendPort = process.env.BACKEND_PORT || 4000;
-    const proxyReq = http.request({
-      hostname: '127.0.0.1',
-      port: backendPort,
-      path: req.url,
-      method: req.method,
-      headers: { ...req.headers, host: `127.0.0.1:${backendPort}` }
-    }, (proxyRes) => {
-      res.writeHead(proxyRes.statusCode, proxyRes.headers);
-      proxyRes.pipe(res);
-    });
-    proxyReq.on('error', () => {
-      // If standalone backend on port 4000 is not running, handle internally
-      handleApiRequest(req, res);
-    });
-    req.pipe(proxyReq);
+    if (process.env.BACKEND_PORT) {
+      const backendPort = process.env.BACKEND_PORT;
+      const proxyReq = http.request({
+        hostname: '127.0.0.1',
+        port: backendPort,
+        path: req.url,
+        method: req.method,
+        headers: { ...req.headers, host: `127.0.0.1:${backendPort}` }
+      }, (proxyRes) => {
+        res.writeHead(proxyRes.statusCode, proxyRes.headers);
+        proxyRes.pipe(res);
+      });
+      proxyReq.on('error', () => {
+        handleApiRequest(req, res);
+      });
+      req.pipe(proxyReq);
+      return;
+    }
+
+    handleApiRequest(req, res);
     return;
   }
 

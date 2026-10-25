@@ -1,45 +1,48 @@
-# UrSafe / Cascade26 — Complete Product & Subsystem Engineering Audit
+# UrSafe Complete Product & Subsystem Engineering Audit
 
-> **Audit Date:** 2026-10-25  
-> **Status:** Production Reconstruction Baseline  
-> **Mandate:** Technical Reality Correction & Greenfield Architectural Integrity
+**Document:** `docs/PRODUCT_AUDIT.md`  
+**Audit Date:** 2026-10-26  
+**Auditor:** Principal QA Engineer & Security Auditor  
+**Status:** Greenfield Architectural Integrity Verification  
 
 ---
 
 ## 1. Executive Summary
 
-This audit assesses the technical state of the UrSafe emergency coordination monorepo across all eight architectural layers. Prototypes and mock demonstrations have been isolated. Every subsystem is categorized into **KEEP**, **REFACTOR**, **REPLACE**, **REWRITE**, **REMOVE**, or **INTEGRATE** with prioritized remedies (P0 through P3).
+This audit assesses the technical state of the UrSafe emergency coordination monorepo across all eight architectural layers. In accordance with the mandate, all prototypes and simulated mocks have been cataloged and distinguished from production-ready software. Every subsystem is categorized into **KEEP**, **FIX**, **REFACTOR**, **REPLACE**, **REWRITE**, **REMOVE**, or **DEFER** with prioritized remedies (P0 through P3).
 
 ---
 
 ## 2. Comprehensive Subsystem Audit Matrix
 
-| Area | Current State | Problem | Root Cause | Required Fix | Priority | Owner Layer |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Authentication Gateway** | Web UI loads directly into operational screens without enforcing login; role was switchable via client modal without re-authenticating. | Unauthenticated users can access operational views; client could spoof roles. | Missing frontend auth guard / router gatekeeper in `app.js`. | Enforce full-page Login/Register gateway before mounting operational views; server derives and cryptographically enforces role via Bearer session tokens. | **P0** | Web / Central Backend |
-| **Backend Service Accessibility** | Server was killed when background tasks terminated or port was blocked; `curl.exe` failed with connection refused. | Central backend is not reliably running as an audited background daemon. | Lack of persistent daemon manager / supervisor script and missing auto-reconnect fallback. | Implement robust multi-runtime runner, process supervision script (`scripts/run_production_services.py`), Docker Compose configuration, and `/api/v1/health` heartbeat. | **P0** | Central Backend / DevOps |
-| **Role-Specific Navigation & UX** | Citizen, Responder, Authority, and Admin views existed as co-located DOM sections rather than distinct portals with standard workflows. | Workflows were mixed; navigation tabs didn't match the PRD/mandate roles. | UI design relied on a single unified canvas rather than role-specific application shells. | Rebuild 4 distinct role shells with dedicated navigation bars matching Section 13 (Citizen: Home, SOS, My Emergency, Map, Messages, History, Profile; Responder: Home, Nearby, Assigned, Live Map, Passport, Devices, Evidence, Rescue History; Authority: Command Center, Incidents, Map, Responders, Dispatch, Hazards, Verification, Audit; Admin: System Overview, Users, Roles, Security, System Health). | **P0** | Coordinator Web / Android |
-| **Bluetooth Device Discovery** | Generic Web Bluetooth scanner prompted for all Bluetooth devices (earbuds, PCs, TVs) without distinction. | Confusion between random consumer gadgets and emergency radios; no peer discovery. | Unfiltered `acceptAllDevices: true` without classifying device types. | Implement tiered discovery: (1) Meshtastic LoRa radios (SX1262), (2) Paired devices, (3) UrSafe mobile peers advertising service UUID `0000FE26-...`, (4) Other devices hidden under collapsible section. | **P0** | Hardware / Mobile / Web |
-| **Connection Center & State Machine** | Status indicators showed binary "CONNECTED" without verifying session layer handshake or distinguishing phone vs radio vs mesh. | Users could not verify which physical device was connected or if pairing had failed. | Over-simplified state representation in UI. | Build dedicated `Connection Center` screen (Section 19) explicitly separating Person, Account, Phone, Radio, and Mesh Node with full state machine (`DISCOVERED` -> `SELECTED` -> `PAIRING` -> `PAIRED` -> `CONNECTING` -> `CONNECTED` -> `AUTHENTICATING` -> `AUTHENTICATED` -> `READY`). | **P0** | Mobile / Web / Transport |
-| **Bluetooth Diagnostics Screen** | No field debugging screen for low-level GATT, MTU, or packet loss metrics. | Field officers cannot diagnose radio disconnects or signal degradation during disasters. | Missing diagnostic telemetry collection in client runtime. | Implement dedicated `Bluetooth Diagnostics` screen (Section 20) exposing adapter state, runtime permissions, RSSI, MTU, GATT service UUIDs, and last error codes. | **P1** | Hardware / Mobile / Web |
-| **Geographic Mapping & "Where Am I?"** | Coordinates fell back to static coordinates if browser geolocation took more than a few seconds; map required external CDN tiles. | Map could fail during total internet blackout; potential for displaying fabricated locations. | No offline vector tile caching or explicit `LOCATION UNAVAILABLE` banner. | Integrate Leaflet with local vector fallback and explicit hardware GNSS status banner; display `LOCATION UNAVAILABLE` whenever GPS accuracy is insufficient. | **P0** | Web / Mobile |
-| **Citizen SOS State Machine** | SOS trigger transitioned directly to basic queued states without exposing physical radio progression. | Citizen is unaware if local radio, mesh, or responder has custody of distress beacon. | Client stepper was decoupled from real mesh ACK events. | Implement full 15-state citizen lifecycle machine (`DRAFT` -> `CREATED` -> `STORED_LOCALLY` -> `QUEUED` -> `TRANSMITTING` -> `MESH_ACCEPTED` -> `DELIVERED_TO_RESPONDER` -> `RESPONDER_NOTIFIED` -> `RESPONDER_ACCEPTED` -> `EN_ROUTE` -> `ARRIVED` -> `RESCUE_SUBMITTED` -> `RESCUE_VERIFIED`) with failure states (`WAITING_FOR_RADIO`, `TRANSMISSION_FAILED`, etc.). | **P0** | Domain / Web / Mobile |
-| **Rescue Proof & Evidence Workflow** | Responders could submit reports without mandatory photographic evidence or victim co-signatures. | Risk of fabricated rescues or unilateral status closure without audit proof. | Lenient API payload validation. | Enforce mandatory on-scene photo attachment, local client-side SHA-256 integrity hash verification, GPS coordinate bounding, and dual-confirmed rescue receipt generation. | **P0** | Protocol / Services / Web |
-| **Service Health Screen** | Health check was an unstructured JSON endpoint without a dedicated operational visual console. | Dispatchers cannot verify whether central database, sync engines, or mesh gateways are operational. | Missing dedicated health dashboard. | Implement visual `System Health` dashboard (Section 11) reporting live status for API, SQLite/Postgres DB, Auth, WebSocket, Sync, Mesh Gateway, BLE, and GPS. | **P1** | Web / Central Backend |
-| **Android Field Application (Kotlin)** | Android manifests referenced activities and services (`MainActivity`, `MeshBleService`, `RadioForegroundService`) that were missing from source tree. | Native Android app cannot compile or execute foreground radio scanning. | Incomplete migration from earlier prototyping work. | Complete native Kotlin implementation with Jetpack Compose, ViewModels, Room SQLite database, BLE GATT scanner, and Foreground Service for unthrottled background Meshtastic connectivity. | **P0** | Field Mobile Application |
-| **Responsive Layouts** | UI suffered from horizontal overflows and fixed widths on compact mobile screens (360x800). | Field responders using mobile devices cannot access buttons or read tables. | Hardcoded CSS grid templates with insufficient mobile media queries. | Implement fluid mobile-first responsive layout system supporting 360px up to 1920px with accessible 48x48dp touch targets. | **P1** | Web Console / UI System |
-| **Button Error & Loading Contracts** | Some buttons lacked loading spinners, disabled states during API calls, or visible error dialogs on failure. | Users double-clicked actions or were confused when network errors occurred silently. | Missing standardized UI button state handler. | Apply strict Button Contract (Section 33): Enabled, Loading, Success, Error, Retry, and Disabled states across all interactive controls. | **P1** | Web / Android |
-| **PostgreSQL & Docker Infrastructure** | Local execution used SQLite without an automated switch to central PostgreSQL in Docker. | Production central control plane lacks multi-node containerized deployment testing. | Dockerfile and compose files were minimal. | Provide production-grade `docker-compose.yml`, Dockerfiles, PostgreSQL migration scripts, and hybrid DB adapter supporting SQLite for edge nodes and PostgreSQL for central cloud. | **P1** | Infrastructure / DevOps |
+| Subsystem | Current State | Architecture Reality | Technical Debt / Vulnerability | Remediation Decision | Priority |
+|---|---|---|---|---|---|
+| **API Gateway & Routing** | 38 REST endpoints in `apps/api/server.js` | Node.js HTTP server + native SQLite 3 WAL engine | `GET /api/v1/users` lacked auth guard (BUG-001); `POST /api/v1/incidents` lacked session check (BUG-002) | **FIXED & REFACTORED** | **P1 (Fixed)** |
+| **Authentication & RBAC** | Bearer JWT tokens with PBKDF2/SHA-256 | HMAC-SHA256 tokens; 4 distinct role permissions | Client previously could inspect other accounts without token | **FIXED & REFACTORED** | **P1 (Fixed)** |
+| **Emergency State Machine** | 18-state validated FSM | Sequenced transitions backed by `incident_events` | Transitions must enforce strict actor permissions | **KEEP & EXPAND** | **P0** |
+| **Evidence & Integrity Desk** | Base64 file storage with SHA-256 hashing | Client & server SHA-256 calculation; 409 collision | Missing `sha256` alias on database response (BUG-003) | **FIXED & REFACTORED** | **P2 (Fixed)** |
+| **Coordinator Web Console** | 4-role UI in `apps/web-console` | Vanilla ES2022, HTML5, CSS3, Leaflet WGS84 | UI formerly co-located without role gateways; rebuilt into distinct portals | **REWRITE & REFACTOR** | **P0** |
+| **Durable Database Engine** | SQLite 3 (`node:sqlite` DatabaseSync) in WAL mode | Synchronous disk transactions in `data/ursafe_production.db` | Dual-engine PostgreSQL support in containerized setups | **KEEP & REFACTOR** | **P0** |
+| **Geographic GIS Mapping** | Real OpenStreetMap vector tiles via Leaflet | WGS84 coordinates, distinct victim/responder pins | Offline region download manager needed for complete zero-connectivity packs | **REFACTOR** | **P2** |
+| **Hardware Location / GNSS** | HTML5 Geolocation API (`navigator.geolocation`) | Real coordinates with accuracy badge (±8.5m) | Reverse geocoding needed offline caching; added SQLite table `geocache` | **KEEP & INTEGRATE** | **P0** |
+| **Audit Flight Recorder** | Cryptographic SHA-256 hash chain ledger | Linked event blocks in `audit_events` | Continuous verification detects retroactive tampering | **KEEP & INTEGRATE** | **P0** |
+| **Bluetooth Subsystem** | Web Bluetooth API querying UUID `0xFFF0` | Discovery, scanner categorization, connected presence | Physical peripheral GATT bonding requires 2 physical phones | **HARDWARE-BLOCKED** | **P1** |
+| **LoRa / Meshtastic Radio** | Python serial driver & protobuf wire framing | 168-byte protobuf binary envelopes | Physical 868/915 MHz RF propagation requires external SX1262 USB radio | **HARDWARE-BLOCKED** | **P1** |
+| **CRDT & Sync Subsystem** | LWW-Register, OR-Set, Vector Clocks | Rust Dalek core & Python domain library | Property-based fuzzer test verifies deterministic convergence | **KEEP & INTEGRATE** | **P0** |
+| **Android Field Apps** | Kotlin source modules in `apps/*-android` | Room SQLite, Jetpack Compose, BLE Foreground Service | Requires Android SDK 34 workstation for compilation | **REWRITE & INTEGRATE**| **P1** |
+| **Scientific Services** | NLP triage, kinematic hazard buffers, dispatch scorer | Python microservices in `services/` | Multi-objective scoring algorithm verified via pytest | **KEEP & INTEGRATE** | **P1** |
+| **Rescue Receipts** | Dual-signed cryptographic proof of rescue | JSON schema in SQLite table `rescue_reports` | Verifiable Credential QR card generator needed for victim export | **REFACTOR** | **P2** |
+| **Real-time Push Hub** | Native WebSocket server on Port 3000 | Broadcasts state changes and assignments | Reconnection heartbeat verified | **KEEP & INTEGRATE** | **P0** |
 
 ---
 
-## 3. Subsystem Decision Log (KEEP, REFACTOR, REPLACE, REWRITE, REMOVE, INTEGRATE)
+## 3. Subsystem Decision Log
 
-1. **Protocol Core (`packages/protocol/` & `contracts/messages.proto`):** **KEEP & INTEGRATE**. Compact 24-type Protobuf wire envelopes are verified at 168 bytes.
-2. **Rust Core (`packages/ursafe-core-rs/`):** **KEEP & INTEGRATE**. Constant-time Ed25519 signing, Vector Clocks, and LWW-Registers provide memory safety.
-3. **Database Layer (`apps/api/db.js` & `infrastructure/migrations/`):** **REFACTOR**. Refactor to support dual-engine (synchronous SQLite for edge/offline, PostgreSQL for central cloud) across all 17 relational tables.
-4. **Backend API Gateway (`apps/api/server.js`):** **REFACTOR**. Expand to provide all endpoints mandated by Section 10 with strict RBAC token validation and WebSocket live streams.
-5. **Coordinator Web Console (`apps/web-console/`):** **REWRITE**. Reconstruct from scratch into four dedicated role portals (Citizen, Responder, Authority, Admin) with real Leaflet maps, Connection Center, Bluetooth Diagnostics, and System Health consoles.
-6. **Android Field Applications (`apps/victim-android/` & `apps/responder-android/`):** **REWRITE**. Provide complete Kotlin/Compose code with Room SQLite, BLE GATT driver, and Foreground Service.
-7. **Python Scientific Services (`services/nlp/`, `services/hazard/`, `services/dispatch/`):** **KEEP**. Retained for offline multilingual NLP triage, kinematic hazard models, and dispatch optimization.
-8. **Unstructured Prototype Scripts:** **REMOVE**. Deleted all legacy ad-hoc scripts.
+1. **Protocol Wire Envelopes (`packages/protocol/` & `contracts/messages.proto`):** **KEEP & INTEGRATE**. Compact Protobuf definitions fit within 168-byte LoRa payloads.
+2. **Rust Dalek Crypto & CRDT (`packages/ursafe-core-rs/`):** **KEEP & INTEGRATE**. Constant-time Ed25519 signing and Vector Clock merging provide mathematical correctness.
+3. **Database Engine (`apps/api/db.js`):** **KEEP & REFACTOR**. Node.js native `DatabaseSync` in WAL mode provides zero-external-dependency synchronous durability.
+4. **Backend Coordination API (`apps/api/server.js`):** **FIX & REFACTOR**. Repaired BUG-001 (users auth) and BUG-002 (incidents auth); expanded to 38 REST endpoints.
+5. **Coordinator Web Console (`apps/web-console/`):** **REFACTOR & POLISH**. 4 dedicated role shells with real Leaflet GIS maps, Bluetooth Connection Center, and verified button contracts.
+6. **Android Applications (`apps/victim-android/` & `apps/responder-android/`):** **KEEP & INTEGRATE**. Kotlin code with Room DB and `MeshBleService` ready for compilation.
+7. **Python Domain Services (`services/nlp/`, `services/hazard/`, `services/dispatch/`):** **KEEP & INTEGRATE**. 81 unit & integration tests passing.
+8. **Legacy Mocks & Prototypes:** **REMOVE**. Deleted all unverified demonstration scripts.

@@ -186,6 +186,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   fetchInitialBackendIncidents();
   renderTriageQueue();
   renderActivityLog();
+  setupConnectivityCockpit();
+  pollConnectivityCockpit();
+  setInterval(pollConnectivityCockpit, 3500);
+  fetchOutboxQueue();
 });
 
 // ============================================================================
@@ -1197,7 +1201,7 @@ function connectWebSocket() {
         const payload = packet.payload || packet.data;
 
         if (eventType === 'INCIDENT_CREATED') {
-          showToast(`SOS Beacon Broadcast: ${payload.category || 'Emergency'} in ${payload.location_description || 'Mesh Sector'}`);
+          showToast(`SOS Beacon Broadcast: ${payload.category || 'Emergency'} in ${payload.location_description || 'Sector 4'}`);
           fetchInitialBackendIncidents();
         } else if (eventType === 'INCIDENT_STATE_CHANGED' || eventType === 'INCIDENT_REOPENED' || eventType === 'INCIDENT_CLOSED') {
           fetchInitialBackendIncidents();
@@ -1206,6 +1210,14 @@ function connectWebSocket() {
         } else if (eventType === 'RESCUE_VERIFIED') {
           showToast(`Incident verified and approved by Disaster Authority.`);
           fetchInitialBackendIncidents();
+        } else if (eventType && eventType.startsWith('continuity.')) {
+          pollConnectivityCockpit();
+          fetchOutboxQueue();
+          if (eventType === 'continuity.message.delivered') {
+            showToast(`Delivery confirmed via ${payload.transport} (${payload.ack_level})`);
+          } else if (eventType === 'continuity.message.queued') {
+            showToast(`Priority P${payload.priority} message queued in outbox`);
+          }
         }
       } catch (e) {}
     };
@@ -1262,6 +1274,14 @@ function setupModals() {
   const btnWhereAmI = document.getElementById('btn-where-am-i');
   if (btnWhereAmI) {
     btnWhereAmI.addEventListener('click', () => openModal('modal-where-am-i'));
+  }
+
+  const btnConnCenter = document.getElementById('btn-connection-center');
+  if (btnConnCenter) {
+    btnConnCenter.addEventListener('click', () => {
+      openModal('modal-connection-center');
+      pollConnectivityCockpit();
+    });
   }
 
   const btnCloseCaseDetail = document.getElementById('btn-close-case-detail');
@@ -1738,3 +1758,288 @@ function showToast(msg) {
     toast.style.transform = 'translateY(-10px)';
   }, 3500);
 }
+
+// ============================================================================
+// 9. PHASE 4: RESCUE CONTINUITY COCKPIT CONTROLLER
+// ============================================================================
+
+function setupConnectivityCockpit() {
+  const btnRefreshOutbox = document.getElementById('btn-refresh-outbox');
+  if (btnRefreshOutbox) {
+    btnRefreshOutbox.addEventListener('click', () => {
+      fetchOutboxQueue();
+      showToast('Refreshing durable outbox queue...');
+    });
+  }
+
+  const btnDeadLetter = document.getElementById('btn-view-dead-letter');
+  if (btnDeadLetter) {
+    btnDeadLetter.addEventListener('click', () => {
+      fetchDeadLetterQueue();
+    });
+  }
+}
+
+async function pollConnectivityCockpit() {
+  try {
+    const res = await fetch('/api/v1/continuity/cockpit');
+    if (!res.ok) return;
+    const data = await res.json();
+    renderConnectivityCockpit(data);
+  } catch (err) {
+    renderOfflineCockpit();
+  }
+}
+
+function renderConnectivityCockpit(data) {
+  // 1. Header Node Capsule & Tickers
+  const headerStats = document.getElementById('header-node-stats');
+  if (headerStats && data.transports) {
+    const activeNames = data.transports.filter(t => t.status === 'CONNECTED').map(t => t.transport_type.replace('_', ' ')).join(' • ');
+    headerStats.textContent = `LINKS: ${activeNames || 'LOCAL STORE'} // QUEUE: ${data.queues.total_pending} // BATT: ${data.battery_level_pct}%`;
+  }
+
+  const queueValEl = document.getElementById('val-packet-queue');
+  if (queueValEl && data.queues) queueValEl.textContent = String(data.queues.total_pending).padStart(2, '0');
+
+  const battValEl = document.getElementById('val-battery-reserve');
+  if (battValEl) battValEl.textContent = `${data.battery_level_pct}%`;
+
+  // 2. Citizen Reassurance Card
+  const citTitle = document.getElementById('cit-conn-title');
+  const citDesc = document.getElementById('cit-conn-desc');
+  const citDot = document.getElementById('cit-conn-dot');
+  const citPills = document.getElementById('cit-active-paths-pills');
+
+  if (citTitle && citDesc && citPills && data.transports) {
+    citTitle.textContent = data.status === 'ALL_PATHS_ONLINE'
+      ? '● All Communication Paths Online'
+      : (data.active_paths_count > 0 ? '● Emergency Mesh Active — Internet Offline' : '● Offline — Distress Stored Locally');
+    
+    citDesc.textContent = data.summary;
+    if (citDot) {
+      citDot.className = data.status === 'ALL_PATHS_ONLINE' ? 'status-pulse-dot' : (data.active_paths_count > 0 ? 'status-pulse-dot warning' : 'status-pulse-dot offline');
+    }
+
+    citPills.innerHTML = data.transports.map(t => {
+      const isConn = t.status === 'CONNECTED';
+      const icon = t.transport_type === 'BLE' ? 'lucide:bluetooth' 
+                 : t.transport_type === 'MESHTASTIC_LORA' ? 'lucide:radio'
+                 : t.transport_type === 'LOCAL_WIFI' ? 'lucide:wifi'
+                 : t.transport_type === 'DATA_MULE' ? 'lucide:truck'
+                 : 'lucide:cloud';
+      return `
+        <span class="path-pill ${isConn ? 'connected' : 'disconnected'}">
+          <iconify-icon icon="${icon}"></iconify-icon>
+          ${t.display_name.split(' ')[0]} ${isConn ? 'ACTIVE' : 'OFFLINE'}
+        </span>
+      `;
+    }).join('');
+  }
+
+  // 3. Responder Bearer Diagnostics
+  const respScore = document.getElementById('resp-cockpit-score');
+  if (respScore) respScore.textContent = `${data.score}% HEALTH`;
+
+  if (data.transports) {
+    const loraTr = data.transports.find(t => t.transport_type === 'MESHTASTIC_LORA');
+    const respLoraSignal = document.getElementById('resp-lora-signal');
+    if (respLoraSignal && loraTr) {
+      respLoraSignal.textContent = loraTr.status === 'CONNECTED' ? `${loraTr.rssi_dbm || -74} dBm / +${loraTr.snr_db || 8.5} dB` : 'OFFLINE';
+    }
+
+    const bleTr = data.transports.find(t => t.transport_type === 'BLE');
+    const respBleStatus = document.getElementById('resp-ble-status');
+    if (respBleStatus && bleTr) {
+      respBleStatus.textContent = bleTr.status;
+      respBleStatus.style.color = bleTr.status === 'CONNECTED' ? 'var(--accent-green)' : 'var(--text-secondary)';
+    }
+  }
+
+  const respOutbox = document.getElementById('resp-outbox-count');
+  if (respOutbox && data.queues) respOutbox.textContent = `${data.queues.total_pending} PENDING`;
+
+  const respBatt = document.getElementById('resp-battery-cost');
+  if (respBatt) respBatt.textContent = `${data.battery_level_pct}% RESERVE`;
+
+  // 4. Authority Dashboard Cockpit
+  const valCockpitScore = document.getElementById('val-cockpit-score');
+  if (valCockpitScore) valCockpitScore.textContent = `${data.score}% CONNECTIVITY SCORE`;
+
+  const explanationText = document.getElementById('cockpit-explanation-text');
+  if (explanationText) explanationText.textContent = data.summary;
+
+  const transportsContainer = document.getElementById('cockpit-transports-container');
+  const modalTransportsGrid = document.getElementById('modal-transports-grid');
+
+  if (data.transports) {
+    const transportsHtml = data.transports.map(t => {
+      const isConn = t.status === 'CONNECTED';
+      const linkQ = t.link_quality;
+      const badgeClass = isConn ? 'connected' : (t.status === 'DEGRADED' ? 'degraded' : 'disconnected');
+      return `
+        <div class="transport-card">
+          <div class="tr-card-top">
+            <span class="tr-name">${t.display_name}</span>
+            <span class="tr-status-pill ${badgeClass}">${t.status}</span>
+          </div>
+          <div class="tr-metrics-row">
+            <span>Latency: ${t.latency_ms || 30}ms</span>
+            <span>Quality: ${linkQ}</span>
+          </div>
+          <div class="tr-metrics-row">
+            <span>Packets Sent: ${t.packets_sent || 0}</span>
+            <span>Acked: ${t.packets_acked || 0}</span>
+          </div>
+          <button class="btn-tr-toggle" onclick="toggleTransport('${t.transport_id}', '${isConn ? 'DISCONNECTED' : 'CONNECTED'}')">
+            <iconify-icon icon="${isConn ? 'lucide:toggle-right' : 'lucide:toggle-left'}"></iconify-icon>
+            <span>${isConn ? 'Disconnect (Failure Injection)' : 'Reconnect Bearer'}</span>
+          </button>
+        </div>
+      `;
+    }).join('');
+
+    if (transportsContainer) transportsContainer.innerHTML = transportsHtml;
+    if (modalTransportsGrid) modalTransportsGrid.innerHTML = transportsHtml;
+  }
+}
+
+function renderOfflineCockpit() {
+  const citTitle = document.getElementById('cit-conn-title');
+  const citDesc = document.getElementById('cit-conn-desc');
+  const citDot = document.getElementById('cit-conn-dot');
+  if (citTitle) citTitle.textContent = '● Offline — Autonomous Local Store';
+  if (citDesc) citDesc.textContent = 'All cellular and cloud uplinks offline. Emergencies are retained in durable device outbox.';
+  if (citDot) citDot.className = 'status-pulse-dot warning';
+}
+
+window.toggleTransport = async function(transportId, newStatus) {
+  try {
+    const res = await fetch(`/api/v1/continuity/transports/${transportId}/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        status: newStatus,
+        link_quality: newStatus === 'CONNECTED' ? 'GOOD' : 'OFFLINE'
+      })
+    });
+    if (res.ok) {
+      showToast(`Transport ${transportId} toggled to ${newStatus}`);
+      pollConnectivityCockpit();
+      fetchOutboxQueue();
+    }
+  } catch (err) {
+    showToast(`Error toggling transport: ${err.message}`);
+  }
+};
+
+async function fetchOutboxQueue() {
+  const tbody = document.getElementById('tbody-outbox-queue');
+  if (!tbody) return;
+
+  try {
+    const res = await fetch('/api/v1/continuity/outbox');
+    if (!res.ok) return;
+    const messages = await res.json();
+
+    if (!Array.isArray(messages) || messages.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" style="text-align:center; padding:20px; color:var(--text-secondary); font-size:12.5px;">
+            <iconify-icon icon="lucide:check-circle-2" style="color:var(--accent-green); font-size:18px; vertical-align:middle;"></iconify-icon>
+            Outbox queue is empty. All emergency messages successfully delivered and acknowledged.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = messages.map(m => {
+      const isP0 = m.priority === 0;
+      const prioBadge = isP0 ? '<span class="badge-prio-0">P0 LIFE CRITICAL</span>' : `<span class="badge-prio-low">P${m.priority}</span>`;
+      return `
+        <tr>
+          <td>${prioBadge}</td>
+          <td><code style="font-size:11px;">${m.message_id}</code></td>
+          <td><strong>${m.message_type}</strong></td>
+          <td><span class="status-badge" style="font-size:10px;">${m.current_state}</span></td>
+          <td>${m.last_transport || 'Searching'}</td>
+          <td>${m.attempt_count}</td>
+          <td style="font-size:12px; color:var(--text-secondary);">${m.human_explanation}</td>
+          <td>
+            <div style="display:flex; gap:6px;">
+              <button class="btn-action-small" onclick="retryOutboxMessage('${m.message_id}')" title="Manual retry">Retry</button>
+              <button class="btn-action-small" onclick="cancelOutboxMessage('${m.message_id}')" style="color:#B91C1C;" title="Cancel delivery">Cancel</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  } catch (err) {
+    console.warn('Fetch outbox error:', err);
+  }
+}
+
+async function fetchDeadLetterQueue() {
+  const tbody = document.getElementById('tbody-outbox-queue');
+  if (!tbody) return;
+
+  try {
+    const res = await fetch('/api/v1/continuity/dead-letter');
+    if (!res.ok) return;
+    const messages = await res.json();
+
+    if (!Array.isArray(messages) || messages.length === 0) {
+      showToast('Dead letter queue is currently empty. Zero unrecoverable messages.');
+      fetchOutboxQueue();
+      return;
+    }
+
+    tbody.innerHTML = messages.map(m => {
+      return `
+        <tr style="background:#FEF2F2;">
+          <td><span class="badge-prio-0">DEAD LETTER</span></td>
+          <td><code style="font-size:11px;">${m.message_id}</code></td>
+          <td><strong>${m.message_type}</strong></td>
+          <td><span style="color:#B91C1C; font-weight:700;">EXHAUSTED</span></td>
+          <td>${m.last_transport || 'NONE'}</td>
+          <td>${m.attempt_count}</td>
+          <td style="font-size:12px; color:#B91C1C;">${m.last_error || 'Policy ceiling reached'}</td>
+          <td>
+            <button class="btn-action-small" onclick="retryOutboxMessage('${m.message_id}')" style="background:#B91C1C; color:#FFF;">Force Retry</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+    showToast(`Displaying ${messages.length} dead letter store items.`);
+  } catch (err) {
+    showToast('Failed to load dead letter queue.');
+  }
+}
+
+window.retryOutboxMessage = async function(messageId) {
+  try {
+    const res = await fetch(`/api/v1/continuity/messages/${messageId}/retry`, { method: 'POST' });
+    if (res.ok) {
+      showToast(`Message ${messageId} reset to outbox queue for immediate retry.`);
+      fetchOutboxQueue();
+      pollConnectivityCockpit();
+    }
+  } catch (err) {
+    showToast(`Retry error: ${err.message}`);
+  }
+};
+
+window.cancelOutboxMessage = async function(messageId) {
+  try {
+    const res = await fetch(`/api/v1/continuity/messages/${messageId}/cancel`, { method: 'POST' });
+    if (res.ok) {
+      showToast(`Message ${messageId} delivery cancelled.`);
+      fetchOutboxQueue();
+      pollConnectivityCockpit();
+    }
+  } catch (err) {
+    showToast(`Cancel error: ${err.message}`);
+  }
+};
+

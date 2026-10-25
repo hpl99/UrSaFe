@@ -35,6 +35,13 @@ const {
   authorizeRoles,
   logAuditEvent
 } = require('./auth');
+const {
+  continuityEngine,
+  PRIORITY,
+  MESSAGE_TYPES,
+  DELIVERY_STATE,
+  ACK_LEVEL
+} = require('./continuity');
 
 const PORT = process.env.PORT || 4000;
 
@@ -417,6 +424,29 @@ function handleApiRequest(req, res) {
 
         const createdIncident = db.prepare('SELECT * FROM incidents WHERE id = ?').get(incidentId);
 
+        // Phase 4: Enqueue durable P0 SOS into Rescue Continuity Engine
+        try {
+          continuityEngine.enqueueMessage({
+            incident_id: incidentId,
+            sender_user_id: reporterId,
+            sender_device_id: body.device_id || 'dev-local-01',
+            message_type: MESSAGE_TYPES.SOS_CREATE,
+            priority: PRIORITY.P0_LIFE_CRITICAL,
+            payload: {
+              incident_id: incidentId,
+              category,
+              urgency,
+              latitude,
+              longitude,
+              victim_count: victims,
+              description,
+              status: initialStatus
+            }
+          });
+        } catch (cErr) {
+          console.warn('[Continuity] Auto-enqueue SOS warning:', cErr.message);
+        }
+
         // Broadcast real-time event
         broadcastEvent('INCIDENT_CREATED', createdIncident);
 
@@ -476,6 +506,44 @@ function handleApiRequest(req, res) {
         });
 
         const updatedIncident = db.prepare('SELECT * FROM incidents WHERE id = ?').get(incidentId);
+        // Phase 4: Enqueue continuity message for responder operation lifecycle
+        try {
+          let cMsgType = MESSAGE_TYPES.SOS_STATUS;
+          let cPriority = PRIORITY.P2_RESPONDER_OPERATION;
+          if (nextState === 'MISSION_ACCEPTED') {
+            cMsgType = MESSAGE_TYPES.RESPONDER_ACCEPT;
+          } else if (nextState === 'EN_ROUTE') {
+            cMsgType = MESSAGE_TYPES.RESPONDER_EN_ROUTE;
+          } else if (nextState === 'ARRIVED_ON_SCENE') {
+            cMsgType = MESSAGE_TYPES.RESPONDER_ARRIVED;
+          } else if (nextState === 'RESCUE_COMPLETED') {
+            cMsgType = MESSAGE_TYPES.RESCUE_COMPLETE;
+          } else if (nextState === 'CANCELLED') {
+            cMsgType = MESSAGE_TYPES.SOS_CANCEL;
+            cPriority = PRIORITY.P1_EMERGENCY_CONTROL;
+          }
+
+          continuityEngine.enqueueMessage({
+            incident_id: incidentId,
+            sender_user_id: session.userId,
+            sender_device_id: deviceId,
+            message_type: cMsgType,
+            priority: cPriority,
+            payload: {
+              incident_id: incidentId,
+              actor_user_id: session.userId,
+              actor_role: session.role,
+              from_status: incident.status,
+              to_status: nextState,
+              reason,
+              latitude: lat,
+              longitude: lon
+            }
+          });
+        } catch (cErr) {
+          console.warn('[Continuity] Transition enqueue warning:', cErr.message);
+        }
+
         broadcastEvent('INCIDENT_STATE_CHANGED', {
           incidentId,
           previous_state: incident.status,
@@ -1297,6 +1365,201 @@ function handleApiRequest(req, res) {
         return sendJson(200, { message: 'Rescue co-signed by citizen', report: updated });
       }
 
+      // =========================================================================
+      // PHASE 4: RESCUE CONTINUITY ENGINE & CONNECTIVITY COCKPIT ENDPOINTS
+      // =========================================================================
+
+      // 40. Connectivity Cockpit State & Score
+      if (pathname === '/api/v1/continuity/cockpit' && method === 'GET') {
+        const cockpit = continuityEngine.getCockpitState();
+        return sendJson(200, cockpit);
+      }
+
+      // 41. List Continuity Transports
+      if (pathname === '/api/v1/continuity/transports' && method === 'GET') {
+        const transports = db.prepare('SELECT * FROM continuity_transports ORDER BY transport_id ASC').all();
+        return sendJson(200, transports);
+      }
+
+      // 42. Update Transport State / Diagnostics (Failure Injection)
+      const transportStatusMatch = pathname.match(/^\/api\/v1\/continuity\/transports\/([^/]+)\/status$/);
+      if (transportStatusMatch && method === 'POST') {
+        const transportId = transportStatusMatch[1];
+        const body = await parseJsonBody();
+        const resUpdate = continuityEngine.updateTransport(transportId, body);
+        if (!resUpdate.success) {
+          return sendJson(404, { error: resUpdate.error });
+        }
+        return sendJson(200, { message: 'Transport updated', transport: resUpdate.transport });
+      }
+
+      // 43. Outbox Inspection (Pending / Active Messages)
+      if (pathname === '/api/v1/continuity/outbox' && method === 'GET') {
+        const outbox = db.prepare(`
+          SELECT * FROM continuity_messages
+          WHERE current_state IN ('QUEUED', 'SCHEDULED', 'TRANSMITTING', 'RETRY_WAIT', 'DEFERRED')
+          ORDER BY priority ASC, next_retry_at ASC, created_at ASC
+        `).all();
+        const formatted = outbox.map(m => continuityEngine.getMessage(m.message_id));
+        return sendJson(200, formatted);
+      }
+
+      // 44. Dead Letter Queue Inspection
+      if (pathname === '/api/v1/continuity/dead-letter' && method === 'GET') {
+        const deadLetters = db.prepare(`
+          SELECT * FROM continuity_messages
+          WHERE current_state = 'DEAD_LETTER'
+          ORDER BY completed_at DESC
+        `).all();
+        const formatted = deadLetters.map(m => continuityEngine.getMessage(m.message_id));
+        return sendJson(200, formatted);
+      }
+
+      // 45. List Messages with Filtering
+      if (pathname === '/api/v1/continuity/messages' && method === 'GET') {
+        const urlParams = parsedUrl.searchParams;
+        const priorityFilter = urlParams.get('priority');
+        const stateFilter = urlParams.get('state');
+        const incidentFilter = urlParams.get('incident_id');
+        const typeFilter = urlParams.get('type');
+        const limit = Math.min(100, parseInt(urlParams.get('limit') || '50', 10));
+
+        let query = 'SELECT * FROM continuity_messages';
+        const conditions = [];
+        const params = [];
+
+        if (priorityFilter != null) {
+          conditions.push('priority = ?');
+          params.push(parseInt(priorityFilter, 10));
+        }
+        if (stateFilter) {
+          conditions.push('current_state = ?');
+          params.push(stateFilter);
+        }
+        if (incidentFilter) {
+          conditions.push('incident_id = ?');
+          params.push(incidentFilter);
+        }
+        if (typeFilter) {
+          conditions.push('message_type = ?');
+          params.push(typeFilter);
+        }
+
+        if (conditions.length > 0) {
+          query += ' WHERE ' + conditions.join(' AND ');
+        }
+        query += ' ORDER BY created_at DESC LIMIT ?';
+        params.push(limit);
+
+        const messages = db.prepare(query).all(...params);
+        const formatted = messages.map(m => continuityEngine.getMessage(m.message_id));
+        return sendJson(200, formatted);
+      }
+
+      // 46. Enqueue Outbound Message
+      if (pathname === '/api/v1/continuity/messages' && method === 'POST') {
+        const session = authenticateRequest(req);
+        const body = await parseJsonBody();
+
+        const enqueueResult = continuityEngine.enqueueMessage({
+          message_id: body.message_id,
+          incident_id: body.incident_id || null,
+          sender_device_id: body.sender_device_id || (session ? `dev-${session.userId.slice(-6)}` : 'dev-local-01'),
+          sender_user_id: session ? session.userId : (body.sender_user_id || null),
+          recipient_scope: body.recipient_scope || 'BROADCAST',
+          message_type: body.message_type || MESSAGE_TYPES.SOS_CREATE,
+          priority: body.priority != null ? parseInt(body.priority, 10) : PRIORITY.P0_LIFE_CRITICAL,
+          payload: body.payload || {},
+          delivery_policy: body.delivery_policy || null,
+          expires_in_ms: body.expires_in_ms || 86400000
+        });
+
+        const statusHttp = enqueueResult.status === 'DUPLICATE_IDEMPOTENT' ? 200 : 201;
+        return sendJson(statusHttp, enqueueResult);
+      }
+
+      // 47. Get Single Message Details
+      const msgDetailMatch = pathname.match(/^\/api\/v1\/continuity\/messages\/([^/]+)$/);
+      if (msgDetailMatch && method === 'GET') {
+        const messageId = msgDetailMatch[1];
+        const msg = continuityEngine.getMessage(messageId);
+        if (!msg) return sendJson(404, { error: 'Message not found' });
+        return sendJson(200, msg);
+      }
+
+      // 48. Manual Retry
+      const msgRetryMatch = pathname.match(/^\/api\/v1\/continuity\/messages\/([^/]+)\/retry$/);
+      if (msgRetryMatch && method === 'POST') {
+        const messageId = msgRetryMatch[1];
+        const resRetry = continuityEngine.retryMessage(messageId);
+        if (!resRetry.success) return sendJson(404, { error: resRetry.error });
+        return sendJson(200, resRetry);
+      }
+
+      // 49. Cancel Message
+      const msgCancelMatch = pathname.match(/^\/api\/v1\/continuity\/messages\/([^/]+)\/cancel$/);
+      if (msgCancelMatch && method === 'POST') {
+        const messageId = msgCancelMatch[1];
+        const resCancel = continuityEngine.cancelMessage(messageId);
+        if (!resCancel.success) return sendJson(404, { error: resCancel.error });
+        return sendJson(200, resCancel);
+      }
+
+      // 50. Explicit Acknowledgement
+      const msgAckMatch = pathname.match(/^\/api\/v1\/continuity\/messages\/([^/]+)\/ack$/);
+      if (msgAckMatch && method === 'POST') {
+        const session = authenticateRequest(req);
+        const messageId = msgAckMatch[1];
+        const body = await parseJsonBody();
+        const ackLevel = body.ack_level || ACK_LEVEL.HUMAN_ACK;
+        const actor = session ? session.userId : (body.remote_actor || 'remote-actor');
+        const resAck = continuityEngine.recordExplicitAck(messageId, ackLevel, actor);
+        if (!resAck.success) return sendJson(404, { error: resAck.error });
+        return sendJson(200, resAck);
+      }
+
+      // 51. Data Mule Sync Bundle (Store-Carry-Forward Reconciliation)
+      if (pathname === '/api/v1/continuity/sync' && method === 'POST') {
+        const session = authenticateRequest(req);
+        const body = await parseJsonBody();
+        const bundle = Array.isArray(body.bundle) ? body.bundle : [];
+        let newCount = 0;
+        let dupCount = 0;
+        const now = Date.now();
+
+        for (const item of bundle) {
+          if (!item.message_id) continue;
+          const dedup = continuityEngine.registerInbound(item.message_id, item.sender_device_id, item.payload_hash);
+          if (dedup.isDuplicate) {
+            dupCount++;
+          } else {
+            newCount++;
+            continuityEngine.enqueueMessage({
+              message_id: item.message_id,
+              incident_id: item.incident_id || null,
+              sender_device_id: item.sender_device_id || 'mule-carrier',
+              sender_user_id: item.sender_user_id || null,
+              message_type: item.message_type || MESSAGE_TYPES.SOS_STATUS,
+              priority: item.priority != null ? item.priority : PRIORITY.P3_SAFETY_LOCATION,
+              payload: item.payload || {}
+            });
+          }
+        }
+
+        const syncReceipt = {
+          synced_at: now,
+          received_total: bundle.length,
+          new_messages: newCount,
+          duplicates_suppressed: dupCount,
+          carrier_device: body.carrier_device || 'data-mule-01'
+        };
+
+        logAuditEvent('DATA_MULE_SYNC', session ? session.userId : 'system', 'MULE_SYNC_BATCH', body.carrier_device || 'data-mule-carrier', syncReceipt);
+        broadcastEvent('DATA_MULE_SYNC_COMPLETED', syncReceipt);
+
+        return sendJson(200, syncReceipt);
+      }
+
       // 404 Fallback
       return sendJson(404, { error: 'Route not found', path: pathname });
     } catch (err) {
@@ -1344,6 +1607,10 @@ function broadcastEvent(type, payload) {
 }
 
 attachWebSocket(server);
+
+// Phase 4: Wire Continuity Engine Real-time Event Streaming & Background Worker
+continuityEngine.setBroadcastCallback(broadcastEvent);
+continuityEngine.startBackgroundWorker();
 
 if (require.main === module) {
   server.listen(PORT, () => {
