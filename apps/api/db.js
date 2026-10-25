@@ -16,8 +16,9 @@ if (!fs.existsSync(DATA_DIR)) {
 const DB_PATH = process.env.DATABASE_PATH || path.join(DATA_DIR, 'ursafe_production.db');
 const db = new DatabaseSync(DB_PATH);
 
-// Enable WAL mode and foreign keys
+// Enable WAL mode, busy timeout, and foreign keys
 db.exec('PRAGMA journal_mode = WAL;');
+db.exec('PRAGMA busy_timeout = 5000;');
 db.exec('PRAGMA foreign_keys = ON;');
 
 // Run Migrations in Order
