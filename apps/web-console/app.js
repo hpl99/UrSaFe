@@ -1148,6 +1148,7 @@ async function fetchAuthorityDashboardData() {
   // Section 2: Network Nodes by Role & State
   try {
     const meshRes = await fetch('/api/v1/mesh', { headers });
+    const roleBreakdownEl = document.getElementById('auth-nodes-role-breakdown');
     if (meshRes.ok) {
       const meshData = await meshRes.json();
       const nodes = meshData.nodes || [];
@@ -1157,22 +1158,48 @@ async function fetchAuthorityDashboardData() {
         else clientCount++;
         if (n.status === 'OFFLINE' || (Date.now() - n.last_seen_at) > 300000) offlineCount++;
       });
-      const elRouter = document.getElementById('auth-nodes-router-count');
-      const elClient = document.getElementById('auth-nodes-client-count');
-      const elOffline = document.getElementById('auth-nodes-offline-count');
       const elTotal = document.getElementById('auth-nodes-total-count');
       const elActiveNodes = document.getElementById('metric-nodes-val');
-      if (elRouter) elRouter.textContent = routerCount;
-      if (elClient) elClient.textContent = clientCount;
-      if (elOffline) elOffline.textContent = offlineCount;
       if (elTotal) elTotal.textContent = nodes.length;
       if (elActiveNodes) elActiveNodes.textContent = (nodes.length - offlineCount);
+
+      if (nodes.length === 0) {
+        if (roleBreakdownEl) {
+          roleBreakdownEl.innerHTML = '<div class="empty-state-text" style="color:var(--text-muted); font-size:12px; font-style:italic; padding:6px 0;">No network nodes registered yet</div>';
+        }
+      } else {
+        if (roleBreakdownEl) {
+          roleBreakdownEl.innerHTML = `
+            <div class="priority-bar-item">
+              <span>ROUTER / RELAY</span>
+              <strong id="auth-nodes-router-count">${routerCount}</strong>
+            </div>
+            <div class="priority-bar-item">
+              <span>CLIENT / PEER</span>
+              <strong id="auth-nodes-client-count">${clientCount}</strong>
+            </div>
+            <div class="priority-bar-item">
+              <span>OFFLINE / UNKNOWN</span>
+              <strong id="auth-nodes-offline-count">${offlineCount}</strong>
+            </div>
+          `;
+        }
+      }
     } else {
+      if (roleBreakdownEl) {
+        roleBreakdownEl.innerHTML = '<div class="empty-state-text" style="color:var(--text-muted); font-size:12px; font-style:italic; padding:6px 0;">No network nodes registered yet</div>';
+      }
       const elNodes = document.getElementById('metric-nodes-val');
       if (elNodes) elNodes.textContent = '0';
     }
   } catch (_) {
+    const roleBreakdownEl = document.getElementById('auth-nodes-role-breakdown');
+    if (roleBreakdownEl) {
+      roleBreakdownEl.innerHTML = '<div class="empty-state-text" style="color:var(--text-muted); font-size:12px; font-style:italic; padding:6px 0;">No network nodes registered yet</div>';
+    }
     const elNodes = document.getElementById('metric-nodes-val');
+    if (elNodes) elNodes.textContent = '0';
+  }
     if (elNodes) elNodes.textContent = '0';
   }
 

@@ -293,7 +293,26 @@ def test_full_emergency_lifecycle_and_history(api_server):
     assert any(inc["id"] == inc_id and inc["status"] == "REOPENED" for inc in active_again)
 
 
-def test_bluetooth_device_discovery_and_presence(api_server):
+@pytest.fixture
+def seed_test_ble_device():
+    """Seeds test-only BLE node fixture into isolated test database."""
+    db_path = os.environ.get("URSAFE_DB_PATH")
+    if db_path:
+        escaped_path = db_path.replace("\\", "/")
+        script = f"""
+        const {{ DatabaseSync }} = require('node:sqlite');
+        const db = new DatabaseSync('{escaped_path}');
+        const now = Date.now();
+        db.prepare(`
+          INSERT OR REPLACE INTO devices (id, user_id, device_type, hardware_model, mac_address, bluetooth_uuid, battery_level, connection_state, protocol_version, role_advertised, connected_user_id, last_heartbeat)
+          VALUES ('ble-ursafe-vikram-01', 'usr-responder-01', 'ANDROID_MOBILE', 'UrSafe Mobile BLE Node', 'AA:BB:CC:DD:EE:FF', '0xFE26', 85.0, 'DISCONNECTED', 'v1', 'RESPONDER', 'usr-responder-01', ?)
+        `).run(now);
+        """
+        subprocess.run(["node", "-e", script], check=True)
+    return "ble-ursafe-vikram-01"
+
+
+def test_bluetooth_device_discovery_and_presence(api_server, seed_test_ble_device):
     responder_token = get_auth_token(api_server, "responder_vikram")
 
     # 1. Discover devices
