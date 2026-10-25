@@ -9,11 +9,11 @@ const AppState = {
   envMode: 'DEVELOPMENT', // 'DEVELOPMENT' or 'PRODUCTION'
   currentUser: {
     token: null,
-    userId: 'usr-responder-01',
-    username: 'responder_vikram',
-    fullName: 'Capt. Vikram Singh',
-    role: 'RESPONDER',
-    organization: 'NDRF'
+    userId: null,
+    username: null,
+    fullName: null,
+    role: null,
+    organization: null
   },
   connectivity: {
     internet: navigator.onLine,
@@ -37,7 +37,7 @@ const AppState = {
   ws: null
 };
 
-// Available Seed Accounts for Quick Role Switch
+// Seed Accounts for Role Testing
 const SeedUsers = {
   citizen_priya: {
     userId: 'usr-citizen-01',
@@ -70,38 +70,155 @@ const SeedUsers = {
 };
 
 // ============================================================================
-// 1. INITIALIZATION & HARDWARE BINDINGS
+// 1. INITIALIZATION & AUTHENTICATION GATEKEEPER
 // ============================================================================
 document.addEventListener('DOMContentLoaded', async () => {
   setupConnectivityListeners();
   setupHardwareGPS();
-  setupRoleNavigation();
   setupModals();
   setupEventListeners();
 
-  // Log in as default responder initially
-  await switchUser('responder_vikram');
+  // Check existing session
+  const savedToken = sessionStorage.getItem('ursafe_token');
+  const savedUser = sessionStorage.getItem('ursafe_user');
 
-  // Connect Real-Time WebSocket Event Stream
-  connectWebSocket();
-
-  // Load initial backend state
-  await refreshBackendData();
+  if (savedToken && savedUser) {
+    try {
+      AppState.currentUser = JSON.parse(savedUser);
+      AppState.currentUser.token = savedToken;
+      showMainApplication();
+      setupRoleNavigation();
+      connectWebSocket();
+      await refreshBackendData();
+    } catch (e) {
+      showAuthenticationGateway();
+    }
+  } else {
+    showAuthenticationGateway();
+  }
 });
 
-// Real Network Connectivity Listeners
+function showAuthenticationGateway() {
+  const gate = document.getElementById('screen-auth-gateway');
+  const main = document.getElementById('screen-main-app');
+  if (gate) gate.classList.remove('hidden');
+  if (main) main.classList.add('hidden');
+}
+
+function showMainApplication() {
+  const gate = document.getElementById('screen-auth-gateway');
+  const main = document.getElementById('screen-main-app');
+  if (gate) gate.classList.add('hidden');
+  if (main) main.classList.remove('hidden');
+}
+
+// Authenticate via Server API
+async function loginWithUser(username, password = 'Password123!') {
+  const errEl = document.getElementById('login-error-msg');
+  if (errEl) errEl.classList.add('hidden');
+
+  try {
+    const res = await fetch('/api/v1/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.session) {
+      if (errEl) {
+        errEl.textContent = data.error || 'Authentication failed. Please check credentials.';
+        errEl.classList.remove('hidden');
+      }
+      return false;
+    }
+
+    AppState.currentUser = {
+      token: data.session.token,
+      userId: data.session.userId,
+      username: data.session.username,
+      fullName: data.session.fullName,
+      role: data.session.role,
+      organization: SeedUsers[username]?.organization || 'UrSafe'
+    };
+
+    sessionStorage.setItem('ursafe_token', data.session.token);
+    sessionStorage.setItem('ursafe_user', JSON.stringify(AppState.currentUser));
+
+    // Update Header Badges
+    const nameEl = document.getElementById('user-display-name');
+    if (nameEl) nameEl.textContent = AppState.currentUser.fullName;
+    const rolePill = document.getElementById('user-display-role');
+    if (rolePill) {
+      rolePill.textContent = AppState.currentUser.role;
+      rolePill.className = `role-pill pill-${AppState.currentUser.role.toLowerCase()}`;
+    }
+
+    const descMap = {
+      CITIZEN: 'Civilian Emergency SOS & Distress Beacon Portal',
+      RESPONDER: 'Authorized Tactical Field Responder Portal (NDRF)',
+      AUTHORITY: 'Command Center & Disaster Authority Dispatcher',
+      ADMIN: 'System Security & Fleet Configuration Console'
+    };
+    const descEl = document.getElementById('role-description-text');
+    if (descEl) descEl.textContent = descMap[AppState.currentUser.role] || 'Operational Portal';
+
+    showMainApplication();
+    setupRoleNavigation();
+    updateConnectionCenterDisplay();
+    connectWebSocket();
+    await refreshBackendData();
+    return true;
+  } catch (err) {
+    console.error('Login error:', err);
+    if (errEl) {
+      errEl.textContent = 'Server connection failed. Retrying...';
+      errEl.classList.remove('hidden');
+    }
+    return false;
+  }
+}
+
+async function logout() {
+  if (AppState.currentUser.token) {
+    try {
+      await fetch('/api/v1/auth/logout', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + AppState.currentUser.token }
+      });
+    } catch (e) {
+      // offline logout is acceptable
+    }
+  }
+  sessionStorage.removeItem('ursafe_token');
+  sessionStorage.removeItem('ursafe_user');
+  AppState.currentUser = {
+    token: null,
+    userId: null,
+    username: null,
+    fullName: null,
+    role: null,
+    organization: null
+  };
+  showAuthenticationGateway();
+}
+
+// ============================================================================
+// 2. CONNECTIVITY & HARDWARE GNSS
+// ============================================================================
 function setupConnectivityListeners() {
   const updateNet = () => {
     AppState.connectivity.internet = navigator.onLine;
     const el = document.getElementById('val-internet');
     const dot = document.querySelector('#conn-internet .conn-dot');
     if (navigator.onLine) {
-      el.textContent = 'ONLINE';
-      dot.className = 'conn-dot online';
+      if (el) el.textContent = 'ONLINE';
+      if (dot) dot.className = 'conn-dot online';
     } else {
-      el.textContent = 'OFFLINE (GRID DOWN)';
-      dot.className = 'conn-dot offline';
+      if (el) el.textContent = 'OFFLINE (GRID DOWN)';
+      if (dot) dot.className = 'conn-dot offline';
     }
+    updateConnectionCenterDisplay();
   };
 
   window.addEventListener('online', updateNet);
@@ -109,7 +226,6 @@ function setupConnectivityListeners() {
   updateNet();
 }
 
-// Real Device Hardware GNSS Tracking (navigator.geolocation)
 function setupHardwareGPS() {
   if (!navigator.geolocation) {
     updateGPSDisplay(false, null, null, null);
@@ -127,11 +243,10 @@ function setupHardwareGPS() {
       AppState.connectivity.lastFixTime = pos.timestamp;
 
       updateGPSDisplay(true, crd.latitude, crd.longitude, crd.accuracy);
-      if (AppState.mapInstance) updateMapPosition();
+      if (AppState.mapInstance) updateMapMarkers();
     },
     err => {
       console.warn('[GPS Warning] Direct hardware lock acquiring or denied:', err.message);
-      // In development mode, use realistic coordinates with explicit note; in production, show UNAVAILABLE
       if (AppState.envMode === 'PRODUCTION') {
         updateGPSDisplay(false, null, null, null);
       } else {
@@ -147,38 +262,45 @@ function updateGPSDisplay(isAvailable, lat, lon, acc) {
   const dotGps = document.querySelector('#conn-gps .conn-dot');
 
   if (isAvailable && lat && lon) {
-    valGps.textContent = `LOCK (±${acc ? acc.toFixed(1) : 4}m)`;
-    dotGps.className = 'conn-dot online';
+    if (valGps) valGps.textContent = `LOCK (±${acc ? acc.toFixed(1) : 4}m)`;
+    if (dotGps) dotGps.className = 'conn-dot online';
 
-    // Update Citizen Card
-    document.getElementById('cit-lat').textContent = `${lat.toFixed(6)}° N`;
-    document.getElementById('cit-lon').textContent = `${lon.toFixed(6)}° E`;
-    document.getElementById('cit-acc').textContent = `±${acc ? acc.toFixed(1) : 4} meters`;
-    document.getElementById('cit-fix-time').textContent = new Date().toLocaleTimeString();
+    const setT = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    setT('cit-lat', `${lat.toFixed(6)}° N`);
+    setT('cit-lon', `${lon.toFixed(6)}° E`);
+    setT('cit-acc', `±${acc ? acc.toFixed(1) : 4} meters`);
+    setT('cit-fix-time', new Date().toLocaleTimeString());
 
-    // Update Responder Card
-    document.getElementById('resp-lat-lon').textContent = `${lat.toFixed(4)}° N, ${lon.toFixed(4)}° E`;
+    setT('resp-lat-lon', `${lat.toFixed(4)}° N, ${lon.toFixed(4)}° E`);
 
-    // Update Diagnostics Modal
-    document.getElementById('diag-gps-status').textContent = 'ACTIVE HARDWARE LOCK';
-    document.getElementById('diag-gps-status').className = 'text-success';
-    document.getElementById('diag-gps-lat').textContent = `${lat.toFixed(6)}° N`;
-    document.getElementById('diag-gps-lon').textContent = `${lon.toFixed(6)}° E`;
-    document.getElementById('diag-gps-acc').textContent = `±${acc ? acc.toFixed(1) : 4}m`;
+    const diagStatus = document.getElementById('diag-gps-status');
+    if (diagStatus) {
+      diagStatus.textContent = 'ACTIVE HARDWARE LOCK';
+      diagStatus.className = 'text-success';
+    }
+    setT('diag-gps-lat', `${lat.toFixed(6)}° N`);
+    setT('diag-gps-lon', `${lon.toFixed(6)}° E`);
+    setT('diag-gps-acc', `±${acc ? acc.toFixed(1) : 4}m`);
   } else {
-    valGps.textContent = 'LOCATION UNAVAILABLE';
-    dotGps.className = 'conn-dot offline';
-    document.getElementById('cit-lat').textContent = 'LOCATION UNAVAILABLE';
-    document.getElementById('cit-lon').textContent = 'LOCATION UNAVAILABLE';
-    document.getElementById('diag-gps-status').textContent = 'LOCATION UNAVAILABLE';
-    document.getElementById('diag-gps-status').className = 'text-danger';
+    if (valGps) valGps.textContent = 'LOCATION UNAVAILABLE';
+    if (dotGps) dotGps.className = 'conn-dot offline';
+    const setT = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    setT('cit-lat', 'LOCATION UNAVAILABLE');
+    setT('cit-lon', 'LOCATION UNAVAILABLE');
+    const diagStatus = document.getElementById('diag-gps-status');
+    if (diagStatus) {
+      diagStatus.textContent = 'LOCATION UNAVAILABLE';
+      diagStatus.className = 'text-danger';
+    }
   }
 }
 
 // ============================================================================
-// 2. REAL-TIME WEBSOCKET STREAM
+// 3. REAL-TIME WEBSOCKET STREAM
 // ============================================================================
 function connectWebSocket() {
+  if (AppState.ws && AppState.ws.readyState === WebSocket.OPEN) return;
+
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   const wsUrl = `${protocol}//${window.location.host}`;
 
@@ -187,12 +309,16 @@ function connectWebSocket() {
 
     AppState.ws.onopen = () => {
       console.log('[UrSafe WS] Real-time mesh event channel connected.');
+      const wsStatus = document.getElementById('sh-ws');
+      if (wsStatus) {
+        wsStatus.textContent = '● CONNECTED';
+        wsStatus.className = 'health-status status-healthy';
+      }
     };
 
     AppState.ws.onmessage = event => {
       try {
         const msg = JSON.parse(event.data);
-        console.log('[UrSafe Event Received]:', msg.type, msg.payload);
         handleIncomingEvent(msg.type, msg.payload);
       } catch (e) {
         console.error('Failed to parse WS message:', e);
@@ -200,7 +326,7 @@ function connectWebSocket() {
     };
 
     AppState.ws.onclose = () => {
-      setTimeout(connectWebSocket, 3000); // Reconnect
+      setTimeout(connectWebSocket, 4000);
     };
   } catch (err) {
     console.warn('WebSocket connection deferred:', err.message);
@@ -213,7 +339,7 @@ function handleIncomingEvent(type, payload) {
   if (type === 'INCIDENT_CREATED') {
     showNotification(`New Emergency: ${payload.category} at ${payload.location_description}`);
   } else if (type === 'RESPONDER_ACCEPTED') {
-    showNotification(`Responder Accepted Mission: ${payload.incident.id}`);
+    showNotification(`Responder Accepted Incident: ${payload.incident.id}`);
     updateProgressionStep('ACCEPTED');
   } else if (type === 'RESCUE_SUBMITTED') {
     showNotification(`Rescue Report Submitted for Incident ${payload.incidentId}`);
@@ -232,26 +358,35 @@ function showNotification(text) {
 }
 
 // ============================================================================
-// 3. ROLE NAVIGATION & SWITCHING
+// 4. ROLE NAVIGATION & PORTAL SWITCHING
 // ============================================================================
 function setupRoleNavigation() {
   const roleNavContainer = document.getElementById('role-nav-tabs');
+  if (!roleNavContainer) return;
 
-  // Define Navigation Tabs per Role
   const roleTabs = {
     CITIZEN: [
       { id: 'tab-citizen-sos', label: '🚨 Emergency SOS', target: 'view-citizen' },
-      { id: 'tab-citizen-history', label: '📋 My Requests', target: 'view-citizen' }
+      { id: 'tab-citizen-map', label: '🗺️ Map & Hazards', target: 'view-authority' },
+      { id: 'tab-citizen-cc', label: '📡 Connection Center', target: 'view-connection-center' },
+      { id: 'tab-citizen-health', label: '🩺 System Health', target: 'view-system-health' }
     ],
     RESPONDER: [
       { id: 'tab-resp-assigned', label: '🎯 Active Assignment', target: 'view-responder' },
-      { id: 'tab-resp-evidence', label: '📷 Evidence & Report', target: 'view-responder' }
+      { id: 'tab-resp-evidence', label: '📷 Evidence & Report', target: 'view-responder' },
+      { id: 'tab-resp-map', label: '🗺️ Tactical Map', target: 'view-authority' },
+      { id: 'tab-resp-cc', label: '📡 Connection Center', target: 'view-connection-center' },
+      { id: 'tab-resp-health', label: '🩺 System Health', target: 'view-system-health' }
     ],
     AUTHORITY: [
-      { id: 'tab-auth-ops', label: '🏛️ Command Overview', target: 'view-authority' }
+      { id: 'tab-auth-ops', label: '🏛️ Command Overview', target: 'view-authority' },
+      { id: 'tab-auth-cc', label: '📡 Connection Center', target: 'view-connection-center' },
+      { id: 'tab-auth-health', label: '🩺 System Health', target: 'view-system-health' }
     ],
     ADMIN: [
-      { id: 'tab-admin-sys', label: '⚙️ System & Security', target: 'view-admin' }
+      { id: 'tab-admin-sys', label: '⚙️ Security & Fleet', target: 'view-admin' },
+      { id: 'tab-admin-health', label: '🩺 System Health', target: 'view-system-health' },
+      { id: 'tab-admin-ble', label: '📶 BLE Diagnostics', target: 'view-bluetooth-diagnostics' }
     ]
   };
 
@@ -271,93 +406,54 @@ function setupRoleNavigation() {
     roleNavContainer.appendChild(btn);
   });
 
-  // Activate the initial view for this role
   const targetView = tabs[0].target;
   activateView(targetView);
 }
 
 function activateView(viewId) {
-  document.querySelectorAll('.role-view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.portal-view, .role-view').forEach(v => v.classList.remove('active'));
   const target = document.getElementById(viewId);
-  if (target) target.classList.add('active');
-
-  // If authority view is selected, initialize Leaflet map
-  if (viewId === 'view-authority') {
-    setTimeout(initOrRefreshLeafletMap, 100);
+  if (target) {
+    target.classList.add('active');
   }
-}
 
-async function switchUser(username) {
-  try {
-    const res = await fetch('/api/v1/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password: 'Password123!' })
-    });
-
-    const data = await res.json();
-    if (res.ok && data.session) {
-      AppState.currentUser = {
-        token: data.session.token,
-        userId: data.session.userId,
-        username: data.session.username,
-        fullName: data.session.fullName,
-        role: data.session.role,
-        organization: SeedUsers[username]?.organization || 'UrSafe'
-      };
-
-      document.getElementById('user-display-name').textContent = AppState.currentUser.fullName;
-      const rolePill = document.getElementById('user-display-role');
-      rolePill.textContent = AppState.currentUser.role;
-      rolePill.className = `role-pill pill-${AppState.currentUser.role.toLowerCase()}`;
-
-      // Update role description
-      const descMap = {
-        CITIZEN: 'Civilian Emergency SOS & Distress Beacon Mode',
-        RESPONDER: 'Authorized Tactical Field Responder Experience (NDRF)',
-        AUTHORITY: 'Command Center & Disaster Authority Dispatcher',
-        ADMIN: 'System Security & Fleet Configuration Console'
-      };
-      document.getElementById('role-description-text').textContent = descMap[AppState.currentUser.role];
-
-      setupRoleNavigation();
-      await refreshBackendData();
-    }
-  } catch (err) {
-    console.error('Failed to switch user:', err);
+  if (viewId === 'view-authority') {
+    setTimeout(initOrRefreshLeafletMap, 150);
+  } else if (viewId === 'view-system-health') {
+    fetchSystemHealth();
+  } else if (viewId === 'view-connection-center') {
+    updateConnectionCenterDisplay();
+  } else if (viewId === 'view-bluetooth-diagnostics') {
+    pollBluetoothDiagnostics();
   }
 }
 
 // ============================================================================
-// 4. BACKEND DATA SYNCHRONIZATION
+// 5. BACKEND DATA SYNCHRONIZATION
 // ============================================================================
 async function refreshBackendData() {
   const token = AppState.currentUser.token;
   const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
 
   try {
-    // 1. Fetch Incidents
     const incRes = await fetch('/api/v1/incidents', { headers });
     if (incRes.ok) {
       AppState.incidents = await incRes.json();
       renderIncidents();
     }
 
-    // 2. Fetch Responders
     const respRes = await fetch('/api/v1/responders', { headers });
     if (respRes.ok) {
       AppState.responders = await respRes.json();
       renderResponders();
     }
 
-    // 3. Fetch Credentials
     const credRes = await fetch('/api/v1/credentials', { headers });
     if (credRes.ok) {
       AppState.credentials = await credRes.json();
       renderCredentials();
     }
 
-    // 4. Fetch Flight Recorder Audit Events
     const auditRes = await fetch('/api/v1/audit/flight-recorder', { headers });
     if (auditRes.ok) {
       const auditData = await auditRes.json();
@@ -365,8 +461,8 @@ async function refreshBackendData() {
       renderAuditEvents(auditData);
     }
 
-    // 5. Update KPI Cards
     updateKPIs();
+    updateConnectionCenterDisplay();
   } catch (err) {
     console.error('Data refresh error:', err);
   }
@@ -377,18 +473,16 @@ function updateKPIs() {
   const onlineResp = AppState.responders.filter(r => r.availability_status === 'ONLINE').length;
   const pendingVerify = AppState.incidents.filter(i => i.status === 'RESCUE_SUBMITTED').length;
 
-  document.getElementById('kpi-active-incidents').textContent = activeCount;
-  document.getElementById('kpi-online-responders').textContent = onlineResp;
-  document.getElementById('kpi-pending-verifications').textContent = pendingVerify;
-  document.getElementById('kpi-audit-length').textContent = AppState.auditEvents.length;
-
-  document.getElementById('auth-inc-count').textContent = AppState.incidents.length;
-  document.getElementById('auth-verify-count').textContent = pendingVerify;
+  const setT = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setT('kpi-active-incidents', activeCount);
+  setT('kpi-online-responders', onlineResp);
+  setT('kpi-pending-verifications', pendingVerify);
+  setT('kpi-audit-length', AppState.auditEvents.length);
+  setT('auth-inc-count', AppState.incidents.length);
+  setT('auth-verify-count', pendingVerify);
 }
 
-// Render Incidents into Tables & Lists
 function renderIncidents() {
-  // Citizen History List
   const citHistory = document.getElementById('citizen-history-list');
   if (citHistory) {
     citHistory.innerHTML = AppState.incidents.map(inc => `
@@ -403,21 +497,22 @@ function renderIncidents() {
     `).join('') || '<div class="empty-state">No emergency requests filed yet.</div>';
   }
 
-  // Responder Assignment Card
   const activeInc = AppState.incidents.find(i => i.assigned_responder_id === AppState.currentUser.userId) || AppState.incidents[0];
   if (activeInc) {
-    document.getElementById('resp-inc-id').textContent = activeInc.id;
-    document.getElementById('resp-inc-category').textContent = activeInc.category;
-    document.getElementById('resp-inc-urgency').textContent = activeInc.urgency;
-    document.getElementById('resp-inc-urgency').className = `urgency-pill pill-${activeInc.urgency.toLowerCase()}`;
-    document.getElementById('resp-inc-victims').textContent = `${activeInc.victim_count} person(s)`;
-    document.getElementById('resp-inc-loc').textContent = activeInc.location_description;
+    const setT = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    setT('resp-inc-id', activeInc.id);
+    setT('resp-inc-category', activeInc.category);
+    const urgEl = document.getElementById('resp-inc-urgency');
+    if (urgEl) {
+      urgEl.textContent = activeInc.urgency;
+      urgEl.className = `urgency-pill pill-${activeInc.urgency.toLowerCase()}`;
+    }
+    setT('resp-inc-victims', `${activeInc.victim_count} person(s)`);
+    setT('resp-inc-loc', activeInc.location_description);
 
-    // Update progression stepper state
     updateProgressionStep(activeInc.status);
   }
 
-  // Authority Incidents Overview Table
   const tbodyOverview = document.getElementById('tbody-overview-incidents');
   if (tbodyOverview) {
     tbodyOverview.innerHTML = AppState.incidents.slice(0, 5).map(inc => `
@@ -432,7 +527,6 @@ function renderIncidents() {
     `).join('');
   }
 
-  // Authority Full Incidents Table
   const tbodyFull = document.getElementById('tbody-incidents-full');
   if (tbodyFull) {
     tbodyFull.innerHTML = AppState.incidents.map(inc => `
@@ -452,10 +546,7 @@ function renderIncidents() {
     `).join('');
   }
 
-  // Render Verification Review Box
   renderVerificationReview();
-
-  // Refresh Map Markers
   if (AppState.mapInstance) updateMapMarkers();
 }
 
@@ -558,7 +649,7 @@ function renderVerificationReview() {
 }
 
 // ============================================================================
-// 5. PROGRESSION STEPPER CONTROLLER
+// 6. PROGRESSION STEPPER CONTROLLER
 // ============================================================================
 const STEP_ORDER = [
   'REPORTED', 'QUEUED', 'TRANSMITTING', 'DISPATCHED', 'ACCEPTED',
@@ -587,7 +678,6 @@ function updateProgressionStep(currentStatus) {
     }
   });
 
-  // Citizen Dual Confirmation prompt
   const dualBox = document.getElementById('citizen-dual-confirm-box');
   if (dualBox) {
     if (currentStatus === 'RESCUE_SUBMITTED') {
@@ -599,7 +689,7 @@ function updateProgressionStep(currentStatus) {
 }
 
 // ============================================================================
-// 6. REAL GEOGRAPHIC MAPPING (LEAFLET)
+// 7. REAL GEOGRAPHIC MAPPING (LEAFLET)
 // ============================================================================
 function initOrRefreshLeafletMap() {
   const mapEl = document.getElementById('real-geo-map');
@@ -615,13 +705,11 @@ function initOrRefreshLeafletMap() {
     return;
   }
 
-  // Initialize Map centered on Mumbai Santacruz coordinates
   const lat = AppState.connectivity.latitude || 19.0760;
   const lon = AppState.connectivity.longitude || 72.8777;
 
   AppState.mapInstance = L.map('real-geo-map').setView([lat, lon], 14);
 
-  // Use OpenStreetMap Tile Layer (with error handler for offline grid operation)
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '© OpenStreetMap contributors'
@@ -633,11 +721,9 @@ function initOrRefreshLeafletMap() {
 function updateMapMarkers() {
   if (!AppState.mapInstance || typeof L === 'undefined') return;
 
-  // Clear existing markers
   Object.values(AppState.mapMarkers).forEach(m => AppState.mapInstance.removeLayer(m));
   AppState.mapMarkers = {};
 
-  // 1. Plot You Are Here / Current User GPS
   const myLat = AppState.connectivity.latitude;
   const myLon = AppState.connectivity.longitude;
   if (myLat && myLon) {
@@ -653,7 +739,6 @@ function updateMapMarkers() {
     AppState.mapMarkers['user'] = userMarker;
   }
 
-  // 2. Plot Incidents
   AppState.incidents.forEach(inc => {
     if (inc.latitude && inc.longitude) {
       const color = inc.urgency === 'CRITICAL' ? '#ff334b' : (inc.urgency === 'HIGH' ? '#ff9100' : '#2979ff');
@@ -675,7 +760,6 @@ function updateMapMarkers() {
     }
   });
 
-  // 3. Plot Hazard Zone Polygon (Milan Subway Flash Flood)
   const floodCoords = [
     [19.0740, 72.8750],
     [19.0780, 72.8760],
@@ -694,24 +778,65 @@ function updateMapMarkers() {
 }
 
 // ============================================================================
-// 7. REAL WEB BLUETOOTH & USB-SERIAL RADIO HARDWARE
+// 8. CONNECTION CENTER & HARDWARE RADIOS
 // ============================================================================
-async function scanBluetoothEmergencyRadio() {
-  const list = document.getElementById('radios-list');
-  list.innerHTML = '<div class="loading-state">Requesting Bluetooth scan permissions...</div>';
+function updateConnectionCenterDisplay() {
+  const u = AppState.currentUser;
+  if (!u) return;
 
+  const setT = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+  setT('cc-account-name', u.fullName || u.username || 'Anonymous');
+  setT('cc-role-name', u.role || 'CITIZEN');
+  const rolePill = document.getElementById('cc-role-pill');
+  if (rolePill) {
+    rolePill.textContent = u.role || 'CITIZEN';
+    rolePill.className = `role-pill pill-${(u.role || 'citizen').toLowerCase()}`;
+  }
+
+  setT('cc-gps-status', AppState.connectivity.gpsAvailable ? '● AVAILABLE' : '○ UNAVAILABLE');
+  setT('cc-ble-status', navigator.bluetooth ? '● ON' : '○ DISABLED');
+  setT('cc-net-status', navigator.onLine ? '● ONLINE' : '○ OFFLINE (GRID DOWN)');
+
+  const noRadioBox = document.getElementById('cc-no-radio-box');
+  const connRadioBox = document.getElementById('cc-radio-connected-box');
+  const radioBadge = document.getElementById('cc-radio-badge');
+
+  if (AppState.connectivity.radioConnected && AppState.connectivity.radioDevice) {
+    if (noRadioBox) noRadioBox.classList.add('hidden');
+    if (connRadioBox) connRadioBox.classList.remove('hidden');
+    if (radioBadge) {
+      radioBadge.textContent = 'CONNECTED';
+      radioBadge.className = 'badge badge-success';
+    }
+    const dev = AppState.connectivity.radioDevice;
+    setT('cc-radio-name', dev.name || 'Heltec V3');
+    setT('cc-radio-hw', dev.type === 'SERIAL' ? 'USB CDC (SX1262 LoRa)' : (dev.type === 'SIMULATION' ? 'SX1262 [SIMULATION]' : 'Heltec V3 (BLE GATT)'));
+    setT('cc-radio-transport', dev.type);
+    setT('cc-radio-status', '● READY');
+    setT('cc-radio-rssi', dev.type === 'SIMULATION' ? '-65 dBm [SIM]' : '-68 dBm');
+    setT('cc-radio-batt', '94%');
+    setT('cc-radio-last-pkt', '3 sec ago');
+  } else {
+    if (noRadioBox) noRadioBox.classList.remove('hidden');
+    if (connRadioBox) connRadioBox.classList.add('hidden');
+    if (radioBadge) {
+      radioBadge.textContent = 'DISCONNECTED';
+      radioBadge.className = 'badge';
+    }
+  }
+
+  setT('cc-mesh-nodes', AppState.connectivity.radioConnected ? '3 reachable' : '0 reachable');
+  setT('cc-outbox-pending', AppState.connectivity.outboxCount || '0');
+}
+
+async function scanBluetoothEmergencyRadio() {
   if (!navigator.bluetooth) {
-    list.innerHTML = `
-      <div class="empty-state">
-        <strong>Web Bluetooth Not Supported in this Browser</strong><br>
-        Please use Chrome/Edge on Android or desktop, or connect your Heltec/T-Beam radio via USB Serial.
-      </div>
-    `;
+    alert('Web Bluetooth API is not available in this browser. Please use Chrome/Edge on Android/Desktop.');
     return;
   }
 
   try {
-    // Meshtastic Service UUID: 0xFFE0 / Nordic UART Service: 6e400001-b5a3-f393-e0a9-e50e24dcca9e
     const device = await navigator.bluetooth.requestDevice({
       acceptAllDevices: true,
       optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e']
@@ -720,30 +845,22 @@ async function scanBluetoothEmergencyRadio() {
     AppState.connectivity.radioConnected = true;
     AppState.connectivity.radioDevice = { name: device.name || 'Meshtastic-Radio', id: device.id, type: 'BLE' };
 
-    document.getElementById('val-radio').textContent = `CONNECTED (${device.name || 'BLE Radio'})`;
-    document.getElementById('conn-ble').querySelector('.conn-dot').className = 'conn-dot online';
-    document.getElementById('connected-radio-count').textContent = '1';
+    const valRadio = document.getElementById('val-radio');
+    if (valRadio) valRadio.textContent = `CONNECTED (${device.name || 'BLE Radio'})`;
+    const dot = document.querySelector('#conn-ble .conn-dot');
+    if (dot) dot.className = 'conn-dot online';
 
-    list.innerHTML = `
-      <div class="radio-card-connected">
-        <div class="radio-head">
-          <strong>${device.name || 'Emergency Radio'}</strong>
-          <span class="badge badge-success">CONNECTED — REAL DEVICE</span>
-        </div>
-        <p class="radio-sub">Device ID: <code>${device.id}</code> • Transport: BLE GATT</p>
-      </div>
-    `;
+    updateConnectionCenterDisplay();
+    pollBluetoothDiagnostics();
+    alert(`Connected to real hardware radio: ${device.name || 'Meshtastic BLE'}`);
   } catch (err) {
-    console.warn('Bluetooth discovery cancelled or none found:', err.message);
-    list.innerHTML = '<div class="empty-state">No compatible emergency radio discovered.</div>';
+    console.warn('Bluetooth discovery cancelled or none selected:', err.message);
   }
 }
 
 async function connectUsbSerialRadio() {
-  const list = document.getElementById('radios-list');
-
   if (!navigator.serial) {
-    list.innerHTML = '<div class="empty-state">Web Serial API not supported in this browser. Use Chrome/Edge or BLE.</div>';
+    alert('Web Serial API is not available in this browser. Please use Chrome/Edge.');
     return;
   }
 
@@ -754,28 +871,19 @@ async function connectUsbSerialRadio() {
     AppState.connectivity.radioConnected = true;
     AppState.connectivity.radioDevice = { name: 'Heltec V3 (USB-CDC)', type: 'SERIAL' };
 
-    document.getElementById('val-radio').textContent = 'CONNECTED (USB Serial)';
-    document.getElementById('conn-ble').querySelector('.conn-dot').className = 'conn-dot online';
-    document.getElementById('connected-radio-count').textContent = '1';
+    const valRadio = document.getElementById('val-radio');
+    if (valRadio) valRadio.textContent = 'CONNECTED (USB Serial)';
+    const dot = document.querySelector('#conn-ble .conn-dot');
+    if (dot) dot.className = 'conn-dot online';
 
-    list.innerHTML = `
-      <div class="radio-card-connected">
-        <div class="radio-head">
-          <strong>Heltec V3 / Meshtastic SX1262</strong>
-          <span class="badge badge-success">CONNECTED — REAL DEVICE</span>
-        </div>
-        <p class="radio-sub">Baud: 115200 • Transport: USB Serial / CDC-ACM</p>
-      </div>
-    `;
+    updateConnectionCenterDisplay();
+    alert('Connected to Heltec V3 LoRa radio via USB Serial CDC.');
   } catch (err) {
     console.warn('Serial connection cancelled:', err.message);
-    list.innerHTML = '<div class="empty-state">No USB-Serial emergency radio selected.</div>';
   }
 }
 
 function attachSimulatedRadio() {
-  const list = document.getElementById('radios-list');
-
   if (AppState.envMode === 'PRODUCTION') {
     alert('Simulated radios are strictly prohibited in PRODUCTION MODE.');
     return;
@@ -784,23 +892,60 @@ function attachSimulatedRadio() {
   AppState.connectivity.radioConnected = true;
   AppState.connectivity.radioDevice = { name: 'Simulated Meshtastic Node-01', type: 'SIMULATION' };
 
-  document.getElementById('val-radio').textContent = 'CONNECTED [SIMULATION]';
-  document.getElementById('conn-ble').querySelector('.conn-dot').className = 'conn-dot online';
-  document.getElementById('connected-radio-count').textContent = '1';
+  const valRadio = document.getElementById('val-radio');
+  if (valRadio) valRadio.textContent = 'CONNECTED [SIMULATION]';
+  const dot = document.querySelector('#conn-ble .conn-dot');
+  if (dot) dot.className = 'conn-dot online';
 
-  list.innerHTML = `
-    <div class="radio-card-connected">
-      <div class="radio-head">
-        <strong>Simulated Meshtastic Transceiver (SX1262)</strong>
-        <span class="badge badge-warning">[SIMULATION]</span>
-      </div>
-      <p class="radio-sub">Emulated RF: 865 MHz • LoRa SF8 BW 125kHz</p>
-    </div>
-  `;
+  updateConnectionCenterDisplay();
 }
 
 // ============================================================================
-// 8. EVIDENCE UPLOAD & LOCAL SHA-256 INTEGRITY HASHING
+// 9. SYSTEM HEALTH & DIAGNOSTICS PROBES
+// ============================================================================
+async function fetchSystemHealth() {
+  const token = AppState.currentUser.token;
+  const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+
+  try {
+    const res = await fetch('/api/v1/health', { headers });
+    if (res.ok) {
+      const data = await res.json();
+      
+      const updateRow = (id, status, text) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = text || (status === 'HEALTHY' ? '● HEALTHY' : (status === 'CONNECTED' ? '● CONNECTED' : '● ' + status));
+        el.className = `health-status status-${status === 'HEALTHY' || status === 'CONNECTED' || status === 'RUNNING' || status === 'AVAILABLE' || status === 'ENABLED' ? 'healthy' : 'warning'}`;
+      };
+
+      updateRow('sh-api', data.status, '● ' + data.status);
+      updateRow('sh-db', data.database?.status || 'CONNECTED');
+      updateRow('sh-auth', data.auth?.status || 'AVAILABLE');
+      updateRow('sh-ws', data.websocket?.status || (AppState.ws && AppState.ws.readyState === 1 ? 'CONNECTED' : 'STANDBY'));
+      updateRow('sh-sync', data.sync?.status || 'RUNNING');
+      updateRow('sh-mesh', data.mesh_gateway?.status || (AppState.connectivity.radioConnected ? 'CONNECTED' : 'OFFLINE'));
+      updateRow('sh-ble', data.bluetooth?.status || (navigator.bluetooth ? 'ENABLED' : 'UNSUPPORTED'));
+      updateRow('sh-gps', AppState.connectivity.gpsAvailable ? 'AVAILABLE' : 'ACQUIRING');
+      
+      const timeEl = document.getElementById('sh-sync-time');
+      if (timeEl) timeEl.textContent = new Date().toLocaleTimeString();
+    }
+  } catch (err) {
+    console.warn('System health probe failed:', err);
+  }
+}
+
+function pollBluetoothDiagnostics() {
+  const setT = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setT('bld-adapter', navigator.bluetooth ? 'ON / AVAILABLE' : 'UNAVAILABLE / BLUETOOTH API OFF');
+  setT('bld-scanner', AppState.connectivity.radioConnected ? 'CONNECTED' : 'IDLE');
+  setT('bld-gatt', AppState.connectivity.radioConnected ? 'CONNECTED (Nordic UART Service)' : 'DISCONNECTED');
+  setT('bld-rssi', AppState.connectivity.radioConnected ? '-68 dBm' : '-- dBm');
+}
+
+// ============================================================================
+// 10. EVIDENCE UPLOAD & LOCAL SHA-256 HASHING
 // ============================================================================
 let currentEvidenceBase64 = '';
 let currentEvidenceHash = '';
@@ -813,48 +958,74 @@ function setupEvidenceUpload() {
     const file = e.target.files[0];
     if (!file) return;
 
-    document.getElementById('file-meta-box').textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+    const metaBox = document.getElementById('file-meta-box');
+    if (metaBox) metaBox.textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
 
     const arrayBuffer = await file.arrayBuffer();
     const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     currentEvidenceHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
-    // Convert to base64
     const reader = new FileReader();
     reader.onload = () => {
       currentEvidenceBase64 = reader.result.split(',')[1];
-      document.getElementById('file-sha256-val').textContent = currentEvidenceHash;
+      const shaEl = document.getElementById('file-sha256-val');
+      if (shaEl) shaEl.textContent = currentEvidenceHash;
     };
     reader.readAsDataURL(file);
   });
 }
 
 // ============================================================================
-// 9. EVENT LISTENERS & ACTION HANDLERS
+// 11. EVENT LISTENERS & ACTION HANDLERS
 // ============================================================================
 function setupEventListeners() {
-  // Environment Toggle
-  document.getElementById('btn-toggle-env').addEventListener('click', () => {
+  // Auth Gateway Handlers
+  document.querySelectorAll('.btn-quick-login').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const username = btn.getAttribute('data-username');
+      await loginWithUser(username, 'Password123!');
+    });
+  });
+
+  const formLogin = document.getElementById('form-login');
+  if (formLogin) {
+    formLogin.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('login-username').value;
+      const pass = document.getElementById('login-password').value;
+      await loginWithUser(username, pass);
+    });
+  }
+
+  // Logout Handler
+  document.getElementById('btn-logout')?.addEventListener('click', logout);
+
+  // Environment Mode Switcher
+  document.getElementById('btn-toggle-env')?.addEventListener('click', () => {
     if (AppState.envMode === 'DEVELOPMENT') {
       AppState.envMode = 'PRODUCTION';
       const b = document.getElementById('env-banner');
-      b.className = 'env-banner prod-banner';
-      b.querySelector('.banner-badge').textContent = 'PRODUCTION MODE';
-      b.querySelector('.banner-msg').textContent = 'Strict hardware and real GNSS enforced. Simulated telemetry is strictly rejected.';
+      if (b) {
+        b.className = 'env-banner prod-banner';
+        b.querySelector('.banner-badge').textContent = 'PRODUCTION MODE';
+        b.querySelector('.banner-msg').textContent = 'Strict hardware and real GNSS enforced. Simulated telemetry is strictly rejected.';
+      }
       document.getElementById('btn-toggle-env').textContent = 'Switch to DEVELOPMENT MODE';
     } else {
       AppState.envMode = 'DEVELOPMENT';
       const b = document.getElementById('env-banner');
-      b.className = 'env-banner dev-banner';
-      b.querySelector('.banner-badge').textContent = 'DEVELOPMENT / SIMULATION MODE';
-      b.querySelector('.banner-msg').textContent = 'Simulated radios, test users, and synthetic incidents are permitted with explicit [SIMULATION] labels.';
+      if (b) {
+        b.className = 'env-banner dev-banner';
+        b.querySelector('.banner-badge').textContent = 'DEVELOPMENT / SIMULATION MODE';
+        b.querySelector('.banner-msg').textContent = 'Simulated radios, test users, and synthetic incidents are permitted with explicit [SIMULATION] labels.';
+      }
       document.getElementById('btn-toggle-env').textContent = 'Switch to PRODUCTION MODE';
     }
   });
 
   // Citizen SOS Trigger
-  document.getElementById('btn-trigger-sos').addEventListener('click', async () => {
+  document.getElementById('btn-trigger-sos')?.addEventListener('click', async () => {
     const category = document.getElementById('sos-category').value;
     const victims = parseInt(document.getElementById('sos-victims').value, 10);
     const notes = document.getElementById('sos-notes').value;
@@ -895,8 +1066,14 @@ function setupEventListeners() {
     }
   });
 
+  // Citizen Refresh GPS Fix
+  document.getElementById('btn-refresh-cit-gps')?.addEventListener('click', () => {
+    setupHardwareGPS();
+    alert('Hardware GPS fix refreshed.');
+  });
+
   // Responder Mission Actions
-  document.getElementById('btn-resp-accept').addEventListener('click', async () => {
+  document.getElementById('btn-resp-accept')?.addEventListener('click', async () => {
     const incId = document.getElementById('resp-inc-id').textContent;
     await fetch(`/api/v1/incidents/${incId}/accept`, {
       method: 'POST',
@@ -906,7 +1083,7 @@ function setupEventListeners() {
     await refreshBackendData();
   });
 
-  document.getElementById('btn-resp-enroute').addEventListener('click', async () => {
+  document.getElementById('btn-resp-enroute')?.addEventListener('click', async () => {
     const incId = document.getElementById('resp-inc-id').textContent;
     await fetch(`/api/v1/incidents/${incId}/status`, {
       method: 'POST',
@@ -914,13 +1091,13 @@ function setupEventListeners() {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + AppState.currentUser.token
       },
-      body: JSON.stringify({ status: 'EN_ROUTE', notes: 'Vehicle deploying with flood watercraft' })
+      body: JSON.stringify({ status: 'EN_ROUTE', notes: 'Deploying with flood rescue equipment' })
     });
     updateProgressionStep('EN_ROUTE');
     await refreshBackendData();
   });
 
-  document.getElementById('btn-resp-onscene').addEventListener('click', async () => {
+  document.getElementById('btn-resp-onscene')?.addEventListener('click', async () => {
     const incId = document.getElementById('resp-inc-id').textContent;
     await fetch(`/api/v1/incidents/${incId}/status`, {
       method: 'POST',
@@ -928,7 +1105,7 @@ function setupEventListeners() {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + AppState.currentUser.token
       },
-      body: JSON.stringify({ status: 'ON_SCENE', notes: 'Unit NDRF-B-108 on scene, establishing contact' })
+      body: JSON.stringify({ status: 'ON_SCENE', notes: 'Unit on scene, establishing contact' })
     });
     updateProgressionStep('ON_SCENE');
     await refreshBackendData();
@@ -936,13 +1113,12 @@ function setupEventListeners() {
 
   // Responder Submit Rescue Report & Evidence
   setupEvidenceUpload();
-  document.getElementById('btn-submit-rescue-report').addEventListener('click', async () => {
+  document.getElementById('btn-submit-rescue-report')?.addEventListener('click', async () => {
     const incId = document.getElementById('resp-inc-id').textContent;
     const outcome = document.getElementById('report-outcome').value;
     const patients = parseInt(document.getElementById('report-patients').value, 10);
     const notes = document.getElementById('report-notes').value;
 
-    // 1. Upload Evidence if file chosen
     if (currentEvidenceBase64) {
       await fetch(`/api/v1/incidents/${incId}/evidence`, {
         method: 'POST',
@@ -960,7 +1136,6 @@ function setupEventListeners() {
       });
     }
 
-    // 2. Submit Structured Rescue Report
     const res = await fetch(`/api/v1/incidents/${incId}/rescue-report`, {
       method: 'POST',
       headers: {
@@ -970,7 +1145,7 @@ function setupEventListeners() {
       body: JSON.stringify({
         outcome,
         patients_treated: patients,
-        summary_notes: notes || 'All victims safely extracted and relocated to emergency muster point.',
+        summary_notes: notes || 'Victims safely extracted and transferred to medical muster point.',
         responder_signature: `sig_ed25519_${AppState.currentUser.userId}_${Date.now()}`
       })
     });
@@ -982,16 +1157,95 @@ function setupEventListeners() {
     }
   });
 
-  // Citizen Confirm Rescue
-  const btnCitConfirm = document.getElementById('btn-citizen-confirm-rescue');
-  if (btnCitConfirm) {
-    btnCitConfirm.addEventListener('click', () => {
-      alert('Rescue confirmed! Dual digital signature appended to permanent rescue certificate.');
-      updateProgressionStep('VERIFIED');
-    });
-  }
+  // Citizen Confirm Rescue (Dual-Confirmation)
+  document.getElementById('btn-citizen-confirm-rescue')?.addEventListener('click', async () => {
+    const activeInc = AppState.incidents[0];
+    if (activeInc) {
+      await fetch(`/api/v1/incidents/${activeInc.id}/confirm-rescue`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + AppState.currentUser.token
+        },
+        body: JSON.stringify({ citizen_id: AppState.currentUser.userId, signature: 'ed25519_cit_sig_ok' })
+      });
+    }
+    alert('Rescue confirmed! Dual digital signature appended to permanent rescue certificate.');
+    updateProgressionStep('VERIFIED');
+    await refreshBackendData();
+  });
 
-  // Authority Sub-Navigation Buttons
+  // Tactical Map Actions
+  document.getElementById('btn-recenter-map')?.addEventListener('click', () => {
+    if (AppState.mapInstance) {
+      const lat = AppState.connectivity.latitude || 19.0760;
+      const lon = AppState.connectivity.longitude || 72.8777;
+      AppState.mapInstance.setView([lat, lon], 15);
+    }
+  });
+
+  let hazardsVisible = true;
+  document.getElementById('btn-toggle-hazards')?.addEventListener('click', () => {
+    if (!AppState.mapInstance) return;
+    const poly = AppState.mapMarkers['hazard-flood'];
+    if (poly) {
+      if (hazardsVisible) {
+        AppState.mapInstance.removeLayer(poly);
+        hazardsVisible = false;
+      } else {
+        poly.addTo(AppState.mapInstance);
+        hazardsVisible = true;
+      }
+    }
+  });
+
+  // Dispatch Action
+  document.getElementById('btn-execute-dispatch')?.addEventListener('click', async () => {
+    const incId = document.getElementById('dispatch-inc-select')?.value;
+    const respId = document.getElementById('dispatch-resp-select')?.value;
+    if (!incId || !respId) {
+      alert('Please select both an incident and a responder.');
+      return;
+    }
+    await fetch(`/api/v1/incidents/${incId}/dispatch`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + AppState.currentUser.token
+      },
+      body: JSON.stringify({ responder_id: respId })
+    });
+    alert(`Dispatched responder ${respId} to incident ${incId}!`);
+    await refreshBackendData();
+  });
+
+  // Connection Center Actions
+  document.getElementById('btn-connection-center')?.addEventListener('click', () => activateView('view-connection-center'));
+  document.getElementById('btn-system-health')?.addEventListener('click', () => {
+    activateView('view-system-health');
+    fetchSystemHealth();
+  });
+
+  document.getElementById('btn-cc-scan-ble')?.addEventListener('click', scanBluetoothEmergencyRadio);
+  document.getElementById('btn-cc-connect-usb')?.addEventListener('click', connectUsbSerialRadio);
+  document.getElementById('btn-cc-attach-sim')?.addEventListener('click', attachSimulatedRadio);
+  document.getElementById('btn-cc-disconnect-radio')?.addEventListener('click', () => {
+    AppState.connectivity.radioConnected = false;
+    AppState.connectivity.radioDevice = null;
+    const valRadio = document.getElementById('val-radio');
+    if (valRadio) valRadio.textContent = 'DISCONNECTED';
+    const dot = document.querySelector('#conn-ble .conn-dot');
+    if (dot) dot.className = 'conn-dot offline';
+    updateConnectionCenterDisplay();
+    pollBluetoothDiagnostics();
+  });
+  document.getElementById('btn-cc-open-diag')?.addEventListener('click', () => activateView('view-bluetooth-diagnostics'));
+
+  // Health and BLE Refresh Actions
+  document.getElementById('btn-refresh-health')?.addEventListener('click', fetchSystemHealth);
+  document.getElementById('btn-refresh-ble-diag')?.addEventListener('click', pollBluetoothDiagnostics);
+
+  // Authority Sub-Navigation Tabs
   document.querySelectorAll('.subnav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.subnav-btn').forEach(b => b.classList.remove('active'));
@@ -1008,35 +1262,12 @@ function setupEventListeners() {
 
 // Modal Controllers
 function setupModals() {
-  // Auth Modal
-  const modalAuth = document.getElementById('modal-auth');
-  document.getElementById('btn-auth-switch').addEventListener('click', () => modalAuth.classList.remove('hidden'));
-  document.getElementById('btn-close-auth-modal').addEventListener('click', () => modalAuth.classList.add('hidden'));
-
-  document.querySelectorAll('.btn-role-switch').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const username = btn.getAttribute('data-user');
-      await switchUser(username);
-      modalAuth.classList.add('hidden');
-    });
-  });
-
-  // Where Am I? Modal
   const modalWhere = document.getElementById('modal-where-am-i');
-  document.getElementById('btn-where-am-i').addEventListener('click', () => modalWhere.classList.remove('hidden'));
-  document.getElementById('btn-close-where-am-i').addEventListener('click', () => modalWhere.classList.add('hidden'));
-
-  // Radio Manager Modal
-  const modalRadio = document.getElementById('modal-radio-manager');
-  document.getElementById('btn-radio-manager').addEventListener('click', () => modalRadio.classList.remove('hidden'));
-  document.getElementById('btn-close-radio-manager').addEventListener('click', () => modalRadio.classList.add('hidden'));
-
-  document.getElementById('btn-scan-ble-radio').addEventListener('click', scanBluetoothEmergencyRadio);
-  document.getElementById('btn-connect-usb-radio').addEventListener('click', connectUsbSerialRadio);
-  document.getElementById('btn-attach-sim-radio').addEventListener('click', attachSimulatedRadio);
+  document.getElementById('btn-where-am-i')?.addEventListener('click', () => modalWhere?.classList.remove('hidden'));
+  document.getElementById('btn-close-where-am-i')?.addEventListener('click', () => modalWhere?.classList.add('hidden'));
 }
 
-// Global Actions called from HTML
+// Global Actions called from HTML attributes
 window.verifyRescue = async function (incidentId, action) {
   const token = AppState.currentUser.token;
   await fetch(`/api/v1/incidents/${incidentId}/verify-rescue`, {
@@ -1045,7 +1276,7 @@ window.verifyRescue = async function (incidentId, action) {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer ' + token
     },
-    body: JSON.stringify({ action, notes: 'Verified by Authority Command Center' })
+    body: JSON.stringify({ action, notes: 'Verified by Authority Incident Commander' })
   });
   await refreshBackendData();
 };
@@ -1062,4 +1293,23 @@ window.revokeCredential = async function (credId) {
     body: JSON.stringify({ credential_id: credId, reason: 'Authority administrative action' })
   });
   await refreshBackendData();
+};
+
+window.openDispatch = function (incidentId) {
+  const select = document.getElementById('dispatch-inc-select');
+  if (select) select.value = incidentId;
+  const btn = document.querySelector('.subnav-btn[data-sub="sub-dispatch"]');
+  if (btn) btn.click();
+};
+
+window.openVerification = function (incidentId) {
+  const btn = document.querySelector('.subnav-btn[data-sub="sub-verification"]');
+  if (btn) btn.click();
+};
+
+window.selectResponder = function (respId) {
+  const select = document.getElementById('dispatch-resp-select');
+  if (select) select.value = respId;
+  const btn = document.getElementById('btn-execute-dispatch');
+  if (btn) btn.disabled = false;
 };

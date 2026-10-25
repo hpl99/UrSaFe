@@ -835,8 +835,8 @@ body.ursafe-dark {
   z-index: 1000;
 }
 
-.modal-backdrop.hidden {
-  display: none;
+.hidden {
+  display: none !important;
 }
 
 .modal-card {
@@ -927,3 +927,341 @@ body.ursafe-dark {
 }
 
 .text-success { color: var(--accent-green); }
+.text-danger { color: var(--accent-red); }
+.text-warning { color: var(--accent-orange); }
+
+/* Portal View Transitions */
+.portal-view {
+  display: none;
+}
+
+.portal-view.active {
+  display: block;
+  animation: portalFadeIn 0.15s ease-in-out;
+}
+
+@keyframes portalFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ========================================================================= */
+/* AUTHENTICATION GATEWAY SCREEN (SECTION 12)                                */
+/* ========================================================================= */
+.auth-gateway-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 20%, #151d2f 0%, #07090e 100%);
+  padding: 24px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 520px;
+  background: rgba(24, 32, 48, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-highlight);
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.brand-badge {
+  display: inline-block;
+  background: rgba(41, 121, 255, 0.15);
+  color: var(--accent-blue);
+  border: 1px solid rgba(41, 121, 255, 0.4);
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 1px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+}
+
+.auth-header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.auth-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.quick-auth-section {
+  margin: 20px 0;
+}
+
+.section-title {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.8px;
+  margin-bottom: 12px;
+}
+
+.quick-role-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.btn-quick-login {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px;
+  color: #fff;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.btn-quick-login:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--accent-blue);
+  transform: translateY(-2px);
+}
+
+.role-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.role-meta strong {
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.role-tag {
+  font-size: 9px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.tag-citizen { color: var(--accent-orange); }
+.tag-responder { color: var(--accent-green); }
+.tag-authority { color: var(--accent-cyan); }
+.tag-admin { color: var(--accent-purple); }
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 24px 0 16px;
+  color: var(--text-muted);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.auth-divider span {
+  padding: 0 10px;
+}
+
+.auth-form .form-row {
+  margin-bottom: 14px;
+}
+
+.auth-form label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.btn-logout {
+  background: rgba(255, 51, 75, 0.15);
+  border: 1px solid var(--accent-red);
+  color: #ff99a8;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  cursor: pointer;
+  margin-left: 8px;
+}
+
+.btn-logout:hover {
+  background: var(--accent-red);
+  color: #fff;
+}
+
+/* ========================================================================= */
+/* CONNECTION CENTER (SECTION 19)                                            */
+/* ========================================================================= */
+.connection-center-layout {
+  padding: 20px;
+}
+
+.conn-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.conn-card {
+  padding: 20px;
+}
+
+.conn-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.detail-row .k {
+  color: var(--text-muted);
+}
+
+.no-radio-box {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px dashed var(--border-color);
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  margin-top: 14px;
+}
+
+.no-radio-box h4 {
+  color: var(--accent-orange);
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.no-radio-box p {
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+
+.no-radio-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.radio-connected-box {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ========================================================================= */
+/* SYSTEM HEALTH SCREEN (SECTION 11)                                         */
+/* ========================================================================= */
+.system-health-layout {
+  padding: 20px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.health-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.health-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+}
+
+.health-name {
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  color: var(--text-primary);
+}
+
+.health-status {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.health-status.status-healthy {
+  color: var(--accent-green);
+}
+
+.health-status.status-warning {
+  color: var(--accent-orange);
+}
+
+.health-status.status-danger {
+  color: var(--accent-red);
+}
+
+.health-timestamp {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+/* ========================================================================= */
+/* RESPONSIVE DESIGN (SECTION 31, 59)                                        */
+/* ========================================================================= */
+@media (max-width: 768px) {
+  .app-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .header-left, .header-right {
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+
+  .connectivity-bar {
+    order: 3;
+    width: 100%;
+    justify-content: space-around;
+  }
+
+  .quick-role-buttons {
+    grid-template-columns: 1fr;
+  }
+
+  .citizen-layout, .responder-layout, .conn-grid {
+    grid-template-columns: 1fr;
+  }
+}

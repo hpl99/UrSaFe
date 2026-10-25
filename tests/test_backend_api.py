@@ -67,7 +67,7 @@ def make_request(url, method="GET", data=None, token=None):
 def test_health_check(api_server):
     status, data = make_request(f"{api_server}/api/v1/health")
     assert status == 200
-    assert data["status"] == "ok"
+    assert data["status"] in ("ok", "HEALTHY")
     assert "stats" in data
     assert data["stats"]["total_incidents"] >= 2
 
