@@ -5,6 +5,24 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+
+// Auto-load root .env if present
+const envPath = path.join(__dirname, '../../.env');
+if (fs.existsSync(envPath)) {
+  try {
+    const lines = fs.readFileSync(envPath, 'utf8').split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
+        const idx = trimmed.indexOf('=');
+        const k = trimmed.slice(0, idx).trim();
+        const v = trimmed.slice(idx + 1).trim();
+        if (!process.env[k]) process.env[k] = v;
+      }
+    }
+  } catch (_) {}
+}
+
 const { handleApiRequest, attachWebSocket } = require('../api/server');
 
 const PORT = process.env.PORT || 3000;
@@ -27,7 +45,18 @@ const server = http.createServer((req, res) => {
   const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost:' + PORT}`);
   const pathname = parsedUrl.pathname;
 
+<<<<<<< HEAD
   // API requests: Handle locally or proxy if BACKEND_PORT explicitly configured
+=======
+  // Dynamic runtime configuration script for frontend
+  if (pathname === '/config.js') {
+    res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8' });
+    const key = process.env.GOOGLE_MAPS_API_KEY || '';
+    return res.end(`window.URSAFE_CONFIG = { googleMapsApiKey: ${JSON.stringify(key)} };`);
+  }
+
+  // API requests: Proxy to standalone backend on port 4000 if active, otherwise handle locally
+>>>>>>> 1909a774eee021b2b653c3728c017ac48de3ff07
   if (pathname.startsWith('/api/')) {
     if (process.env.BACKEND_PORT) {
       const backendPort = process.env.BACKEND_PORT;
