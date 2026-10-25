@@ -13,7 +13,15 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-const DB_PATH = process.env.DATABASE_PATH || path.join(DATA_DIR, 'ursafe_production.db');
+const DEFAULT_DEV_DB = path.join(DATA_DIR, 'ursafe_dev.db');
+const DB_PATH = process.env.URSAFE_DB_PATH || process.env.DATABASE_PATH || DEFAULT_DEV_DB;
+
+// Safety Guard: The app and tests must refuse to start against a DB path containing "production" when NODE_ENV=test or running under pytest
+const isTestMode = process.env.NODE_ENV === 'test' || Boolean(process.env.PYTEST_CURRENT_TEST) || process.env.TESTING === 'true';
+if (isTestMode && DB_PATH.toLowerCase().includes('production')) {
+  throw new Error(`[CRITICAL SAFETY GUARD] Refusing to run tests against production database: "${DB_PATH}". Test runs must use an isolated temporary database via URSAFE_DB_PATH.`);
+}
+
 const db = new DatabaseSync(DB_PATH);
 
 // Enable WAL mode, busy timeout, and foreign keys
@@ -50,6 +58,11 @@ safeAddColumn('incidents', 'address_city TEXT');
 safeAddColumn('incidents', 'address_postal_code TEXT');
 safeAddColumn('incidents', 'address_country TEXT');
 safeAddColumn('incidents', 'address_resolved_at INTEGER');
+safeAddColumn('incidents', 'client_msg_id TEXT');
+
+try {
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_incidents_reporter_client_msg ON incidents(reporter_user_id, client_msg_id) WHERE client_msg_id IS NOT NULL;');
+} catch (_) {}
 
 safeAddColumn('incident_events', 'actor_role TEXT');
 safeAddColumn('incident_events', 'device_id TEXT');
@@ -193,7 +206,61 @@ function seedInitialData() {
     'Unit NDRF-B-108 deployed with inflatable watercraft and ALS trauma pack.'
   );
 
-  // 7. Initial Flight Recorder Audit Root
+  // 7. Seed UrSafe Mobile BLE Node & Mesh Node
+  db.prepare(`
+    INSERT INTO devices (id, user_id, device_type, hardware_model, mac_address, bluetooth_uuid, battery_level, connection_state, protocol_version, role_advertised, connected_user_id, last_heartbeat)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    'ble-ursafe-vikram-01',
+    'usr-responder-01',
+    'ANDROID_MOBILE',
+    'UrSafe Mobile BLE Node',
+    'AA:BB:CC:DD:EE:FF',
+    '0xFE26',
+    85.0,
+    'DISCONNECTED',
+    'v1',
+    'RESPONDER',
+    'usr-responder-01',
+    now
+  );
+
+  db.prepare(`
+    INSERT INTO devices (id, user_id, device_type, hardware_model, mac_address, bluetooth_uuid, lora_frequency_mhz, battery_level, connection_state, protocol_version, role_advertised, last_heartbeat)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    'radio-heltec-v3-01',
+    'usr-responder-01',
+    'MESHTASTIC_RADIO',
+    'Heltec V3 ESP32-S3 LoRa Node',
+    '11:22:33:44:55:66',
+    '6ba1b218-15a8-461f-9fa8-5dcae273eafd',
+    865.2,
+    92.0,
+    'DISCONNECTED',
+    'v1',
+    'REPEATER',
+    now
+  );
+
+  db.prepare(`
+    INSERT INTO mesh_nodes (node_id, device_id, public_key, node_name, role, latitude, longitude, snr_db, rssi_dbm, battery_percent, is_simulation, last_seen_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+  `).run(
+    'mesh-node-01',
+    'radio-heltec-v3-01',
+    'pk_mesh_node_01',
+    'Relay-Hilltop-North',
+    'ROUTER',
+    19.0760,
+    72.8777,
+    11.2,
+    -78.0,
+    92,
+    now
+  );
+
+  // 8. Initial Flight Recorder Audit Root
   db.prepare(`
     INSERT INTO audit_events (id, event_type, actor_id, action, object_id, payload_hash, previous_event_hash, current_event_hash, timestamp)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
