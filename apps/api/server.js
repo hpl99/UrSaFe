@@ -231,6 +231,9 @@ function handleApiRequest(req, res) {
       // 6. Incidents / Emergencies: List (with active vs history filtering)
       if (normPath === '/api/v1/incidents' && method === 'GET') {
         const session = authenticateRequest(req);
+        if (!session) {
+          return sendJson(401, { error: 'Authentication required to access incident registry' });
+        }
         const urlParams = parsedUrl.searchParams;
         const statusFilter = urlParams.get('status');
         const allIncidents = urlParams.get('all') === 'true';
