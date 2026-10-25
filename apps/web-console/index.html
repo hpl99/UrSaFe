@@ -91,12 +91,13 @@
       </button>
 
       <!-- Authenticated User Profile Pill -->
-      <div class="user-badge-pill" id="user-profile-badge" title="Switch User Role">
+      <div class="user-badge-pill" id="user-profile-badge" title="Click to Switch Active Persona (Citizen, Responder, Authority, Admin)" style="cursor: pointer;">
         <div class="user-avatar-circle" id="user-avatar-initials">PS</div>
         <div class="user-meta">
           <span class="user-name-text" id="user-display-name">Priya Sharma</span>
           <span class="user-role-label" id="user-display-role">CITIZEN</span>
         </div>
+        <iconify-icon icon="lucide:chevron-down" style="font-size:14px; color:var(--text-muted); margin-left:3px;"></iconify-icon>
       </div>
     </div>
   </header>
@@ -961,36 +962,278 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- MODAL 1: "WHERE AM I?" HARDWARE GNSS REPORT                               -->
+  <!-- MODAL 1: "WHERE AM I?" HARDWARE GNSS REPORT & CALIBRATION               -->
   <!-- ========================================================================= -->
   <div id="modal-where-am-i" class="modal-backdrop hidden">
-    <div class="modal-card">
+    <div class="modal-card" style="max-width: 620px;">
       <div class="modal-header">
-        <h3>Where Am I? — Hardware GNSS Fix</h3>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <iconify-icon icon="lucide:map-pin" style="color: var(--accent-orange); font-size: 22px;"></iconify-icon>
+          <h3 style="margin: 0;">Hardware GNSS Fix & Location</h3>
+        </div>
         <button class="btn-modal-close" data-close="modal-where-am-i">✕</button>
       </div>
       <div class="modal-body">
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
           <div style="background:#FAF6ED; padding:12px; border-radius:12px; border:1px solid var(--border-color);">
             <span style="font-family:var(--font-mono); font-size:10px; color:var(--text-muted); display:block;">GNSS STATUS</span>
-            <strong style="color:var(--accent-green); font-size:15px;">ACTIVE HARDWARE LOCK</strong>
+            <strong id="modal-gnss-status" style="color:var(--accent-green); font-size:14px; display:flex; align-items:center; gap:6px;">
+              <span class="ticker-status-dot"></span> <span id="modal-gnss-status-text">ACTIVE HARDWARE LOCK</span>
+            </strong>
           </div>
           <div style="background:#FAF6ED; padding:12px; border-radius:12px; border:1px solid var(--border-color);">
             <span style="font-family:var(--font-mono); font-size:10px; color:var(--text-muted); display:block;">ACCURACY RADIUS</span>
-            <strong style="font-size:15px;">±4.2 meters</strong>
+            <strong id="modal-accuracy" style="font-size:14px;">±4.2 meters</strong>
           </div>
           <div style="background:#FAF6ED; padding:12px; border-radius:12px; border:1px solid var(--border-color);">
-            <span style="font-family:var(--font-mono); font-size:10px; color:var(--text-muted); display:block;">LATITUDE</span>
-            <strong id="modal-lat" style="font-family:var(--font-mono); font-size:13.5px;">19.076000° N</strong>
+            <span style="font-family:var(--font-mono); font-size:10px; color:var(--text-muted); display:block;">CURRENT LATITUDE</span>
+            <strong id="modal-lat" style="font-family:var(--font-mono); font-size:14px;">19.076000° N</strong>
           </div>
           <div style="background:#FAF6ED; padding:12px; border-radius:12px; border:1px solid var(--border-color);">
-            <span style="font-family:var(--font-mono); font-size:10px; color:var(--text-muted); display:block;">LONGITUDE</span>
-            <strong id="modal-lon" style="font-family:var(--font-mono); font-size:13.5px;">72.877700° E</strong>
+            <span style="font-family:var(--font-mono); font-size:10px; color:var(--text-muted); display:block;">CURRENT LONGITUDE</span>
+            <strong id="modal-lon" style="font-family:var(--font-mono); font-size:14px;">72.877700° E</strong>
           </div>
         </div>
-        <p style="font-size:12.5px; color:var(--text-secondary); line-height:1.4;">
-          Coordinates are retrieved directly from the device's hardware GNSS receiver via <code>navigator.geolocation</code>. Coordinates are never fabricated or simulated in production.
+
+        <div style="background:#FAF6ED; padding:12px; border-radius:12px; border:1px solid var(--border-color); margin-bottom:16px;">
+          <span style="font-family:var(--font-mono); font-size:10px; color:var(--text-muted); display:block; margin-bottom:4px;">REVERSE-GEOCODED ADDRESS</span>
+          <strong id="modal-resolved-address" style="font-size:13px; color:var(--text-primary); line-height:1.4; display:block;">
+            Santacruz West, Mumbai Suburban, Maharashtra, India
+          </strong>
+        </div>
+
+        <!-- Quick GPS Trigger -->
+        <div style="display:flex; gap:10px; margin-bottom:18px;">
+          <button id="btn-acquire-real-gps" class="btn-broadcast-distress" style="flex:1; padding:10px; font-size:13px; background:var(--accent-green); border-color:var(--accent-green);">
+            <iconify-icon icon="lucide:crosshair"></iconify-icon>
+            <span>Request Device GPS (Browser Location)</span>
+          </button>
+        </div>
+
+        <!-- Location Presets & Custom Coordinates Override -->
+        <div style="border-top:1px solid var(--border-color); padding-top:14px;">
+          <span style="font-family:var(--font-mono); font-size:11px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; display:block; margin-bottom:8px;">
+            Quick Tactical Presets (Recenter Map Anywhere)
+          </span>
+          <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
+            <button class="layer-pill btn-preset-loc" data-lat="28.6508" data-lon="77.2300" data-city="Old Delhi (Chandni Chowk)">📍 Delhi (Central)</button>
+            <button class="layer-pill btn-preset-loc" data-lat="19.0760" data-lon="72.8777" data-city="Santacruz, Mumbai">📍 Mumbai (Milan Subway)</button>
+            <button class="layer-pill btn-preset-loc" data-lat="12.9716" data-lon="77.5946" data-city="Bengaluru, Karnataka">📍 Bengaluru</button>
+            <button class="layer-pill btn-preset-loc" data-lat="22.5726" data-lon="88.3639" data-city="Kolkata, West Bengal">📍 Kolkata</button>
+            <button class="layer-pill btn-preset-loc" data-lat="13.0827" data-lon="80.2707" data-city="Chennai, Tamil Nadu">📍 Chennai</button>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr auto; gap:8px; align-items:end;">
+            <div>
+              <label style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted); display:block; margin-bottom:3px;">CUSTOM LATITUDE</label>
+              <input type="number" id="input-custom-lat" step="0.0001" placeholder="e.g. 28.6139" style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid var(--border-color); font-family:var(--font-mono); font-size:12px;">
+            </div>
+            <div>
+              <label style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted); display:block; margin-bottom:3px;">CUSTOM LONGITUDE</label>
+              <input type="number" id="input-custom-lon" step="0.0001" placeholder="e.g. 77.2090" style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid var(--border-color); font-family:var(--font-mono); font-size:12px;">
+            </div>
+            <button id="btn-apply-custom-coords" class="btn-view-details" style="height:36px; padding:0 14px; font-size:12px;">
+              Apply Coords
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: HARDWARE CONNECTION CENTER & BLUETOOTH BLE SCANNER                 -->
+  <!-- ========================================================================= -->
+  <div id="modal-connection-center" class="modal-backdrop hidden">
+    <div class="modal-card modal-large" style="max-width: 820px; max-height: 88vh; overflow-y: auto;">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <iconify-icon icon="lucide:bluetooth" style="color:#007AFF; font-size:24px;"></iconify-icon>
+          <div>
+            <h3 style="margin:0; font-family:var(--font-display);">Hardware Connection Center</h3>
+            <span style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted);">UrSafe Custom BLE Service UUID: 0xFE26 | LoRa PHY 868 MHz</span>
+          </div>
+        </div>
+        <button class="btn-modal-close" data-close="modal-connection-center">✕</button>
+      </div>
+      <div class="modal-body" style="display:flex; flex-direction:column; gap:18px;">
+        <!-- Bluetooth Control Strip -->
+        <div style="display:flex; justify-content:space-between; align-items:center; background:#FAF6ED; padding:12px 18px; border-radius:14px; border:1px solid var(--border-color); flex-wrap:wrap; gap:12px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div class="ticker-status-dot" style="background:#007AFF;"></div>
+            <span style="font-weight:700; font-size:13px;" id="ble-system-status">Bluetooth BLE Subsystem Ready</span>
+            <span class="badge-priority-pill" style="background:rgba(0,122,255,0.12); color:#007AFF; font-size:10px;">Web Bluetooth</span>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button id="btn-scan-web-bluetooth" class="btn-broadcast-distress" style="padding:8px 14px; font-size:12px; background:#007AFF; border-color:#007AFF;">
+              <iconify-icon icon="lucide:search"></iconify-icon>
+              <span>Scan Web BLE (0xFE26)</span>
+            </button>
+            <button id="btn-refresh-devices" class="btn-view-details" style="padding:8px 14px; font-size:12px;">
+              <iconify-icon icon="lucide:refresh-cw"></iconify-icon>
+              <span>Refresh Registry</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Category 1: UrSafe BLE Nodes (Service 0xFE26) -->
+        <div class="device-category-box">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <iconify-icon icon="lucide:radio" style="color:var(--accent-green); font-size:18px;"></iconify-icon>
+              <h4 style="margin:0; font-size:14px; font-weight:700;">Nearby UrSafe Peer Nodes (BLE Service 0xFE26)</h4>
+            </div>
+            <span class="badge-priority-pill standard" id="count-ursafe-nodes">3 Nodes</span>
+          </div>
+          <div id="list-ursafe-nodes" style="display:flex; flex-direction:column; gap:10px;">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Category 2: Compatible Off-Grid Radios (Meshtastic SX1262 LoRa) -->
+        <div class="device-category-box">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <iconify-icon icon="lucide:cpu" style="color:var(--accent-orange); font-size:18px;"></iconify-icon>
+              <h4 style="margin:0; font-size:14px; font-weight:700;">Compatible Hardware Radios (Meshtastic SX1262 LoRa)</h4>
+            </div>
+            <span class="badge-priority-pill urgent" id="count-radios">2 Radios</span>
+          </div>
+          <div id="list-compatible-radios" style="display:flex; flex-direction:column; gap:10px;">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Category 3: Other Nearby Wireless Peripherals (Incompatible) -->
+        <div class="device-category-box" style="opacity:0.85;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <iconify-icon icon="lucide:headphones" style="color:var(--text-muted); font-size:18px;"></iconify-icon>
+              <h4 style="margin:0; font-size:14px; font-weight:700;">Other Wireless Peripherals (Consumer Devices)</h4>
+            </div>
+            <span class="badge-priority-pill" style="background:#F0E6D2; color:var(--text-muted); font-size:10px;">Filtered</span>
+          </div>
+          <div id="list-other-devices" style="display:flex; flex-direction:column; gap:8px;">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: SYSTEM HEALTH & CRYPTOGRAPHIC FLIGHT RECORDER AUDIT                -->
+  <!-- ========================================================================= -->
+  <div id="modal-system-health" class="modal-backdrop hidden">
+    <div class="modal-card modal-large" style="max-width: 760px; max-height: 85vh; overflow-y: auto;">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <iconify-icon icon="lucide:activity" style="color:var(--accent-green); font-size:24px;"></iconify-icon>
+          <div>
+            <h3 style="margin:0; font-family:var(--font-display);">System Health & Flight Recorder Audit</h3>
+            <span style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted);">Tamper-Evident SHA-256 Hash Chain Integrity</span>
+          </div>
+        </div>
+        <button class="btn-modal-close" data-close="modal-system-health">✕</button>
+      </div>
+      <div class="modal-body" style="display:flex; flex-direction:column; gap:16px;">
+        <!-- Status Tiles -->
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px;">
+          <div style="background:#FAF6ED; padding:14px; border-radius:12px; border:1px solid var(--border-color);">
+            <span style="font-size:10px; font-family:var(--font-mono); color:var(--text-muted); display:block;">COORDINATION API</span>
+            <strong id="health-api-status" style="color:var(--accent-green); font-size:15px;">ONLINE (200 OK)</strong>
+            <span style="font-size:11px; color:var(--text-secondary); display:block; margin-top:2px;">Node.js SQLite Hub</span>
+          </div>
+          <div style="background:#FAF6ED; padding:14px; border-radius:12px; border:1px solid var(--border-color);">
+            <span style="font-size:10px; font-family:var(--font-mono); color:var(--text-muted); display:block;">LORA MESH TOPOLOGY</span>
+            <strong id="health-mesh-status" style="color:var(--accent-orange); font-size:15px;">868 MHz LoRa</strong>
+            <span id="health-mesh-nodes" style="font-size:11px; color:var(--text-secondary); display:block; margin-top:2px;">4 Active Base Stations</span>
+          </div>
+          <div style="background:#FAF6ED; padding:14px; border-radius:12px; border:1px solid var(--border-color);">
+            <span style="font-size:10px; font-family:var(--font-mono); color:var(--text-muted); display:block;">FLIGHT RECORDER</span>
+            <strong id="health-audit-status" style="color:var(--accent-green); font-size:15px;">CHAIN INTACT</strong>
+            <span id="health-audit-length" style="font-size:11px; color:var(--text-secondary); display:block; margin-top:2px;">Verified 100% Intact</span>
+          </div>
+        </div>
+
+        <!-- Audit Trail Stream -->
+        <div style="background:#FAF6ED; padding:14px; border-radius:14px; border:1px solid var(--border-color);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h4 style="margin:0; font-size:13px; font-weight:700;">Immutable Audit Ledger (Recent Events)</h4>
+            <span style="font-size:10px; font-family:var(--font-mono); color:var(--text-muted);">SHA-256 Event Chain</span>
+          </div>
+          <div id="audit-events-stream" style="display:flex; flex-direction:column; gap:8px; max-height:280px; overflow-y:auto;">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: PERSONA & ROLE SWITCHER (CITIZEN / RESPONDER / AUTHORITY / ADMIN)   -->
+  <!-- ========================================================================= -->
+  <div id="modal-persona-select" class="modal-backdrop hidden">
+    <div class="modal-card" style="max-width: 520px;">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <iconify-icon icon="lucide:user-check" style="color:var(--accent-orange); font-size:22px;"></iconify-icon>
+          <h3 style="margin:0; font-family:var(--font-display);">Switch Active Persona</h3>
+        </div>
+        <button class="btn-modal-close" data-close="modal-persona-select">✕</button>
+      </div>
+      <div class="modal-body" style="display:flex; flex-direction:column; gap:12px;">
+        <p style="font-size:12.5px; color:var(--text-secondary); margin:0;">
+          Select any role to automatically authenticate with the backend via JWT Bearer tokens and unlock role-based capabilities:
         </p>
+
+        <!-- Citizen -->
+        <div class="persona-option-card" data-username="citizen_priya" data-role="CITIZEN" data-name="Priya Sharma" data-initials="PS" style="cursor:pointer; padding:12px 16px; border-radius:12px; border:1px solid var(--border-color); background:#FFFFFF; display:flex; align-items:center; justify-content:space-between; transition:all 0.2s ease;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div class="user-avatar-circle" style="background:#FFE6D5; color:#D95A00;">PS</div>
+            <div>
+              <div style="font-weight:700; font-size:13.5px;">Priya Sharma</div>
+              <span class="user-role-label" style="font-size:10.5px;">CITIZEN — Victim Portal Access</span>
+            </div>
+          </div>
+          <span class="badge-priority-pill standard">Report SOS</span>
+        </div>
+
+        <!-- Responder -->
+        <div class="persona-option-card" data-username="responder_vikram" data-role="RESPONDER" data-name="Capt. Vikram Singh" data-initials="VS" style="cursor:pointer; padding:12px 16px; border-radius:12px; border:1px solid var(--border-color); background:#FFFFFF; display:flex; align-items:center; justify-content:space-between; transition:all 0.2s ease;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div class="user-avatar-circle" style="background:#E6F4EA; color:#137333;">VS</div>
+            <div>
+              <div style="font-weight:700; font-size:13.5px;">Capt. Vikram Singh</div>
+              <span class="user-role-label" style="font-size:10.5px; color:#137333;">RESPONDER — NDRF Tactical ALS</span>
+            </div>
+          </div>
+          <span class="badge-priority-pill urgent">Accept & Rescue</span>
+        </div>
+
+        <!-- Authority -->
+        <div class="persona-option-card" data-username="authority_rajesh" data-role="AUTHORITY" data-name="Commander Rajesh Kumar" data-initials="RK" style="cursor:pointer; padding:12px 16px; border-radius:12px; border:1px solid var(--border-color); background:#FFFFFF; display:flex; align-items:center; justify-content:space-between; transition:all 0.2s ease;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div class="user-avatar-circle" style="background:#E8F0FE; color:#1A73E8;">RK</div>
+            <div>
+              <div style="font-weight:700; font-size:13.5px;">Commander Rajesh Kumar</div>
+              <span class="user-role-label" style="font-size:10.5px; color:#1A73E8;">AUTHORITY — SDMA Command</span>
+            </div>
+          </div>
+          <span class="badge-priority-pill critical">Dispatch & Verify</span>
+        </div>
+
+        <!-- Admin -->
+        <div class="persona-option-card" data-username="admin_system" data-role="ADMIN" data-name="System Administrator" data-initials="SA" style="cursor:pointer; padding:12px 16px; border-radius:12px; border:1px solid var(--border-color); background:#FFFFFF; display:flex; align-items:center; justify-content:space-between; transition:all 0.2s ease;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div class="user-avatar-circle" style="background:#F1F3F4; color:#3C4043;">SA</div>
+            <div>
+              <div style="font-weight:700; font-size:13.5px;">System Administrator</div>
+              <span class="user-role-label" style="font-size:10.5px;">ADMIN — Global Orchestration</span>
+            </div>
+          </div>
+          <span class="badge-priority-pill standard">Full RBAC</span>
+        </div>
       </div>
     </div>
   </div>

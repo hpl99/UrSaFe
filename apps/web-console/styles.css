@@ -3339,6 +3339,7 @@ body.ursafe-theme {
   color: #FFFFFF;
   box-shadow: 0 2px 6px rgba(255, 139, 61, 0.35);
 }
+<<<<<<< HEAD
 
 /* Training Mode Full-Width Banner */
 .training-banner {
@@ -3360,11 +3361,57 @@ body.ursafe-theme {
 }
 
 .training-banner-content {
+=======
+<<<<<<< HEAD
+
+/* ========================================================================= */
+/* HARDWARE CONNECTION CENTER & BLUETOOTH BLE COMPONENT STYLES              */
+/* ========================================================================= */
+.device-category-box {
+  background: #FFFFFF;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.device-item-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: #FAF6ED;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.device-item-card:hover {
+  border-color: var(--accent-orange);
+  background: #FFFDF9;
+  transform: translateY(-1px);
+}
+
+.device-item-card.connected {
+  border-left: 4px solid var(--accent-green);
+  background: #F4FBF7;
+}
+
+.device-item-card.incompatible {
+  opacity: 0.65;
+  background: #F8F5F0;
+}
+
+.device-meta-group {
+>>>>>>> ece2da3b08329b23ed48edd26b04c7df06397e4f
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
+<<<<<<< HEAD
 .training-banner-btn {
   background: #FFFFFF;
   color: #DC2626;
@@ -3397,4 +3444,41 @@ body.ursafe-theme {
 .char-counter-text.over-budget {
   color: #DC2626 !important;
   font-weight: 800;
+=======
+.device-icon-bubble {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #FFFFFF;
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--accent-orange);
+}
+
+.device-telemetry-pill {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: #FFFFFF;
+  border: 1px solid var(--border-color);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.persona-option-card:hover {
+  border-color: var(--accent-orange) !important;
+  background: #FAF6ED !important;
+  transform: translateX(4px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-preset-loc:hover {
+  border-color: var(--accent-orange);
+  color: var(--accent-orange);
+>>>>>>> ece2da3b08329b23ed48edd26b04c7df06397e4f
 }
