@@ -966,6 +966,90 @@
     </div>
   </div>
 
+  <!-- ========================================================================= -->
+  <!-- MODAL: COMPREHENSIVE CASE DETAIL VIEW                                     -->
+  <!-- ========================================================================= -->
+  <div id="modal-case-detail" class="modal-backdrop hidden">
+    <div class="modal-card modal-large" style="max-width: 900px; max-height: 85vh; overflow-y: auto;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="modal-title-group" style="display: flex; align-items: center; gap: 12px;">
+          <h3 id="cd-title" style="margin: 0; font-family: var(--font-display);">CASE #INC-2026-000042</h3>
+          <span class="status-badge" id="cd-status-badge">VERIFIED & CLOSED</span>
+        </div>
+        <button class="modal-close" id="btn-close-case-detail">✕</button>
+      </div>
+      <div class="modal-body case-detail-layout" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding-top: 15px;">
+        <!-- Left Column: Incident Summary, Location, Responder & Verification -->
+        <div class="cd-col-meta" style="display: flex; flex-direction: column; gap: 15px;">
+          <div class="card" style="padding: 15px; border: 1px solid var(--border-color); border-radius: 12px; background: #FFFFFF;">
+            <h4 style="margin-top: 0; color: var(--primary-orange); border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">Incident Details</h4>
+            <div class="detail-row"><span class="k" style="color: var(--text-secondary);">Category:</span> <strong id="cd-category">MEDICAL</strong></div>
+            <div class="detail-row"><span class="k" style="color: var(--text-secondary);">Urgency:</span> <span class="urgency-pill pill-critical" id="cd-urgency">CRITICAL</span></div>
+            <div class="detail-row"><span class="k" style="color: var(--text-secondary);">Victims:</span> <span id="cd-victims">1 person</span></div>
+            <div class="detail-row"><span class="k" style="color: var(--text-secondary);">Reporter:</span> <span id="cd-reporter">Priya Sharma (CITIZEN)</span></div>
+            <div class="detail-row"><span class="k" style="color: var(--text-secondary);">Reported At:</span> <span id="cd-created">25 Oct 2026, 23:12</span></div>
+            <div class="detail-row" style="flex-direction: column; align-items: flex-start; margin-top: 6px;">
+              <span class="k" style="color: var(--text-secondary);">Description:</span>
+              <p id="cd-desc" style="margin: 4px 0 0 0; font-size: 13px; line-height: 1.4; color: var(--text-primary);">Trapped on 1st floor roof</p>
+            </div>
+          </div>
+
+          <div class="card" style="padding: 15px; border: 1px solid var(--border-color); border-radius: 12px; background: #FFFFFF;">
+            <h4 style="margin-top: 0; color: var(--primary-orange); border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">Exact Location (GPS Source of Truth)</h4>
+            <div class="detail-row"><span class="k" style="color: var(--text-secondary);">Coordinates:</span> <strong id="cd-coords" style="font-family: var(--font-mono);">28.650805° N, 77.230014° E</strong></div>
+            <div class="detail-row"><span class="k" style="color: var(--text-secondary);">Accuracy:</span> <span id="cd-acc">±8 meters</span></div>
+            <div class="detail-row" style="flex-direction: column; align-items: flex-start; margin-top: 6px;">
+              <span class="k" style="color: var(--text-secondary);">Resolved Address:</span>
+              <span id="cd-address" style="margin-top: 4px; font-size: 13px; color: var(--text-primary);">Chandni Chowk, Old Delhi, Delhi 110006, India</span>
+            </div>
+          </div>
+
+          <div class="card" style="padding: 15px; border: 1px solid var(--border-color); border-radius: 12px; background: #FFFFFF;">
+            <h4 style="margin-top: 0; color: var(--primary-orange); border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">Assigned Tactical Responder</h4>
+            <div class="detail-row"><span class="k" style="color: var(--text-secondary);">Unit / Medic:</span> <strong id="cd-responder">Capt. Vikram Singh</strong></div>
+            <div class="detail-row"><span class="k" style="color: var(--text-secondary);">Badge:</span> <span id="cd-badge">NDRF-B-108</span></div>
+            <div class="detail-row"><span class="k" style="color: var(--text-secondary);">Specialization:</span> <span id="cd-spec">TACTICAL_ALS_PARAMEDIC</span></div>
+          </div>
+
+          <div class="card" id="cd-verification-box" style="padding: 15px; border: 1px solid var(--border-color); border-radius: 12px; background: #FFFFFF;">
+            <h4 style="margin-top: 0; color: var(--primary-orange); border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">Authority Verification Decision</h4>
+            <div class="detail-row"><span class="k" style="color: var(--text-secondary);">Decision:</span> <strong id="cd-verif-decision" style="color:var(--accent-green);">VERIFIED & APPROVED</strong></div>
+            <div class="detail-row"><span class="k" style="color: var(--text-secondary);">Verified By:</span> <span id="cd-verifier">Commander Rajesh Kumar (SDMA)</span></div>
+            <div class="detail-row"><span class="k" style="color: var(--text-secondary);">Verified At:</span> <span id="cd-verif-time">25 Oct 2026, 23:27</span></div>
+            <div class="detail-row" style="flex-direction: column; align-items: flex-start; margin-top: 6px;">
+              <span class="k" style="color: var(--text-secondary);">Decision Notes / Reason:</span>
+              <span id="cd-verif-notes" style="margin-top: 4px; font-size: 13px; color: var(--text-primary);">Photographic evidence matches coordinates.</span>
+            </div>
+          </div>
+
+          <!-- Authority Reopen Action -->
+          <div class="cd-authority-actions" id="cd-auth-actions" style="margin-top: 5px;">
+            <button id="btn-reopen-case" class="btn-broadcast-distress" style="background:#433422; color:#FFFBF2; border:1px solid var(--primary-orange); padding:10px 16px;">
+              ⚠️ Reopen Historical Case (Authority Action)
+            </button>
+          </div>
+        </div>
+
+        <!-- Right Column: Chronological State Timeline & Attached Evidence -->
+        <div class="cd-col-timeline" style="display: flex; flex-direction: column; gap: 15px;">
+          <div class="card" style="padding: 15px; border: 1px solid var(--border-color); border-radius: 12px; background: #FFFFFF;">
+            <h4 style="margin-top: 0; color: var(--primary-orange); border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">Complete Chronological Lifecycle Timeline</h4>
+            <div class="cd-timeline-container" id="cd-timeline-events" style="max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+              <!-- Populated dynamically with full state transitions -->
+            </div>
+          </div>
+
+          <div class="card" style="padding: 15px; border: 1px solid var(--border-color); border-radius: 12px; background: #FFFFFF;">
+            <h4 style="margin-top: 0; color: var(--primary-orange); border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">Rescue Evidence & Cryptographic Hashes</h4>
+            <div class="cd-evidence-gallery" id="cd-evidence-list" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+              <!-- Populated dynamically with evidence cards -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- UrSafe Client Logic -->
   <script src="app.js?v=4"></script>
 </body>

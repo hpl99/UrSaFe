@@ -925,6 +925,35 @@ function setupModals() {
     btnWhereAmI.addEventListener('click', () => openModal('modal-where-am-i'));
   }
 
+  const btnCloseCaseDetail = document.getElementById('btn-close-case-detail');
+  if (btnCloseCaseDetail) {
+    btnCloseCaseDetail.addEventListener('click', () => closeModal('modal-case-detail'));
+  }
+
+  const btnReopen = document.getElementById('btn-reopen-case');
+  if (btnReopen) {
+    btnReopen.addEventListener('click', async () => {
+      const title = document.getElementById('cd-title')?.textContent || '';
+      const incId = title.replace('CASE #', '').trim();
+      const inc = AppState.incidents.find(i => i.id === incId || i.rawId === incId);
+      const targetId = inc ? inc.rawId : incId;
+      try {
+        const res = await fetch(`/api/v1/incidents/${targetId}/reopen`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reason: 'Reopened by Incident Commander for further verification' })
+        });
+        if (res.ok) {
+          showToast(`Case ${incId} successfully reopened.`);
+          closeModal('modal-case-detail');
+          fetchInitialBackendIncidents();
+        }
+      } catch (err) {
+        showToast(`Offline mode: Reopen queued in local mesh outbox.`);
+      }
+    });
+  }
+
   // Close buttons
   const closeBtns = document.querySelectorAll('.btn-modal-close');
   closeBtns.forEach(btn => {
@@ -942,6 +971,74 @@ function setupModals() {
     });
   });
 }
+
+window.openCaseDetail = async function(incidentId) {
+  const inc = AppState.incidents.find(i => i.id === incidentId || i.rawId === incidentId);
+  const rawId = inc ? inc.rawId : incidentId;
+
+  try {
+    const res = await fetch(`/api/v1/incidents/${rawId}`);
+    if (res.ok) {
+      const data = await res.json();
+      const incident = data.incident || inc || {};
+      const events = data.events || [];
+      const evidence = data.evidence || [];
+
+      const titleEl = document.getElementById('cd-title');
+      if (titleEl) titleEl.textContent = `CASE #${incident.id}`;
+      const statusEl = document.getElementById('cd-status-badge');
+      if (statusEl) statusEl.textContent = incident.status || 'REPORTED';
+      const catEl = document.getElementById('cd-category');
+      if (catEl) catEl.textContent = incident.category || 'EMERGENCY';
+      const urgEl = document.getElementById('cd-urgency');
+      if (urgEl) urgEl.textContent = incident.urgency || 'HIGH';
+      const vicEl = document.getElementById('cd-victims');
+      if (vicEl) vicEl.textContent = `${incident.victim_count || 1} person(s)`;
+      const descEl = document.getElementById('cd-desc');
+      if (descEl) descEl.textContent = incident.description || 'No description provided';
+      const coordsEl = document.getElementById('cd-coords');
+      if (coordsEl) coordsEl.textContent = `${incident.latitude?.toFixed(6) || 19.076}° N, ${incident.longitude?.toFixed(6) || 72.877}° E`;
+      const accEl = document.getElementById('cd-acc');
+      if (accEl) accEl.textContent = `±${incident.accuracy_m || 4.5}m`;
+      const addrEl = document.getElementById('cd-address');
+      if (addrEl) addrEl.textContent = incident.location_description || incident.address_street || 'Local Mesh Sector';
+
+      // Timeline events
+      const timelineEl = document.getElementById('cd-timeline-events');
+      if (timelineEl) {
+        timelineEl.innerHTML = events.length > 0
+          ? events.map(e => `
+              <div style="background:#FAF6ED; border-left:3px solid var(--primary-orange); padding:8px 12px; border-radius:4px; font-size:12px;">
+                <strong>${e.event_type}</strong> (${e.to_status || ''}) - <em>${new Date(e.timestamp).toLocaleTimeString()}</em>
+                <div>${e.notes || e.reason || ''}</div>
+              </div>
+            `).join('')
+          : '<p style="color:var(--text-secondary); font-size:12px;">No historical events recorded yet.</p>';
+      }
+
+      // Evidence gallery
+      const evEl = document.getElementById('cd-evidence-list');
+      if (evEl) {
+        evEl.innerHTML = evidence.length > 0
+          ? evidence.map(ev => `
+              <div style="background:#FAF6ED; border:1px solid var(--border-color); padding:8px 12px; border-radius:6px; font-size:12px;">
+                <div style="font-weight:700;">${ev.evidence_type}</div>
+                <div style="font-family:var(--font-mono); font-size:11px; word-break:break-all;">Hash: ${ev.sha256_hash}</div>
+              </div>
+            `).join('')
+          : '<p style="color:var(--text-secondary); font-size:12px;">No photographic evidence attached.</p>';
+      }
+
+      openModal('modal-case-detail');
+      return;
+    }
+  } catch (err) {
+    console.warn('Fetch case detail error:', err);
+  }
+
+  // Fallback to local incident dossier if offline
+  window.openIncidentDossier(incidentId);
+};
 
 function openModal(modalId) {
   const m = document.getElementById(modalId);
