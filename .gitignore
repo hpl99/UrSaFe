@@ -1,0 +1,50 @@
+# UrSafe Monorepo - Root Git Ignore
+
+# Runtimes & Dependencies
+node_modules/
+.npm/
+__pycache__/
+*.py[cod]
+*$py.class
+*.env
+.venv/
+env/
+venv/
+ENV/
+target/
+Cargo.lock
+
+# Build & Bundles
+dist/
+build/
+out/
+.next/
+*.apk
+*.aab
+.gradle/
+local.properties
+
+# IDE & OS
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs & Diagnostics
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# Test outputs
+scratch/
+test-results/
