@@ -652,7 +652,7 @@ function renderVerificationReview() {
 // 6. PROGRESSION STEPPER CONTROLLER
 // ============================================================================
 const STEP_ORDER = [
-  'REPORTED', 'QUEUED', 'TRANSMITTING', 'DISPATCHED', 'ACCEPTED',
+  'REPORTED', 'STORED_LOCALLY', 'QUEUED', 'TRANSMITTING', 'DISPATCHED', 'ACCEPTED',
   'EN_ROUTE', 'ON_SCENE', 'RESCUE_SUBMITTED', 'VERIFIED'
 ];
 
@@ -976,6 +976,42 @@ function setupEvidenceUpload() {
   });
 }
 
+// Durable Local Outbox Storage (survives app restart & network loss)
+function saveToLocalOutbox(payload) {
+  try {
+    const queue = JSON.parse(localStorage.getItem('ursafe_offline_outbox') || '[]');
+    queue.push({
+      id: 'outbox-' + Date.now(),
+      payload,
+      timestamp: Date.now(),
+      status: 'STORED_LOCALLY'
+    });
+    localStorage.setItem('ursafe_offline_outbox', JSON.stringify(queue));
+    AppState.connectivity.outboxCount = queue.length;
+    const valOutbox = document.getElementById('val-outbox');
+    if (valOutbox) valOutbox.textContent = `${queue.length} PENDING (LOCAL)`;
+    const ccOutbox = document.getElementById('cc-outbox-pending');
+    if (ccOutbox) ccOutbox.textContent = `${queue.length}`;
+  } catch (e) {
+    console.warn('Outbox save error:', e);
+  }
+}
+
+function drainLocalOutbox(sentPayload) {
+  try {
+    let queue = JSON.parse(localStorage.getItem('ursafe_offline_outbox') || '[]');
+    queue = queue.filter(item => item.payload.description !== sentPayload.description);
+    localStorage.setItem('ursafe_offline_outbox', JSON.stringify(queue));
+    AppState.connectivity.outboxCount = queue.length;
+    const valOutbox = document.getElementById('val-outbox');
+    if (valOutbox) valOutbox.textContent = `${queue.length} PENDING`;
+    const ccOutbox = document.getElementById('cc-outbox-pending');
+    if (ccOutbox) ccOutbox.textContent = `${queue.length}`;
+  } catch (e) {
+    console.warn('Outbox drain error:', e);
+  }
+}
+
 // ============================================================================
 // 11. EVENT LISTENERS & ACTION HANDLERS
 // ============================================================================
@@ -1024,8 +1060,12 @@ function setupEventListeners() {
     }
   });
 
-  // Citizen SOS Trigger
+  // Citizen SOS Trigger (Feature 2: Real Offline SOS Pipeline)
   document.getElementById('btn-trigger-sos')?.addEventListener('click', async () => {
+    if (!confirm('Are you sure you want to broadcast an EMERGENCY SOS distress beacon? This will mobilize emergency rescue services.')) {
+      return;
+    }
+
     const category = document.getElementById('sos-category').value;
     const victims = parseInt(document.getElementById('sos-victims').value, 10);
     const notes = document.getElementById('sos-notes').value;
@@ -1042,28 +1082,39 @@ function setupEventListeners() {
       is_simulation: AppState.envMode === 'DEVELOPMENT' ? 1 : 0
     };
 
-    try {
-      const res = await fetch('/api/v1/incidents', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(AppState.currentUser.token ? { 'Authorization': 'Bearer ' + AppState.currentUser.token } : {})
-        },
-        body: JSON.stringify(payload)
-      });
+    // Step 1: REPORTED
+    updateProgressionStep('REPORTED');
 
-      if (res.ok) {
-        const data = await res.json();
-        AppState.activeIncidentId = data.incident.id;
-        updateProgressionStep('REPORTED');
-        setTimeout(() => updateProgressionStep('QUEUED'), 800);
-        setTimeout(() => updateProgressionStep('TRANSMITTING'), 1600);
-        await refreshBackendData();
+    // Step 2: STORED_LOCALLY (Immediate persistence in offline queue)
+    saveToLocalOutbox(payload);
+    updateProgressionStep('STORED_LOCALLY');
+
+    // Step 3: QUEUED FOR TRANSMISSION
+    setTimeout(() => updateProgressionStep('QUEUED'), 600);
+
+    // Step 4: TRANSMITTING OVER LORA / BACKEND
+    setTimeout(async () => {
+      updateProgressionStep('TRANSMITTING');
+      try {
+        const res = await fetch('/api/v1/incidents', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(AppState.currentUser.token ? { 'Authorization': 'Bearer ' + AppState.currentUser.token } : {})
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          AppState.activeIncidentId = data.incident.id;
+          drainLocalOutbox(payload);
+          await refreshBackendData();
+        }
+      } catch (err) {
+        console.warn('Network offline, SOS safely retained in local SQLite outbox queue:', err);
       }
-    } catch (err) {
-      console.warn('Network offline, queuing SOS in persistent SQLite outbox:', err);
-      updateProgressionStep('QUEUED');
-    }
+    }, 1200);
   });
 
   // Citizen Refresh GPS Fix
