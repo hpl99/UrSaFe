@@ -341,7 +341,8 @@ def test_database_persistence_direct_inspection(auth_sessions):
     are durably written to physical disk tables rather than held only in memory.
     """
     import sqlite3
-    db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", "ursafe_production.db")
+    db_path = os.environ.get("URSAFE_DB_PATH") or os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", "ursafe_dev.db")
+    assert "production" not in db_path.lower(), f"Refusing to inspect production database in tests: {db_path}"
     assert os.path.exists(db_path), f"SQLite database file missing at {db_path}"
 
     conn = sqlite3.connect(db_path)

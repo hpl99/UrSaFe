@@ -240,7 +240,7 @@ def test_full_incident_and_rescue_lifecycle(api_server):
     assert cosign_data["report"]["victim_signature"] == "sig_ed25519_priya_cosign_ok"
 
     # 11. Flight Recorder Audit Chain Verification
-    status, audit_data = make_request(f"{api_server}/api/v1/audit/flight-recorder")
+    status, audit_data = make_request(f"{api_server}/api/v1/audit/flight-recorder", token=auth_token)
     assert status == 200
     assert audit_data["status"] == "CHAIN_INTACT"
     assert audit_data["verified"] is True
@@ -423,7 +423,7 @@ def test_locations_and_device_presence(api_server):
     assert loc_res["location"]["accuracy_m"] == 4.1
 
     # 2. Get live locations
-    status_get, live_locs = make_request(f"{api_server}/api/v1/locations")
+    status_get, live_locs = make_request(f"{api_server}/api/v1/locations", token=resp_token)
     assert status_get == 200
     assert "responders" in live_locs
     assert "incidents" in live_locs

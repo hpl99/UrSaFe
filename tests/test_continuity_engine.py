@@ -236,11 +236,22 @@ def test_dead_letter_max_attempts():
     assert "dead-letter" in out["explanation"].lower()
 
 
+@pytest.fixture(scope="module")
+def auth_token(api_server):
+    status, login_res = make_request(
+        f"{api_server}/api/v1/auth/login",
+        method="POST",
+        data={"username": "authority_rajesh", "password": "Password123!"}
+    )
+    assert status == 200
+    return login_res["session"]["token"]
+
+
 # --- 2. REST API & Multi-Transport HTTP Integration Tests ---
 
-def test_api_cockpit_state(api_server):
+def test_api_cockpit_state(api_server, auth_token):
     """GET /api/v1/continuity/cockpit returns real transport status, active paths, and queue metrics."""
-    status, body = make_request(f"{api_server}/api/v1/continuity/cockpit")
+    status, body = make_request(f"{api_server}/api/v1/continuity/cockpit", token=auth_token)
     assert status == 200
     assert "status" in body
     assert "score" in body
@@ -252,7 +263,7 @@ def test_api_cockpit_state(api_server):
     assert body["active_paths_count"] >= 1
 
 
-def test_api_enqueue_and_delivery_lifecycle(api_server):
+def test_api_enqueue_and_delivery_lifecycle(api_server, auth_token):
     """POST /api/v1/continuity/messages enqueues P0 message and delivers it through continuity pipeline."""
     msg_id = f"test-http-p0-{int(time.time() * 1000)}"
     payload = {
@@ -267,7 +278,7 @@ def test_api_enqueue_and_delivery_lifecycle(api_server):
     }
 
     # 1. Enqueue
-    status, body = make_request(f"{api_server}/api/v1/continuity/messages", method="POST", data=payload)
+    status, body = make_request(f"{api_server}/api/v1/continuity/messages", method="POST", data=payload, token=auth_token)
     assert status == 201
     assert body["status"] == "ENQUEUED"
     assert body["message"]["message_id"] == msg_id
@@ -276,7 +287,7 @@ def test_api_enqueue_and_delivery_lifecycle(api_server):
     time.sleep(0.3)
 
     # 3. Retrieve single message detail
-    status, detail = make_request(f"{api_server}/api/v1/continuity/messages/{msg_id}")
+    status, detail = make_request(f"{api_server}/api/v1/continuity/messages/{msg_id}", token=auth_token)
     assert status == 200
     assert detail["message_id"] == msg_id
     assert detail["current_state"] in ("DELIVERED", "ACKNOWLEDGED")
@@ -287,13 +298,14 @@ def test_api_enqueue_and_delivery_lifecycle(api_server):
     assert len(detail["human_explanation"]) > 10
 
 
-def test_api_transport_status_and_failure_injection(api_server):
+def test_api_transport_status_and_failure_injection(api_server, auth_token):
     """POST /api/v1/continuity/transports/:id/status updates real transport link quality."""
     # 1. Degrade LoRa transport
     status, body = make_request(
         f"{api_server}/api/v1/continuity/transports/tr-lora-01/status",
         method="POST",
-        data={"status": "DEGRADED", "link_quality": "POOR", "rssi_dbm": -118.0, "snr_db": -4.2}
+        data={"status": "DEGRADED", "link_quality": "POOR", "rssi_dbm": -118.0, "snr_db": -4.2},
+        token=auth_token
     )
     assert status == 200
     assert body["transport"]["status"] == "DEGRADED"
@@ -301,7 +313,7 @@ def test_api_transport_status_and_failure_injection(api_server):
     assert body["transport"]["rssi_dbm"] == -118.0
 
     # 2. Verify Cockpit reflects the change
-    status, cockpit = make_request(f"{api_server}/api/v1/continuity/cockpit")
+    status, cockpit = make_request(f"{api_server}/api/v1/continuity/cockpit", token=auth_token)
     lora = next(t for t in cockpit["transports"] if t["transport_id"] == "tr-lora-01")
     assert lora["status"] == "DEGRADED"
     assert lora["link_quality"] == "POOR"
@@ -310,12 +322,13 @@ def test_api_transport_status_and_failure_injection(api_server):
     status, _ = make_request(
         f"{api_server}/api/v1/continuity/transports/tr-lora-01/status",
         method="POST",
-        data={"status": "CONNECTED", "link_quality": "GOOD", "rssi_dbm": -74.0, "snr_db": 8.5}
+        data={"status": "CONNECTED", "link_quality": "GOOD", "rssi_dbm": -74.0, "snr_db": 8.5},
+        token=auth_token
     )
     assert status == 200
 
 
-def test_api_manual_retry_and_ack(api_server):
+def test_api_manual_retry_and_ack(api_server, auth_token):
     """POST manual retry and explicit human ACK endpoints."""
     msg_id = f"test-ack-{int(time.time() * 1000)}"
     make_request(f"{api_server}/api/v1/continuity/messages", method="POST", data={
@@ -323,11 +336,11 @@ def test_api_manual_retry_and_ack(api_server):
         "priority": 1,
         "message_type": "RESPONDER_ASSIGNMENT",
         "payload": { "responder": "Aarav", "badge": "RESP-001" }
-    })
+    }, token=auth_token)
     time.sleep(0.2)
 
     # Trigger manual retry
-    status, retry_res = make_request(f"{api_server}/api/v1/continuity/messages/{msg_id}/retry", method="POST")
+    status, retry_res = make_request(f"{api_server}/api/v1/continuity/messages/{msg_id}/retry", method="POST", token=auth_token)
     assert status == 200
     assert retry_res["success"] is True
 
@@ -335,13 +348,13 @@ def test_api_manual_retry_and_ack(api_server):
     status, ack_res = make_request(f"{api_server}/api/v1/continuity/messages/{msg_id}/ack", method="POST", data={
         "ack_level": "HUMAN_ACK",
         "remote_actor": "user-responder-42"
-    })
+    }, token=auth_token)
     assert status == 200
     assert ack_res["message"]["ack_level"] == "HUMAN_ACK"
     assert ack_res["message"]["current_state"] == "ACKNOWLEDGED"
 
 
-def test_api_data_mule_sync(api_server):
+def test_api_data_mule_sync(api_server, auth_token):
     """POST /api/v1/continuity/sync processes bundles with inbound deduplication."""
     sync_id_1 = f"mule-msg-1-{int(time.time() * 1000)}"
     sync_id_2 = f"mule-msg-2-{int(time.time() * 1000)}"
@@ -355,7 +368,7 @@ def test_api_data_mule_sync(api_server):
     status, receipt = make_request(f"{api_server}/api/v1/continuity/sync", method="POST", data={
         "carrier_device": "mule-carrier-jeep-7",
         "bundle": bundle
-    })
+    }, token=auth_token)
 
     assert status == 200
     assert receipt["received_total"] == 3
