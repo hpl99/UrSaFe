@@ -108,6 +108,17 @@ function handleApiRequest(req, res) {
         });
       }
 
+      // Configuration & GIS Status Endpoint
+      if (pathname === '/api/v1/config' && method === 'GET') {
+        const key = process.env.GOOGLE_MAPS_API_KEY || '';
+        return sendJson(200, {
+          googleMapsApiKey: key,
+          hasGoogleMaps: Boolean(key),
+          status: key ? 'CONFIGURED' : 'NOT_CONFIGURED',
+          provider: key ? 'GOOGLE_MAPS' : 'OPENSTREETMAP_OFFLINE'
+        });
+      }
+
       // 2. Authentication: Register
       if (pathname === '/api/v1/auth/register' && method === 'POST') {
         const body = await parseJsonBody();

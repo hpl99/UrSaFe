@@ -125,7 +125,9 @@ const SeedUsers = {
 // INITIALIZATION
 // ============================================================================
 document.addEventListener('DOMContentLoaded', () => {
+  updateGoogleMapsStatusUI();
   setupNavigation();
+  setupMapLayerSwitchers();
   setupLocationSensors();
   setupVictimPortal();
   setupResponderPortal();
@@ -304,6 +306,92 @@ function updateLocationDisplay() {
   if (modalLon) modalLon.textContent = `${AppState.location.lon.toFixed(6)}° E`;
 }
 
+// ============================================================================
+// GOOGLE MAPS TILE LAYER BUILDER & LAYER SWITCHING
+// ============================================================================
+function getGoogleMapsKey() {
+  return window.URSAFE_CONFIG?.googleMapsApiKey || '';
+}
+
+function updateGoogleMapsStatusUI() {
+  const badge = document.getElementById('badge-google-maps');
+  const label = document.getElementById('label-google-maps-status');
+  const key = getGoogleMapsKey();
+  if (badge && label) {
+    if (key) {
+      label.textContent = 'Google Maps Active';
+      badge.style.borderColor = '#1A73E8';
+      badge.style.color = '#1A73E8';
+      badge.title = `Google Maps API Key Connected (${key.slice(0, 8)}...)`;
+    } else {
+      label.textContent = 'Offline Mesh Tiles';
+      badge.style.borderColor = 'var(--border-color)';
+      badge.style.color = 'var(--text-secondary)';
+      badge.title = 'Offline OpenStreetMap active. Add GOOGLE_MAPS_API_KEY in .env for Google Tiles';
+    }
+  }
+}
+
+function createMapTileLayer(layerType) {
+  const key = getGoogleMapsKey();
+  if (layerType === 'google-satellite' && key) {
+    return L.tileLayer(`https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}&key=${key}`, {
+      maxZoom: 20,
+      attribution: '© Google Maps'
+    });
+  } else if (layerType === 'google-roadmap' && key) {
+    return L.tileLayer(`https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&key=${key}`, {
+      maxZoom: 20,
+      attribution: '© Google Maps'
+    });
+  } else {
+    return L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      className: 'warm-osm-tiles',
+      attribution: '© OpenStreetMap'
+    });
+  }
+}
+
+function setupMapLayerSwitchers() {
+  const layerPills = document.querySelectorAll('.layer-pill');
+  layerPills.forEach(pill => {
+    pill.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const mapName = pill.getAttribute('data-map');
+      const layerType = pill.getAttribute('data-layer');
+      const parent = pill.parentElement;
+
+      // Update active pill UI
+      if (parent) {
+        parent.querySelectorAll('.layer-pill').forEach(p => p.classList.remove('active'));
+      }
+      pill.classList.add('active');
+
+      const key = getGoogleMapsKey();
+      if ((layerType === 'google-roadmap' || layerType === 'google-satellite') && !key) {
+        showToast('Google Maps key not found. Using Offline OpenStreetMap layer.');
+        return;
+      }
+
+      // Swap tile layer on target map
+      if (mapName === 'victim' && AppState.maps.victimRadar) {
+        if (AppState.maps.victimTileLayer) {
+          AppState.maps.victimRadar.removeLayer(AppState.maps.victimTileLayer);
+        }
+        AppState.maps.victimTileLayer = createMapTileLayer(layerType).addTo(AppState.maps.victimRadar);
+        showToast(`Victim Radar: Switched to ${layerType === 'google-satellite' ? 'Google Satellite' : (layerType === 'google-roadmap' ? 'Google Maps Roadmap' : 'Offline Mesh')}`);
+      } else if (mapName === 'orchestration' && AppState.maps.orchestration) {
+        if (AppState.maps.orchestrationTileLayer) {
+          AppState.maps.orchestration.removeLayer(AppState.maps.orchestrationTileLayer);
+        }
+        AppState.maps.orchestrationTileLayer = createMapTileLayer(layerType).addTo(AppState.maps.orchestration);
+        showToast(`Central Map: Switched to ${layerType === 'google-satellite' ? 'Google Satellite' : (layerType === 'google-roadmap' ? 'Google Maps Roadmap' : 'Offline Mesh')}`);
+      }
+    });
+  });
+}
+
 function initVictimRadarMap() {
   const mapContainer = document.getElementById('victim-radar-map');
   if (!mapContainer || AppState.maps.victimRadar) return;
@@ -316,11 +404,9 @@ function initVictimRadarMap() {
       attributionControl: false
     });
 
-    // Warm compassionate OpenStreetMap tiles with offline fallback
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      className: 'warm-osm-tiles'
-    }).addTo(AppState.maps.victimRadar);
+    // Default to Google Maps Roadmap if API key is present, otherwise offline warm tiles
+    const defaultLayer = getGoogleMapsKey() ? 'google-roadmap' : 'osm-mesh';
+    AppState.maps.victimTileLayer = createMapTileLayer(defaultLayer).addTo(AppState.maps.victimRadar);
 
     // Click to adjust pin
     AppState.maps.victimRadar.on('click', (e) => {
@@ -814,10 +900,9 @@ function initOrchestrationMap() {
       attributionControl: false
     });
 
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      className: 'warm-osm-tiles'
-    }).addTo(AppState.maps.orchestration);
+    // Default to Google Maps Roadmap if API key is present, otherwise offline warm tiles
+    const defaultLayer = getGoogleMapsKey() ? 'google-roadmap' : 'osm-mesh';
+    AppState.maps.orchestrationTileLayer = createMapTileLayer(defaultLayer).addTo(AppState.maps.orchestration);
 
     // Hazard Polygon Overlay
     const floodPolygon = [
