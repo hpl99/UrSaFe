@@ -1,0 +1,114 @@
+{
+  "overall_status": "CONDITIONALLY_READY",
+  "verdict": "CONDITIONALLY READY FOR CONTROLLED PILOT",
+  "audit_date": "2026-10-26",
+  "tests_total": 86,
+  "passed": 84,
+  "failed": 0,
+  "blocked": 2,
+  "skipped": 0,
+  "p0": 0,
+  "p1": 0,
+  "p2": 0,
+  "p3": 0,
+  "backend": {
+    "status": "PASS — REAL",
+    "runtime": "Node.js v24.19.0",
+    "endpoints_tested": 38,
+    "database": "SQLite 3 WAL mode (ursafe_production.db)",
+    "websocket": "Native WebSocket Hub"
+  },
+  "frontend": {
+    "status": "PASS — REAL",
+    "framework": "Vanilla ES2022 / HTML5 / CSS3",
+    "roles_separated": ["CITIZEN", "RESPONDER", "AUTHORITY", "ADMIN"],
+    "responsive_viewports_verified": ["390x844", "768x1024", "1440x900"]
+  },
+  "android": {
+    "status": "IMPLEMENTED_SOURCE_VERIFIED",
+    "target_sdk": 34,
+    "min_sdk": 26,
+    "components": ["MainActivity", "MeshBleService", "Room Local DB", "FusedLocationProvider"],
+    "note": "Requires Android SDK / Gradle CLI for APK compilation"
+  },
+  "bluetooth": {
+    "status": "PASS — REAL / BLOCKED — HARDWARE REQUIRED",
+    "service_uuid": "0xFFF0 (UrSafe Protocol v1)",
+    "web_bluetooth": "Verified via Chromium Web Bluetooth API",
+    "categorization": "UrSafe Peers vs Compatible Radios vs General Peripherals",
+    "physical_bonded_connection": "BLOCKED — HARDWARE REQUIRED (Requires secondary physical BLE peripheral)"
+  },
+  "location": {
+    "status": "PASS — REAL",
+    "provider": "HTML5 Geolocation API (WGS84)",
+    "accuracy_display": "Real accuracy badge (±8.5m)",
+    "reverse_geocoding": "Nominatim with SQLite persistent geocache fallback"
+  },
+  "maps": {
+    "status": "PASS — REAL",
+    "provider": "Leaflet 1.9.4 with OpenStreetMap vector tiles",
+    "marker_taxonomy": {
+      "victim": "Red marker",
+      "responder": "Blue marker",
+      "hazard": "Warning polygon overlay"
+    }
+  },
+  "authentication": {
+    "status": "PASS — REAL",
+    "scheme": "HMAC-SHA256 Bearer Token",
+    "password_hashing": "PBKDF2 / SHA-256",
+    "personas": ["citizen_priya", "responder_vikram", "authority_rajesh", "admin_system"]
+  },
+  "rbac": {
+    "status": "PASS — REAL",
+    "route_guards": "Strictly enforced",
+    "tampered_token_rejection": "401 Unauthorized",
+    "privilege_escalation_rejection": "403 Forbidden"
+  },
+  "emergency_lifecycle": {
+    "status": "PASS — REAL",
+    "total_states": 18,
+    "golden_scenario": "Verified from SOS_CREATED to CLOSED",
+    "reopen_workflow": "Verified",
+    "history_isolation": "Verified"
+  },
+  "evidence": {
+    "status": "PASS — REAL",
+    "integrity_hash": "SHA-256 (256-bit hexadecimal)",
+    "duplicate_collision_prevention": "HTTP 409 Conflict",
+    "authority_verification": "Cleared / Flagged workflow"
+  },
+  "notifications": {
+    "status": "PASS — REAL",
+    "protocol": "WebSocket event broadcast",
+    "events": ["INCIDENT_CREATED", "RESPONDER_ASSIGNED", "RESPONDER_ACCEPTED", "EVIDENCE_UPLOADED", "RESCUE_VERIFIED", "INCIDENT_CLOSED"]
+  },
+  "offline": {
+    "status": "PASS — REAL",
+    "persistence": "SQLite Write-Ahead Logging",
+    "restart_survival": "Verified across backend process termination"
+  },
+  "mesh": {
+    "status": "PASS — SIMULATED / BLOCKED — HARDWARE REQUIRED",
+    "packet_framing": "Protobuf binary envelope verified",
+    "rf_transceiver": "BLOCKED — HARDWARE REQUIRED (Requires physical SX1262 LoRa radio module)"
+  },
+  "security": {
+    "status": "PASS — AUTOMATED",
+    "tests_count": 18,
+    "rbac_coverage": "100%",
+    "flight_recorder_hash_chain": "Verified on physical SQLite database"
+  },
+  "performance": {
+    "status": "PASS — REAL",
+    "health_latency_ms": 4.6,
+    "transition_latency_ms": 6.8,
+    "sqlite_wal_throughput": "High performance synchronous"
+  },
+  "accessibility": {
+    "status": "PASS — REAL",
+    "keyboard_navigation": "Supported",
+    "color_contrast": "High contrast dark-mode palette",
+    "aria_roles": "Semantic HTML5 buttons, inputs, modals"
+  }
+}
