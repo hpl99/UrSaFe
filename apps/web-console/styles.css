@@ -1,5 +1,5 @@
 /* ==========================================================================
-   HEPN — Hyper-local Emergency P2P Network
+   UrSafe — Hyper-local Emergency P2P Network
    Warm Compassion Disaster Response Theme
    WCAG AAA High Contrast & Mission-Critical Responsive Design System
    ========================================================================== */
@@ -71,7 +71,7 @@
   -webkit-font-smoothing: antialiased;
 }
 
-body.hepn-theme {
+body.ursafe-theme {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   font-family: var(--font-ui);
@@ -1855,7 +1855,7 @@ body.hepn-theme {
   gap: 14px;
 }
 
-.incident-card-hepn {
+.incident-card-ursafe {
   background: #FFFFFF;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
@@ -1869,16 +1869,16 @@ body.hepn-theme {
   overflow: hidden;
 }
 
-.incident-card-hepn:hover {
+.incident-card-ursafe:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
   border-color: #D6C29E;
 }
 
 /* Left Colored Curve / Accent */
-.incident-card-hepn.priority-critical { border-left: 8px solid var(--accent-red); }
-.incident-card-hepn.priority-urgent { border-left: 8px solid var(--accent-amber); }
-.incident-card-hepn.priority-stable { border-left: 8px solid var(--accent-green); }
+.incident-card-ursafe.priority-critical { border-left: 8px solid var(--accent-red); }
+.incident-card-ursafe.priority-urgent { border-left: 8px solid var(--accent-amber); }
+.incident-card-ursafe.priority-stable { border-left: 8px solid var(--accent-green); }
 
 .distance-box-square {
   width: 64px;
@@ -1892,17 +1892,17 @@ body.hepn-theme {
   flex-shrink: 0;
 }
 
-.incident-card-hepn.priority-critical .distance-box-square {
+.incident-card-ursafe.priority-critical .distance-box-square {
   background: var(--accent-red-bg);
   color: var(--accent-red);
 }
 
-.incident-card-hepn.priority-urgent .distance-box-square {
+.incident-card-ursafe.priority-urgent .distance-box-square {
   background: var(--accent-amber-bg);
   color: var(--accent-amber);
 }
 
-.incident-card-hepn.priority-stable .distance-box-square {
+.incident-card-ursafe.priority-stable .distance-box-square {
   background: var(--accent-green-bg);
   color: var(--accent-green);
 }
@@ -2520,14 +2520,14 @@ body.hepn-theme {
   overflow-x: auto;
 }
 
-.hepn-table {
+.ursafe-table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
   font-size: 13px;
 }
 
-.hepn-table th {
+.ursafe-table th {
   background: #FAF6ED;
   padding: 12px 16px;
   font-family: var(--font-mono);
@@ -2539,14 +2539,14 @@ body.hepn-theme {
   border-bottom: 1px solid var(--border-color);
 }
 
-.hepn-table td {
+.ursafe-table td {
   padding: 14px 16px;
   border-bottom: 1px solid var(--border-color);
   color: var(--text-primary);
   vertical-align: middle;
 }
 
-.hepn-table tr:hover td {
+.ursafe-table tr:hover td {
   background: rgba(250, 246, 237, 0.6);
 }
 
@@ -2786,7 +2786,7 @@ body.hepn-theme {
   .severity-cards-grid { grid-template-columns: 1fr; }
   .additional-needs-grid { grid-template-columns: 1fr; }
   .metrics-horizontal-strip { grid-template-columns: 1fr; }
-  .incident-card-hepn { flex-direction: column; align-items: flex-start; }
+  .incident-card-ursafe { flex-direction: column; align-items: flex-start; }
   .incident-actions-right { width: 100%; justify-content: flex-end; margin-top: 10px; }
   .global-bottom-ticker { font-size: 9.5px; padding: 6px 12px; }
 }

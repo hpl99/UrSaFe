@@ -1,5 +1,5 @@
 /**
- * HEPN — Hyper-local Emergency P2P Network
+ * UrSafe — Hyper-local Emergency P2P Network
  * Production Client Application Logic & Disaster Response State Engine
  * Seamless integration with Node.js SQLite Coordination Hub & WebSockets
  */
@@ -229,12 +229,12 @@ function switchView(viewId) {
   const breadcrumbEl = document.getElementById('sub-breadcrumb-text');
   if (breadcrumbEl) {
     const breadcrumbMap = {
-      'view-landing': 'HEPN / DISASTER COORDINATION NETWORK | PEER-TO-PEER ENCRYPTED LINK',
-      'view-victim': 'HEPN / VICTIM EMERGENCY NODE | PEER-TO-PEER ENCRYPTED LINK',
-      'view-responder': 'HEPN / RESPONDER PORTAL | 868.4MHz LORA MESH',
-      'view-dashboard': 'HEPN / CENTRALIZED NETWORK ORCHESTRATION | MERKLE AUDIT ACTIVE'
+      'view-landing': 'URSAFE / DISASTER COORDINATION NETWORK | PEER-TO-PEER ENCRYPTED LINK',
+      'view-victim': 'URSAFE / VICTIM EMERGENCY NODE | PEER-TO-PEER ENCRYPTED LINK',
+      'view-responder': 'URSAFE / RESPONDER PORTAL | 868.4MHz LORA MESH',
+      'view-dashboard': 'URSAFE / CENTRALIZED NETWORK ORCHESTRATION | MERKLE AUDIT ACTIVE'
     };
-    breadcrumbEl.textContent = breadcrumbMap[viewId] || 'HEPN / DISASTER NETWORK';
+    breadcrumbEl.textContent = breadcrumbMap[viewId] || 'URSAFE / DISASTER NETWORK';
   }
 
   // Lazy initialize map viewports
@@ -655,7 +655,7 @@ function renderTriageQueue() {
     const badgeClass = inc.urgency.toLowerCase();
 
     return `
-      <div class="incident-card-hepn ${priorityClass}" data-id="${inc.id}">
+      <div class="incident-card-ursafe ${priorityClass}" data-id="${inc.id}">
         <!-- Distance Box -->
         <div class="distance-box-square">
           <span class="dist-num-bold">${inc.distance}</span>
@@ -797,7 +797,7 @@ function exportLogToCSV() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `hepn_disaster_log_${Date.now()}.csv`;
+  a.download = `ursafe_disaster_log_${Date.now()}.csv`;
   a.click();
   showToast('Activity Log exported as CSV.');
 }
@@ -867,7 +867,7 @@ function connectWebSocket() {
   try {
     AppState.ws = new WebSocket(wsUrl);
     AppState.ws.onopen = () => {
-      console.log('[HEPN Stream] WebSocket connected.');
+      console.log('[UrSafe Stream] WebSocket connected.');
     };
     AppState.ws.onmessage = (event) => {
       try {
@@ -954,10 +954,10 @@ function closeModal(modalId) {
 }
 
 function showToast(msg) {
-  let toast = document.getElementById('hepn-toast');
+  let toast = document.getElementById('ursafe-toast');
   if (!toast) {
     toast = document.createElement('div');
-    toast.id = 'hepn-toast';
+    toast.id = 'ursafe-toast';
     toast.style.cssText = `
       position: fixed;
       top: 80px;
