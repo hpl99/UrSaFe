@@ -22,6 +22,7 @@ This directory contains the immutable Architecture Decision Records for the UrSa
 | [ADR-014](decisions/ADR-014-progressive-disclosure-privacy.md) | 5-Tier Progressive Location Disclosure & Privacy Architecture | Approved | 2026-10 |
 | [ADR-015](decisions/ADR-015-mobile-architecture-kotlin-android.md) | Native Android Mobile Architecture (Kotlin, Room, Coroutines) | Approved | 2026-10 |
 | [ADR-016](decisions/ADR-016-coordinator-web-console.md) | High-Contrast Operational Web Console & MapLibre Offline Vector Maps | Approved | 2026-10 |
+| [ADR-017](decisions/ADR-017-polyglot-multitier-architecture-selection.md) | Polyglot Multi-Tier Architecture & Technology Selection | Approved | 2026-10 |
 
 ## Validation Policy
 ADRs in this repository are permanent records. Once approved, decisions are never overwritten; amendments are recorded as subsequent superseding ADRs.
