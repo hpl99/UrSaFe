@@ -4,8 +4,28 @@
  * Backed by durable SQLite database (node:sqlite) and Flight Recorder audit trail.
  */
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
 const crypto = require('crypto');
 const { WebSocketServer } = require('ws');
+
+// Auto-load root .env if present
+const envPath = path.join(__dirname, '../../.env');
+if (fs.existsSync(envPath)) {
+  try {
+    const lines = fs.readFileSync(envPath, 'utf8').split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
+        const idx = trimmed.indexOf('=');
+        const k = trimmed.slice(0, idx).trim();
+        const v = trimmed.slice(idx + 1).trim();
+        if (!process.env[k]) process.env[k] = v;
+      }
+    }
+  } catch (_) {}
+}
+
 const { db } = require('./db');
 const {
   registerUser,
