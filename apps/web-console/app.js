@@ -22,72 +22,59 @@ const AppState = {
     accuracy: 4.2,
     locked: true
   },
-  activeSeverity: 'URGENT',
-  selectedMedicalFactors: ['Asthma'],
+  activeSeverity: null, // Initialized UNSET
+  selectedMedicalFactors: [],
   activeSosId: null,
   activeFilter: 'ALL',
-  incidents: [
-    {
-      id: '#8293-A',
-      rawId: 'inc-8293',
-      category: 'MEDICAL',
-      type: 'Trauma / Hemorrhage',
-      urgency: 'CRITICAL',
-      title: 'Severe Hemorrhage / Marcus Chen',
-      description: 'Blunt thoracic trauma following ceiling collapse. Pressure dressing applied by bystander, active bleeding reported.',
-      distance: 0.4,
-      timeAgo: '3m ago',
-      hop: '01',
-      lat: 19.0785,
-      lon: 72.8810,
-      tags: [{ text: '+ Trauma Kit Required', type: 'req' }, { text: '✓ Skills Matched', type: 'match' }],
-      status: 'REPORTED',
-      responder: 'Sarah Jones (Nurse)',
-      resolution: 'En Route'
-    },
-    {
-      id: '#4102-C',
-      rawId: 'inc-4102',
-      category: 'COLLAPSE',
-      type: 'Structural Encirclement',
-      urgency: 'URGENT',
-      title: 'Building Encirclement / Sharma Family',
-      description: 'Ground floor ingress blocked by fallen reinforced concrete masonry. 3 occupants sheltering in 2nd floor room.',
-      distance: 1.2,
-      timeAgo: '11m ago',
-      hop: '02',
-      lat: 19.0830,
-      lon: 72.8850,
-      tags: [{ text: 'Evacuation Support', type: 'req' }, { text: '3 Persons', type: 'req' }],
-      status: 'DISPATCHED',
-      responder: 'David Miller',
-      resolution: 'Acknowledged'
-    },
-    {
-      id: '#1890-L',
-      rawId: 'inc-1890',
-      category: 'MEDICAL',
-      type: 'Pharma / Cold-chain',
-      urgency: 'STABLE',
-      title: 'Insulin Supply Request',
-      description: 'Type-1 diabetic individual with 4-hour remaining refrigerated stash. Requires insulated courier to temporary camp.',
-      distance: 2.1,
-      timeAgo: '28m ago',
-      hop: '03',
-      lat: 19.0890,
-      lon: 72.8910,
-      tags: [{ text: '* Cold-chain Supply Needed', type: 'req' }, { text: 'TEMP: 4°C REQ', type: 'req' }],
-      status: 'REPORTED',
-      responder: 'Mike Chen (EMT)',
-      resolution: 'Pending Pickup'
-    }
-  ],
+  incidents: [],
   maps: {
     victimRadar: null,
     orchestration: null
   },
   ws: null
 };
+
+// Isolated Simulated Seed Incidents (Rendered strictly in TRAINING mode with [SIMULATED] badge)
+const SimulatedSeedIncidents = [
+  {
+    id: '#8293-A',
+    rawId: 'inc-sim-8293',
+    category: 'MEDICAL',
+    type: 'Trauma / Hemorrhage',
+    urgency: 'CRITICAL',
+    title: 'Severe Hemorrhage / Simulation Patient A',
+    description: 'Blunt thoracic trauma simulation. Training exercise scenario.',
+    distance: null,
+    timeAgo: 'Training',
+    hop: '01',
+    lat: 19.0785,
+    lon: 72.8810,
+    tags: [{ text: '+ Trauma Kit Required', type: 'req' }, { text: 'SIMULATED', type: 'match' }],
+    status: 'REPORTED',
+    responder: 'Unassigned',
+    resolution: 'Training Exercise',
+    simulated: true
+  },
+  {
+    id: '#4102-C',
+    rawId: 'inc-sim-4102',
+    category: 'COLLAPSE',
+    type: 'Structural Encirclement',
+    urgency: 'URGENT',
+    title: 'Building Encirclement / Simulation Family B',
+    description: 'Structural obstacle simulation. 3 occupants sheltering. Training exercise.',
+    distance: null,
+    timeAgo: 'Training',
+    hop: '02',
+    lat: 19.0830,
+    lon: 72.8850,
+    tags: [{ text: 'Evacuation Support', type: 'req' }, { text: 'SIMULATED', type: 'match' }],
+    status: 'DISPATCHED',
+    responder: 'Unassigned',
+    resolution: 'Training Exercise',
+    simulated: true
+  }
+];
 
 // Seed Users for Instant Persona Evaluation
 const SeedUsers = {
@@ -125,6 +112,46 @@ const SeedUsers = {
 // INITIALIZATION
 // ============================================================================
 document.addEventListener('DOMContentLoaded', () => {
+  // Dev flag gating for quick role switcher
+  const isDev = Boolean(window.URSAFE_CONFIG && window.URSAFE_CONFIG.isDev);
+  const roleEval = document.getElementById('quick-role-eval');
+  if (roleEval) {
+    roleEval.style.display = isDev ? 'block' : 'none';
+  }
+
+  // Training Banner Exit handler
+  const btnToggleTraining = document.getElementById('btn-toggle-training-mode');
+  if (btnToggleTraining) {
+    btnToggleTraining.addEventListener('click', () => {
+      AppState.mode = 'LIVE';
+      const trainingBanner = document.getElementById('training-mode-banner');
+      if (trainingBanner) trainingBanner.style.display = 'none';
+      const btnLive = document.getElementById('btn-mode-live');
+      const btnTrain = document.getElementById('btn-mode-train');
+      if (btnLive) btnLive.className = 'btn-mode active-live';
+      if (btnTrain) btnTrain.className = 'btn-mode inactive';
+      showToast('Switched to LIVE Operational Mode.');
+      fetchInitialBackendIncidents();
+    });
+  }
+
+  // Situational Byte Budget Listener (200 bytes LoRa budget)
+  const sosInput = document.getElementById('sos-situation-input');
+  const byteCounter = document.getElementById('situation-char-count');
+  if (sosInput && byteCounter) {
+    const updateBytes = () => {
+      const bytes = new TextEncoder().encode(sosInput.value || '').length;
+      byteCounter.textContent = `${bytes} / 200 bytes (LoRa Payload Budget)`;
+      if (bytes > 200) {
+        byteCounter.classList.add('over-budget');
+      } else {
+        byteCounter.classList.remove('over-budget');
+      }
+    };
+    sosInput.addEventListener('input', updateBytes);
+    updateBytes();
+  }
+
   updateGoogleMapsStatusUI();
   setupNavigation();
   setupMapLayerSwitchers();
@@ -141,6 +168,8 @@ document.addEventListener('DOMContentLoaded', () => {
   setupConnectivityCockpit();
   pollConnectivityCockpit();
   setInterval(pollConnectivityCockpit, 3500);
+  fetchAuthorityDashboardData();
+  setInterval(fetchAuthorityDashboardData, 5000);
   fetchOutboxQueue();
 });
 
@@ -193,18 +222,35 @@ function setupNavigation() {
       AppState.mode = 'TRAINING';
       btnTrain.className = 'btn-mode active-train';
       btnLive.className = 'btn-mode inactive';
-      showToast('Switched to TRAINING / SIMULATION MODE — Mock telemetry active.');
+      const trainingBanner = document.getElementById('training-mode-banner');
+      if (trainingBanner) trainingBanner.style.display = 'flex';
+      showToast('Switched to TRAINING MODE — Distress signals strictly isolated.');
+      fetchInitialBackendIncidents();
     });
   }
 
-  // Quick Role Evaluation buttons
+  // Quick Role Evaluation buttons (Dev Only)
   const roleBtns = document.querySelectorAll('.role-switch-btn');
   roleBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const roleKey = btn.getAttribute('data-role');
       const seed = SeedUsers[roleKey];
       if (seed) {
-        AppState.currentUser = { ...seed };
+        try {
+          const res = await fetch('/api/v1/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: seed.username, password: 'Password123!' })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            AppState.currentUser = { ...seed, token: data.session?.token, session: data.session };
+          } else {
+            AppState.currentUser = { ...seed };
+          }
+        } catch (_) {
+          AppState.currentUser = { ...seed };
+        }
         updateUserBadge();
         showToast(`Active persona: ${seed.fullName} (${seed.role})`);
         if (seed.role === 'CITIZEN') switchView('view-victim');
@@ -237,17 +283,20 @@ function switchView(viewId) {
     const breadcrumbMap = {
       'view-landing': 'URSAFE / DISASTER COORDINATION NETWORK | PEER-TO-PEER ENCRYPTED LINK',
       'view-victim': 'URSAFE / VICTIM EMERGENCY NODE | PEER-TO-PEER ENCRYPTED LINK',
-      'view-responder': 'URSAFE / RESPONDER PORTAL | 868.4MHz LORA MESH',
+      'view-responder': 'URSAFE / RESPONDER PORTAL | IN_865 LORA MESH',
       'view-dashboard': 'URSAFE / CENTRALIZED NETWORK ORCHESTRATION | MERKLE AUDIT ACTIVE'
     };
     breadcrumbEl.textContent = breadcrumbMap[viewId] || 'URSAFE / DISASTER NETWORK';
   }
 
-  // Lazy initialize map viewports
+  // Lazy initialize map viewports or query dashboard
   if (viewId === 'view-victim' && !AppState.maps.victimRadar) {
     setTimeout(initVictimRadarMap, 100);
-  } else if (viewId === 'view-dashboard' && !AppState.maps.orchestration) {
-    setTimeout(initOrchestrationMap, 100);
+  } else if (viewId === 'view-dashboard') {
+    fetchAuthorityDashboardData();
+    if (!AppState.maps.orchestration) {
+      setTimeout(initOrchestrationMap, 100);
+    }
   }
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -744,23 +793,27 @@ function renderTriageQueue() {
     const priorityClass = inc.urgency === 'CRITICAL' ? 'priority-critical' : (inc.urgency === 'URGENT' ? 'priority-urgent' : 'priority-stable');
     const badgeClass = inc.urgency.toLowerCase();
 
+    const distDisplay = inc.distance != null ? `<span class="dist-num-bold">${inc.distance}</span><span class="dist-unit-label">KM</span>` : `<span class="dist-num-bold">--</span><span class="dist-unit-label">N/A</span>`;
+    const hopDisplay = inc.hop != null ? `HOP: ${inc.hop}` : 'Direct';
+    const simBadge = inc.simulated ? `<span class="badge-simulated">[SIMULATED]</span>` : '';
+
     return `
       <div class="incident-card-ursafe ${priorityClass}" data-id="${inc.id}">
         <!-- Distance Box -->
         <div class="distance-box-square">
-          <span class="dist-num-bold">${inc.distance}</span>
-          <span class="dist-unit-label">KM</span>
+          ${distDisplay}
         </div>
 
         <!-- Middle Details -->
         <div class="incident-details-middle">
           <div class="meta-pill-row">
+            ${simBadge}
             <span class="badge-priority-pill ${badgeClass}">● ${inc.urgency}</span>
             <span class="incident-id-tag">${inc.id}</span>
             <span>•</span>
             <span class="incident-time-tag">${inc.timeAgo}</span>
             <span>•</span>
-            <span class="incident-hop-tag"><iconify-icon icon="lucide:radio"></iconify-icon> HOP: ${inc.hop}</span>
+            <span class="incident-hop-tag"><iconify-icon icon="lucide:radio"></iconify-icon> ${hopDisplay}</span>
           </div>
 
           <h3 class="incident-headline-bold">${inc.title}</h3>
@@ -931,17 +984,34 @@ function initOrchestrationMap() {
 // ============================================================================
 // 6. TELEMETRY & MESH CONTROLS
 // ============================================================================
+function calculateHaversineKm(lat1, lon1, lat2, lon2) {
+  if (lat1 == null || lon1 == null || lat2 == null || lon2 == null) return null;
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return parseFloat((R * c).toFixed(1));
+}
+
 function setupTelemetryControls() {
   const btnPing = document.getElementById('btn-trigger-mesh-ping');
   if (btnPing) {
-    btnPing.addEventListener('click', () => {
+    btnPing.addEventListener('click', async () => {
       btnPing.classList.add('animate-spin');
-      setTimeout(() => {
+      try {
+        const res = await fetch('/api/v1/health');
+        const data = await res.json();
         btnPing.classList.remove('animate-spin');
         const syncTimeEl = document.getElementById('val-last-sync-time');
         if (syncTimeEl) syncTimeEl.textContent = '0s AGO';
-        showToast('Mesh Ping: 3 hops verified • Roundtrip 18ms • LQI 99.4%');
-      }, 400);
+        showToast(`Mesh Hub Ping: ${data.status || 'ONLINE'} • SQLite: ${data.subsystems?.database || 'OK'}`);
+      } catch (err) {
+        btnPing.classList.remove('animate-spin');
+        showToast('Local Mesh Ping: Local node operational (Offline mode)');
+      }
     });
   }
 }
@@ -970,6 +1040,7 @@ function connectWebSocket() {
         } else if (eventType && eventType.startsWith('continuity.')) {
           pollConnectivityCockpit();
           fetchOutboxQueue();
+          fetchAuthorityDashboardData();
           if (eventType === 'continuity.message.delivered') {
             showToast(`Delivery confirmed via ${payload.transport} (${payload.ack_level})`);
           } else if (eventType === 'continuity.message.queued') {
@@ -983,37 +1054,158 @@ function connectWebSocket() {
 
 async function fetchInitialBackendIncidents() {
   try {
-    const res = await fetch('/api/v1/incidents');
+    const token = AppState.currentUser?.token || AppState.currentUser?.session?.token;
+    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+    const res = await fetch('/api/v1/incidents', { headers });
+
+    let fetchedList = [];
     if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        data.forEach(srvInc => {
-          if (!AppState.incidents.some(i => i.rawId === srvInc.id)) {
-            AppState.incidents.unshift({
-              id: '#' + srvInc.id.slice(-6).toUpperCase(),
-              rawId: srvInc.id,
-              category: srvInc.category,
-              type: srvInc.category + ' Emergency',
-              urgency: srvInc.urgency || 'URGENT',
-              title: srvInc.description ? srvInc.description.slice(0, 36) + '...' : 'SOS Report',
-              description: srvInc.description || 'Emergency reported via offline mesh.',
-              distance: 0.8,
-              timeAgo: 'Just now',
-              hop: '01',
-              lat: srvInc.latitude || 19.0760,
-              lon: srvInc.longitude || 72.8777,
-              tags: [{ text: srvInc.urgency, type: 'req' }, { text: 'Real Incident', type: 'match' }],
-              status: srvInc.status || 'REPORTED',
-              responder: srvInc.responder_name || 'Unassigned',
-              resolution: srvInc.status || 'Reported'
-            });
+      fetchedList = await res.json();
+    }
+
+    // Filter simulation vs live mode
+    const isSimMode = AppState.mode === 'TRAINING';
+    AppState.incidents = [];
+
+    if (Array.isArray(fetchedList) && fetchedList.length > 0) {
+      fetchedList.forEach(srvInc => {
+        const isSim = Boolean(srvInc.is_simulation || srvInc.training);
+        if (!isSimMode && isSim) return; // Do not render simulated in live mode
+
+        const dist = (srvInc.latitude && srvInc.longitude)
+          ? calculateHaversineKm(AppState.location.lat, AppState.location.lon, srvInc.latitude, srvInc.longitude)
+          : null;
+
+        AppState.incidents.push({
+          id: '#' + srvInc.id.slice(-6).toUpperCase(),
+          rawId: srvInc.id,
+          category: srvInc.category,
+          type: srvInc.category + ' Emergency',
+          urgency: srvInc.urgency || 'URGENT',
+          title: srvInc.description ? srvInc.description.slice(0, 36) + '...' : 'SOS Report',
+          description: srvInc.description || 'Emergency reported via offline mesh.',
+          distance: dist,
+          timeAgo: 'Just now',
+          hop: srvInc.hop_count || null,
+          lat: srvInc.latitude || null,
+          lon: srvInc.longitude || null,
+          tags: [{ text: srvInc.urgency, type: 'req' }, { text: isSim ? 'SIMULATED' : 'Verified', type: 'match' }],
+          status: srvInc.status || 'REPORTED',
+          responder: srvInc.responder_name || 'Unassigned',
+          resolution: srvInc.status || 'Reported',
+          simulated: isSim
+        });
+      });
+    }
+
+    // In training mode, if no real training incidents returned, show isolated training scenarios
+    if (isSimMode && AppState.incidents.length === 0) {
+      AppState.incidents = SimulatedSeedIncidents.map(sc => ({ ...sc }));
+    }
+
+    renderTriageQueue();
+    renderActivityLog();
+  } catch (e) {
+    if (AppState.mode === 'TRAINING' && AppState.incidents.length === 0) {
+      AppState.incidents = SimulatedSeedIncidents.map(sc => ({ ...sc }));
+      renderTriageQueue();
+      renderActivityLog();
+    }
+  }
+}
+
+async function fetchAuthorityDashboardData() {
+  const token = AppState.currentUser?.token || AppState.currentUser?.session?.token;
+  const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+  // Section 1: Incidents by Priority
+  try {
+    const incRes = await fetch('/api/v1/incidents?all=true', { headers });
+    if (incRes.ok) {
+      const incList = await incRes.json();
+      if (Array.isArray(incList)) {
+        let critical = 0, urgent = 0, standard = 0;
+        incList.forEach(inc => {
+          if (inc.status !== 'VERIFIED' && inc.status !== 'CLOSED' && inc.status !== 'CANCELLED') {
+            if (inc.urgency === 'CRITICAL') critical++;
+            else if (inc.urgency === 'URGENT') urgent++;
+            else standard++;
           }
         });
-        renderTriageQueue();
-        renderActivityLog();
+        const total = critical + urgent + standard;
+        const elCrit = document.getElementById('auth-critical-count');
+        const elUrg = document.getElementById('auth-urgent-count');
+        const elStd = document.getElementById('auth-standard-count');
+        const elTot = document.getElementById('auth-unresolved-count');
+        if (elCrit) elCrit.textContent = critical;
+        if (elUrg) elUrg.textContent = urgent;
+        if (elStd) elStd.textContent = standard;
+        if (elTot) elTot.textContent = total;
       }
     }
-  } catch (e) {}
+  } catch (_) {}
+
+  // Section 2: Network Nodes by Role & State
+  try {
+    const meshRes = await fetch('/api/v1/mesh', { headers });
+    if (meshRes.ok) {
+      const meshData = await meshRes.json();
+      const nodes = meshData.nodes || [];
+      let routerCount = 0, clientCount = 0, offlineCount = 0;
+      nodes.forEach(n => {
+        if (n.role === 'ROUTER' || n.role === 'RELAY' || n.role === 'REPEATER') routerCount++;
+        else clientCount++;
+        if (n.status === 'OFFLINE' || (Date.now() - n.last_seen_at) > 300000) offlineCount++;
+      });
+      const elRouter = document.getElementById('auth-nodes-router-count');
+      const elClient = document.getElementById('auth-nodes-client-count');
+      const elOffline = document.getElementById('auth-nodes-offline-count');
+      const elTotal = document.getElementById('auth-nodes-total-count');
+      const elActiveNodes = document.getElementById('metric-nodes-val');
+      if (elRouter) elRouter.textContent = routerCount;
+      if (elClient) elClient.textContent = clientCount;
+      if (elOffline) elOffline.textContent = offlineCount;
+      if (elTotal) elTotal.textContent = nodes.length;
+      if (elActiveNodes) elActiveNodes.textContent = (nodes.length - offlineCount);
+    } else {
+      const elNodes = document.getElementById('metric-nodes-val');
+      if (elNodes) elNodes.textContent = '0';
+    }
+  } catch (_) {
+    const elNodes = document.getElementById('metric-nodes-val');
+    if (elNodes) elNodes.textContent = '0';
+  }
+
+  // Section 3: Partitions & Connectivity State
+  try {
+    const cockpitRes = await fetch('/api/v1/continuity/cockpit', { headers });
+    if (cockpitRes.ok) {
+      const cockpit = await cockpitRes.json();
+      const elTransports = document.getElementById('auth-transports-count');
+      const elIntegrity = document.getElementById('metric-integrity-val');
+      const elFill = document.getElementById('metric-integrity-fill');
+      const elOutbox = document.getElementById('auth-outbox-pending-count');
+      const elPartition = document.getElementById('auth-partition-state');
+
+      const onlineCount = cockpit.active_transports_count || 0;
+      if (elTransports) elTransports.textContent = onlineCount;
+      if (elIntegrity) elIntegrity.textContent = onlineCount > 0 ? `${onlineCount} ACTIVE` : 'OFFLINE';
+      if (elFill) elFill.style.width = onlineCount > 0 ? `${Math.min(100, onlineCount * 33)}%` : '0%';
+      if (elOutbox) elOutbox.textContent = cockpit.outbox_pending_count || 0;
+      if (elPartition) {
+        if (onlineCount >= 2) {
+          elPartition.textContent = 'REDUNDANT MESH';
+          elPartition.style.color = 'var(--accent-green)';
+        } else if (onlineCount === 1) {
+          elPartition.textContent = 'SINGLE CARRIER';
+          elPartition.style.color = 'var(--accent-amber)';
+        } else {
+          elPartition.textContent = 'ISOLATED LOCAL CELL';
+          elPartition.style.color = 'var(--accent-red)';
+        }
+      }
+    }
+  } catch (_) {}
 }
 
 // ============================================================================

@@ -49,7 +49,8 @@ const server = http.createServer((req, res) => {
   if (pathname === '/config.js') {
     res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8' });
     const key = process.env.GOOGLE_MAPS_API_KEY || '';
-    return res.end(`window.URSAFE_CONFIG = { googleMapsApiKey: ${JSON.stringify(key)} };`);
+    const isDev = process.env.NODE_ENV !== 'production';
+    return res.end(`window.URSAFE_CONFIG = { googleMapsApiKey: ${JSON.stringify(key)}, isDev: ${isDev}, region: 'IN_865' };`);
   }
 
   // API requests: Handle locally or proxy if BACKEND_PORT explicitly configured

@@ -24,6 +24,14 @@
   <link rel="stylesheet" href="styles.css?v=5">
 </head>
 <body class="ursafe-theme">
+  <!-- Full-Width Sticky Training Mode Banner -->
+  <div id="training-mode-banner" class="training-banner" style="display:none;">
+    <div class="training-banner-content">
+      <iconify-icon icon="lucide:alert-triangle" style="font-size:20px;"></iconify-icon>
+      <span><strong>TRAINING MODE ACTIVE:</strong> All emergency distress signals are simulated and strictly isolated. Live mesh radios and production dispatch will NOT be triggered.</span>
+    </div>
+    <button id="btn-toggle-training-mode" class="training-banner-btn">Exit Training</button>
+  </div>
 
   <!-- Ambient Backdrop Glows -->
   <div class="ambient-blob-1"></div>
@@ -56,7 +64,7 @@
       <!-- Live Radio Node Capsule -->
       <div class="node-telemetry-capsule" id="header-node-capsule">
         <iconify-icon icon="lucide:radio"></iconify-icon>
-        <span id="header-node-stats">NODE: Local 868MHz // Peers: 04 // RSSI: -72dBm</span>
+        <span id="header-node-stats">REGION: IN_865 // Transports: Initializing</span>
       </div>
 
       <!-- Google Maps API Status Badge -->
@@ -120,7 +128,7 @@
         <div class="landing-left">
           <div class="node-count-badge">
             <span class="node-pulse-dot"></span>
-            <span>12,408 Neighbor-Nodes Active Worldwide</span>
+            <span id="landing-mesh-status">Local Offline Mesh Active • IN_865</span>
           </div>
 
           <h1 class="landing-title">Help is just a neighbor away.</h1>
@@ -158,9 +166,9 @@
             </a>
           </div>
 
-          <!-- Quick Authenticated Role Testing Selector -->
-          <div class="quick-role-eval">
-            <span>One-Click Authenticated Role Access</span>
+          <!-- Quick Authenticated Role Testing Selector (DEV / TEST MODE ONLY) -->
+          <div class="quick-role-eval" id="quick-role-eval" style="display:none;">
+            <span>Quick Role Switcher <strong style="color:var(--accent-orange);">(DEV / TEST ONLY)</strong></span>
             <div class="quick-role-tags">
               <button class="role-switch-btn" data-role="citizen_priya">👤 Priya Sharma (Civilian)</button>
               <button class="role-switch-btn" data-role="responder_vikram">🚑 Capt. Vikram (NDRF Responder)</button>
@@ -174,7 +182,7 @@
           <div class="hero-image-frame">
             <img src="assets/community_hands_hero.jpg" alt="Community Hands with Red Paint" id="hero-hands-image">
             <div class="hero-image-overlay">
-              <span class="hero-overlay-tag">100% OFF-GRID READY</span>
+              <span class="hero-overlay-tag">OFFLINE CAPABLE MESH</span>
               <p class="hero-overlay-text">Autonomous mesh radios preserve life-safety communications when electrical grids fail.</p>
             </div>
           </div>
@@ -263,10 +271,10 @@
               <iconify-icon icon="lucide:radio-tower" class="mesh-health-icon"></iconify-icon>
               <div class="mesh-health-text">
                 <h4>Local Mesh Health</h4>
-                <p>4 Peer Hops to Emergency Ops HQ</p>
+                <p id="mesh-health-hops">Hops: No data yet</p>
               </div>
             </div>
-            <span class="badge-optimal">OPTIMAL</span>
+            <span class="badge-health-pill" id="mesh-health-badge">No data yet</span>
           </div>
         </div>
 
@@ -283,7 +291,7 @@
             </div>
             <div class="active-paths-pill-group" id="cit-active-paths-pills">
               <span class="path-pill connected"><iconify-icon icon="lucide:bluetooth"></iconify-icon> BLE ACTIVE</span>
-              <span class="path-pill connected"><iconify-icon icon="lucide:radio"></iconify-icon> LORA 868MHz</span>
+              <span class="path-pill connected"><iconify-icon icon="lucide:radio"></iconify-icon> LORA IN_865</span>
               <span class="path-pill disconnected"><iconify-icon icon="lucide:cloud-off"></iconify-icon> CLOUD OFFLINE</span>
             </div>
           </div>
@@ -303,9 +311,9 @@
             <!-- Emergency Situation Details Textarea -->
             <div class="form-label-row">
               <span class="form-field-title">Emergency Situation Details</span>
-              <span class="char-counter-text" id="situation-char-count">82 / 240 chars (LoRa Packet Optimized)</span>
+              <span class="char-counter-text" id="situation-char-count">0 / 200 bytes (LoRa Payload Budget)</span>
             </div>
-            <textarea id="sos-situation-input" class="lora-textarea" maxlength="240" placeholder="Describe hazards, floor level, trapped persons, or medical urgency...">Ground floor is flooded, we are on the roof. One elderly male needs oxygen supply.</textarea>
+            <textarea id="sos-situation-input" class="lora-textarea" maxlength="200" placeholder="Describe hazards, floor level, trapped persons, or medical urgency..."></textarea>
 
             <!-- Triage Severity Level (3 Selectable Cards) -->
             <div class="form-label-row">
@@ -503,17 +511,17 @@
                 <span class="green-dot"></span>
                 <span>MESH SYNC ACTIVE</span>
               </div>
-              <span class="badge-lqi">99.4% LQI</span>
+              <span class="badge-lqi" id="mesh-lqi-badge">No data yet</span>
             </div>
-            <p class="sync-body-text">Connected to 12 local nodes via distributed P2P multi-hop relay.</p>
+            <p class="sync-body-text" id="resp-mesh-body-text">Local P2P mesh relay active across local radios.</p>
             <div class="sync-metrics-grid">
               <div class="sync-metric-cell">
                 <span class="sync-metric-k">HOP METRIC</span>
-                <span class="sync-metric-v">HOP: 02</span>
+                <span class="sync-metric-v" id="resp-hop-metric">HOP: 01</span>
               </div>
               <div class="sync-metric-cell">
-                <span class="sync-metric-k">SYNC EPOCH</span>
-                <span class="sync-metric-v">171804.8s</span>
+                <span class="sync-metric-k">REGION</span>
+                <span class="sync-metric-v">IN_865</span>
               </div>
             </div>
           </div>
@@ -525,16 +533,16 @@
                 <iconify-icon icon="lucide:cpu" style="color:var(--accent-orange);"></iconify-icon>
                 <span style="font-weight:700; font-size:11px;">BEARER DIAGNOSTICS</span>
               </div>
-              <span class="badge-lqi" id="resp-cockpit-score">68% HEALTH</span>
+              <span class="badge-lqi" id="resp-cockpit-score">INITIALIZING</span>
             </div>
             <div class="sync-metrics-grid" style="grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;">
               <div class="sync-metric-cell">
                 <span class="sync-metric-k">LORA RSSI / SNR</span>
-                <span class="sync-metric-v" id="resp-lora-signal">-74 dBm / +8.5 dB</span>
+                <span class="sync-metric-v" id="resp-lora-signal">No data yet</span>
               </div>
               <div class="sync-metric-cell">
-                <span class="sync-metric-k">BLE (0xFFF0)</span>
-                <span class="sync-metric-v" id="resp-ble-status">CONNECTED</span>
+                <span class="sync-metric-k">BLE (Meshtastic)</span>
+                <span class="sync-metric-v" id="resp-ble-status">DISCONNECTED</span>
               </div>
               <div class="sync-metric-cell">
                 <span class="sync-metric-k">OUTBOX QUEUE</span>
@@ -542,7 +550,7 @@
               </div>
               <div class="sync-metric-cell">
                 <span class="sync-metric-k">BATTERY RESERVE</span>
-                <span class="sync-metric-v" id="resp-battery-cost">92%</span>
+                <span class="sync-metric-v" id="resp-battery-cost">No data yet</span>
               </div>
             </div>
           </div>
@@ -595,46 +603,12 @@
           <div class="map-viewport-card">
             <div class="viewport-header-capsule">
               <iconify-icon icon="lucide:radar"></iconify-icon>
-              <span>MAP VIEWPORT // GRID SECTOR 4-BETA | OFF-GRID VECTOR TILE</span>
+              <span>MAP VIEWPORT // TACTICAL FIELD SECTOR | REAL INCIDENTS</span>
             </div>
 
-            <!-- Tactical Mesh SVG Vector Canvas -->
-            <div class="mesh-vector-canvas" id="mesh-vector-canvas">
-              <svg class="svg-mesh-network" viewBox="0 0 800 220" preserveAspectRatio="none">
-                <!-- Dashed emerald mesh links -->
-                <line x1="176" y1="84" x2="352" y2="140" stroke="#10B981" stroke-width="1.8" stroke-dasharray="6,4" stroke-opacity="0.8" />
-                <line x1="352" y1="140" x2="528" y2="70" stroke="#10B981" stroke-width="1.8" stroke-dasharray="6,4" stroke-opacity="0.8" />
-                <line x1="352" y1="140" x2="656" y2="158" stroke="#10B981" stroke-width="1.8" stroke-dasharray="6,4" stroke-opacity="0.8" />
-                <line x1="528" y1="70" x2="656" y2="158" stroke="#10B981" stroke-width="1.5" stroke-dasharray="4,4" stroke-opacity="0.4" />
-                
-                <!-- Link distance markers text -->
-                <text x="440" y="98" fill="#10B981" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="700">0.4 KM</text>
-                <text x="500" y="165" fill="#10B981" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="700">1.2 KM</text>
-              </svg>
-
-              <!-- Node R-01 -->
-              <div class="mesh-node-marker node-r01">
-                <span class="node-chip-label">NODE: R-01</span>
-                <span class="status-dot-indicator" style="background:var(--accent-green); margin-top:3px;"></span>
-              </div>
-
-              <!-- Node YOU (Sector 4) -->
-              <div class="mesh-node-marker node-you">
-                <span class="node-chip-label">YOU: SECTOR 4</span>
-                <iconify-icon icon="lucide:compass" style="color:var(--accent-orange); font-size:18px; margin-top:2px;"></iconify-icon>
-              </div>
-
-              <!-- Incident Node #8293 -->
-              <div class="mesh-node-marker node-inc-8293">
-                <span class="node-chip-label">● 0.4 KM #8293</span>
-                <iconify-icon icon="lucide:alert-circle" style="color:var(--accent-red); font-size:18px; margin-top:2px;"></iconify-icon>
-              </div>
-
-              <!-- Incident Node #4102 -->
-              <div class="mesh-node-marker node-inc-4102">
-                <span class="node-chip-label">● 1.2 KM #4102</span>
-                <iconify-icon icon="lucide:alert-triangle" style="color:var(--accent-amber); font-size:18px; margin-top:2px;"></iconify-icon>
-              </div>
+            <!-- Real Tactical Map Canvas -->
+            <div id="map-responder-viewport" style="width:100%; height:220px; border-radius:12px; background:#1C1917; position:relative;">
+              <div id="responder-map-canvas" style="width:100%; height:100%;"></div>
             </div>
 
             <!-- Viewport Bottom Controls -->
@@ -743,19 +717,19 @@
           <!-- 4 Telemetry Metrics Horizontal Strip -->
           <div class="metrics-horizontal-strip">
             <div class="metric-strip-card">
-              <span class="metric-label-mono">MESH INTEGRITY</span>
+              <span class="metric-label-mono">TRANSPORTS ONLINE</span>
               <div class="metric-val-large">
-                <span id="metric-integrity-val">94.2%</span>
+                <span id="metric-integrity-val">No data yet</span>
               </div>
               <div class="metric-progress-line">
-                <div class="metric-progress-fill" style="width: 94.2%;"></div>
+                <div class="metric-progress-fill" id="metric-integrity-fill" style="width: 0%;"></div>
               </div>
             </div>
 
             <div class="metric-strip-card">
               <span class="metric-label-mono">ACTIVE NODES</span>
               <div class="metric-val-large">
-                <span id="metric-nodes-val">128</span>
+                <span id="metric-nodes-val">No data yet</span>
                 <iconify-icon icon="lucide:radio" style="font-size:18px; color:var(--text-muted);"></iconify-icon>
               </div>
             </div>
@@ -763,7 +737,7 @@
             <div class="metric-strip-card">
               <span class="metric-label-mono">AVG BATTERY</span>
               <div class="metric-val-large">
-                <span id="metric-battery-val">76%</span>
+                <span id="metric-battery-val">No data yet</span>
                 <iconify-icon icon="lucide:battery-charging" style="font-size:18px; color:var(--accent-orange);"></iconify-icon>
               </div>
             </div>
@@ -771,8 +745,8 @@
             <div class="metric-strip-card">
               <span class="metric-label-mono">SIGNAL QUALITY</span>
               <div class="metric-val-large">
-                <span style="font-size:20px; color:var(--accent-green);">High / Stable</span>
-                <iconify-icon icon="lucide:signal" style="font-size:18px; color:var(--accent-green);"></iconify-icon>
+                <span id="metric-signal-val" style="font-size:18px; color:var(--text-primary);">No data yet</span>
+                <iconify-icon icon="lucide:signal" style="font-size:18px; color:var(--text-muted);"></iconify-icon>
               </div>
             </div>
           </div>
@@ -788,87 +762,83 @@
                 <button type="button" class="layer-pill" data-map="orchestration" data-layer="osm-mesh">🛡️ Offline Mesh</button>
               </div>
 
-              <svg class="svg-orchestration-overlay" viewBox="0 0 700 380" preserveAspectRatio="none" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:10; pointer-events:none;">
-                <polygon points="270,110 390,130 360,260 250,230" fill="rgba(239, 68, 68, 0.12)" stroke="#EF4444" stroke-width="1.8" stroke-dasharray="5,5" />
-                <polygon points="460,190 540,200 520,290 440,270" fill="rgba(245, 158, 11, 0.08)" stroke="#F59E0B" stroke-width="1.5" stroke-dasharray="4,4" />
-                <line x1="270" y1="180" x2="330" y2="150" stroke="#10B981" stroke-width="1.8" stroke-dasharray="4,4" />
-                <line x1="330" y1="150" x2="410" y2="190" stroke="#10B981" stroke-width="1.8" stroke-dasharray="4,4" />
-                <circle cx="480" cy="240" r="5" fill="#EF4444" />
-                <circle cx="510" cy="245" r="4" fill="#EF4444" />
-                <circle cx="330" cy="150" r="4.5" fill="#10B981" />
-                <circle cx="270" cy="180" r="4.5" fill="#10B981" />
-              </svg>
-
-              <!-- Floating Clusters Card -->
-              <div class="floating-cluster-badge-card">
-                <span class="cluster-card-title">INCIDENT CLUSTERS</span>
-                <div class="cluster-stat-item">
-                  <div class="cluster-stat-left">
-                    <span class="status-dot-indicator" style="background:var(--accent-red);"></span>
-                    <span>High Severity</span>
-                  </div>
-                  <strong>12</strong>
-                </div>
-                <div class="cluster-stat-item">
-                  <div class="cluster-stat-left">
-                    <span class="status-dot-indicator" style="background:var(--accent-amber);"></span>
-                    <span>Urgent Needed</span>
-                  </div>
-                  <strong>28</strong>
-                </div>
-                <div class="cluster-stat-item">
-                  <div class="cluster-stat-left">
-                    <span class="status-dot-indicator" style="background:var(--accent-green);"></span>
-                    <span>Mesh Secure</span>
-                  </div>
-                  <strong>88</strong>
-                </div>
-              </div>
-
               <!-- Floating Status Capsule -->
-              <div class="floating-status-capsule">
+              <div class="floating-status-capsule" id="auth-status-capsule">
                 <span class="capsule-dot-live"></span>
-                <span>SYNCING PROTOCOL V2.4</span>
+                <span id="auth-capsule-protocol">IN_865 (865-867 MHz)</span>
                 <span>|</span>
-                <span>LAST HEAL: 42s AGO</span>
-                <span>|</span>
-                <span>48 RELAYS ACTIVE</span>
+                <span id="auth-capsule-sync">LOCAL AD-HOC HUB</span>
               </div>
             </div>
 
-            <!-- Right Telemetry Rails -->
+            <!-- Right Telemetry Rails: 3 Separate Sections -->
             <div class="telemetry-rail-stack">
-              <!-- Incidents by Priority Widget -->
-              <div class="rail-widget-card">
-                <h4 class="rail-widget-title">Incidents by Priority</h4>
+              <!-- Section 1: Incidents by Priority Widget -->
+              <div class="rail-widget-card" id="section-incidents-priority">
+                <h4 class="rail-widget-title">1. Incidents by Priority</h4>
                 <div class="priority-count-bars">
                   <div class="priority-bar-item">
                     <span>CRITICAL</span>
-                    <strong style="color:var(--accent-red);">12</strong>
+                    <strong style="color:var(--accent-red);" id="auth-critical-count">0</strong>
                   </div>
                   <div class="priority-bar-item">
                     <span>URGENT</span>
-                    <strong style="color:var(--accent-amber);">28</strong>
+                    <strong style="color:var(--accent-amber);" id="auth-urgent-count">0</strong>
                   </div>
                   <div class="priority-bar-item">
                     <span>STANDARD</span>
-                    <strong style="color:var(--accent-green);">02</strong>
+                    <strong style="color:var(--accent-green);" id="auth-standard-count">0</strong>
                   </div>
                 </div>
                 <div class="rail-widget-foot">
                   <span>Total Unresolved</span>
-                  <strong>42</strong>
+                  <strong id="auth-unresolved-count">0</strong>
                 </div>
               </div>
 
-              <!-- Responder Load Gauge -->
-              <div class="rail-widget-card">
-                <h4 class="rail-widget-title">Responder Load</h4>
-                <div class="circle-gauge-container">
-                  <div class="circular-gauge">
-                    <span class="gauge-val-center">75%</span>
+              <!-- Section 2: Network Nodes by Role & State -->
+              <div class="rail-widget-card" id="section-nodes-breakdown">
+                <h4 class="rail-widget-title">2. Network Nodes by Role & State</h4>
+                <div class="priority-count-bars" id="auth-nodes-role-breakdown">
+                  <div class="priority-bar-item">
+                    <span>ROUTER / RELAY</span>
+                    <strong id="auth-nodes-router-count">0</strong>
                   </div>
-                  <span class="gauge-sub-caption">OCCUPIED</span>
+                  <div class="priority-bar-item">
+                    <span>CLIENT / PEER</span>
+                    <strong id="auth-nodes-client-count">0</strong>
+                  </div>
+                  <div class="priority-bar-item">
+                    <span>OFFLINE / UNKNOWN</span>
+                    <strong id="auth-nodes-offline-count">0</strong>
+                  </div>
+                </div>
+                <div class="rail-widget-foot">
+                  <span>Total Nodes</span>
+                  <strong id="auth-nodes-total-count">0</strong>
+                </div>
+              </div>
+
+              <!-- Section 3: Partitions & Outbox -->
+              <div class="rail-widget-card" id="section-partitions-breakdown">
+                <h4 class="rail-widget-title">3. Partitions & Outbox</h4>
+                <div class="priority-count-bars" id="auth-partitions-summary">
+                  <div class="priority-bar-item">
+                    <span>ACTIVE TRANSPORTS</span>
+                    <strong id="auth-transports-count">0</strong>
+                  </div>
+                  <div class="priority-bar-item">
+                    <span>OUTBOX PENDING</span>
+                    <strong id="auth-outbox-pending-count">0</strong>
+                  </div>
+                  <div class="priority-bar-item">
+                    <span>TOPOLOGY REACHABILITY</span>
+                    <strong id="auth-partition-state" style="font-size:12px; color:var(--accent-green);">ISOLATED LOCAL CELL</strong>
+                  </div>
+                </div>
+                <div class="rail-widget-foot">
+                  <span>Store-and-Forward</span>
+                  <strong id="auth-dtn-mule-status">ENABLED</strong>
                 </div>
               </div>
             </div>
@@ -978,11 +948,11 @@
   <div class="global-bottom-ticker">
     <div class="ticker-left">
       <span class="ticker-status-dot"></span>
-      <span id="ticker-sync-status">URSAFE PEER-ROUTER v2.4.19  •  CHANNEL: LORA-MESH-US915  •  GATEWAY: B-77 RADIO TOWER (RELAY)</span>
+      <span id="ticker-sync-status">URSAFE TACTICAL COORDINATOR v1.0.0  •  REGION: IN_865  •  LOCAL AD-HOC</span>
     </div>
     <div class="ticker-right">
-      <span>PACKETS RX/TX: <strong id="val-packet-rxtx">14,892 / 814</strong></span>
-      <span>LAST SYNC: <strong id="val-last-sync-time">1s AGO</strong></span>
+      <span>PACKETS RX/TX: <strong id="val-packet-rxtx">No data yet</strong></span>
+      <span>LAST SYNC: <strong id="val-last-sync-time">Just now</strong></span>
       <button class="btn-mesh-ping" id="btn-trigger-mesh-ping">
         <iconify-icon icon="lucide:refresh-cw"></iconify-icon>
         <span>Mesh Ping</span>
