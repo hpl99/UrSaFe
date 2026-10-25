@@ -79,7 +79,7 @@ class SimulatedFieldNode:
         return env
 
     def accept_emergency(self, emergency_env: MessageEnvelope) -> MessageEnvelope:
-        now = int(time.time() * 1000)
+        now = max(int(time.time() * 1000), emergency_env.created_at + 100)
         ack_payload = {
             "emergency_id": emergency_env.message_id,
             "responder_id": self.node_id,

@@ -1,15 +1,22 @@
 openapi: 3.0.3
 info:
-  title: UrSafe Central Coordination & Cloud Replication API
-  version: 1.0.0
+  title: UrSafe Production Coordination & Ingress API
+  version: 1.1.0
   description: >
-    REST and WebSocket endpoints for incident coordination, verifiable credential issuance,
-    asynchronous bundle synchronization, and operational dashboard analytics.
-    Note: Central server is optional; core emergency operations run offline first.
+    Production REST and WebSocket specifications for the UrSafe / Cascade26
+    offline-first emergency communication and coordination infrastructure.
+    Supports authenticated roles: CITIZEN, RESPONDER, AUTHORITY, and ADMIN.
+
+servers:
+  - url: http://localhost:3000
+    description: UrSafe Web Console & Ingress Gateway
+  - url: http://localhost:4000
+    description: Standalone Control Plane API Server
+
 paths:
   /api/v1/health:
     get:
-      summary: Service Health & Mesh Ingress Status
+      summary: Service Health & Ingress Status
       responses:
         '200':
           description: Service healthy
@@ -19,119 +26,295 @@ paths:
                 type: object
                 properties:
                   status: { type: string, example: "ok" }
+                  service: { type: string }
                   timestamp: { type: integer }
-                  active_mesh_nodes: { type: integer }
-                  sync_backlog: { type: integer }
+                  stats:
+                    type: object
+                    properties:
+                      total_incidents: { type: integer }
+                      active_responders: { type: integer }
+                      audit_chain_length: { type: integer }
 
-  /api/v1/emergencies:
+  /api/v1/auth/register:
+    post:
+      summary: Register new authenticated user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password, role, fullName]
+              properties:
+                username: { type: string }
+                email: { type: string }
+                password: { type: string }
+                role: { type: string, enum: [CITIZEN, RESPONDER, AUTHORITY, ADMIN] }
+                fullName: { type: string }
+                phoneNumber: { type: string }
+      responses:
+        '201':
+          description: Registration successful, returns session token
+
+  /api/v1/auth/login:
+    post:
+      summary: Authenticate user credentials
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string }
+                password: { type: string }
+      responses:
+        '200':
+          description: Login successful, returns Bearer token
+
+  /api/v1/auth/me:
     get:
-      summary: Query active emergencies
+      summary: Get currently authenticated user profile
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User profile and permissions
+
+  /api/v1/incidents:
+    get:
+      summary: List operational emergency incidents
+      security:
+        - BearerAuth: []
       parameters:
         - name: status
           in: query
           schema: { type: string }
       responses:
         '200':
-          description: List of emergencies
+          description: Array of incidents with progressive disclosure filtering
     post:
-      summary: Ingest emergency message bundle
+      summary: Create new life-safety SOS incident
+      security:
+        - BearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MessageEnvelope'
-      responses:
-        '202':
-          description: Envelope accepted into local outbox / mesh
-
-  /api/v1/sync/bundles:
-    post:
-      summary: Synchronize DTN Data Mule bundle
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SyncBundle'
-      responses:
-        '200':
-          description: Bundle ingested, returns acknowledged message IDs
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  bundle_id: { type: string }
-                  accepted_count: { type: integer }
-                  duplicate_count: { type: integer }
-                  rejected_count: { type: integer }
-
-  /api/v1/credentials/issue:
-    post:
-      summary: Issue signed Responder Passport
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CredentialRequest'
+              type: object
+              required: [category, urgency]
+              properties:
+                category: { type: string, enum: [FLOOD, FIRE, COLLAPSE, MEDICAL, TRAPPED, OTHER] }
+                urgency: { type: string, enum: [CRITICAL, HIGH, NORMAL, LOW] }
+                latitude: { type: number }
+                longitude: { type: number }
+                accuracy_m: { type: number }
+                victim_count: { type: integer }
+                description: { type: string }
       responses:
         '201':
-          description: Issued Verifiable Credential
+          description: SOS incident persisted and broadcast
 
-  /api/v1/hazards:
-    get:
-      summary: Get active hazard polygons
+  /api/v1/incidents/{id}/assign:
+    post:
+      summary: Dispatch responder unit (Authority only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [responder_id]
+              properties:
+                responder_id: { type: string }
+                notes: { type: string }
       responses:
         '200':
-          description: List of observed and predicted hazard polygons
+          description: Responder dispatched
+
+  /api/v1/incidents/{id}/accept:
+    post:
+      summary: Accept mission assignment (Responder only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Mission accepted and ACK broadcast
+
+  /api/v1/incidents/{id}/status:
+    post:
+      summary: Update incident tactical status
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [EN_ROUTE, ON_SCENE, RESOLVED, CANCELLED] }
+                notes: { type: string }
+      responses:
+        '200':
+          description: Status updated
+
+  /api/v1/incidents/{id}/evidence:
+    post:
+      summary: Attach photographic or document rescue evidence
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [evidence_type, file_data_base64]
+              properties:
+                evidence_type: { type: string, enum: [PHOTO, VIDEO, AUDIO, DOCUMENT, NOTE] }
+                file_name: { type: string }
+                file_data_base64: { type: string }
+                latitude: { type: number }
+                longitude: { type: number }
+      responses:
+        '201':
+          description: Evidence attached with SHA-256 verification
+
+  /api/v1/incidents/{id}/rescue-report:
+    post:
+      summary: Submit structured rescue report (Responder only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [outcome, responder_signature]
+              properties:
+                outcome: { type: string, enum: [RESCUED, TRANSFERRED, FALSE_ALARM, FATALITY] }
+                patients_treated: { type: integer }
+                summary_notes: { type: string }
+                responder_signature: { type: string }
+                victim_signature: { type: string }
+      responses:
+        '201':
+          description: Rescue report submitted for verification
+
+  /api/v1/incidents/{id}/verify-rescue:
+    post:
+      summary: Verify or reject rescue report (Authority only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action: { type: string, enum: [VERIFY, REQUEST_MORE_EVIDENCE, REJECT] }
+                notes: { type: string }
+      responses:
+        '200':
+          description: Rescue verification recorded
+
+  /api/v1/responders:
+    get:
+      summary: List registered responders and availability
+      responses:
+        '200':
+          description: Array of responders with credentials
+
+  /api/v1/credentials:
+    get:
+      summary: List W3C Responder Passports
+      responses:
+        '200':
+          description: Array of credentials
+
+  /api/v1/credentials/revoke:
+    post:
+      summary: Revoke responder credential (Authority only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [credential_id]
+              properties:
+                credential_id: { type: string }
+                reason: { type: string }
+      responses:
+        '200':
+          description: Credential revoked
 
   /api/v1/audit/flight-recorder:
     get:
-      summary: Fetch tamper-evident audit hash chain
+      summary: Retrieve and verify Flight Recorder SHA-256 Merkle chain
       responses:
         '200':
-          description: Ordered cryptographic audit chain
+          description: Tamper-evident audit chain with verification status
+
+  /api/v1/sync/bundles:
+    post:
+      summary: Ingest opportunistic DTN Data Mule bundle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                bundle_id: { type: string }
+                envelopes: { type: array, items: { type: object } }
+      responses:
+        '200':
+          description: Bundle ingested, returns acknowledged message IDs
 
 components:
-  schemas:
-    MessageEnvelope:
-      type: object
-      required: [message_id, sender_id, message_type, priority, payload, signature]
-      properties:
-        message_id: { type: string }
-        sender_id: { type: string }
-        recipient_id: { type: string }
-        created_at: { type: integer }
-        expires_at: { type: integer }
-        priority: { type: string, enum: [EMERGENCY, HIGH, ROUTINE, TELEMETRY] }
-        message_type: { type: string }
-        sequence: { type: integer }
-        hop_limit: { type: integer }
-        origin: { type: string }
-        current_hop: { type: string }
-        payload: { type: string }
-        payload_hash: { type: string }
-        signature: { type: string }
-
-    SyncBundle:
-      type: object
-      required: [bundle_id, custodian_id, envelopes]
-      properties:
-        bundle_id: { type: string }
-        custodian_id: { type: string }
-        envelopes:
-          type: array
-          items:
-            $ref: '#/components/schemas/MessageEnvelope'
-
-    CredentialRequest:
-      type: object
-      required: [subject_id, roles, skills]
-      properties:
-        subject_id: { type: string }
-        roles: { type: array, items: { type: string } }
-        skills: { type: array, items: { type: string } }
-        certifications: { type: array, items: { type: string } }
-        validity_days: { type: integer }
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
