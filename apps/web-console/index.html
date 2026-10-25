@@ -261,6 +261,22 @@
 
         <!-- Right Column: 2. Broadcast Emergency Signal -->
         <div class="victim-col-form">
+          <!-- Phase 4: Offline Reassurance & Active Transports Banner -->
+          <div class="connectivity-reassurance-card" id="cit-connectivity-card">
+            <div class="reassurance-left">
+              <span class="status-pulse-dot" id="cit-conn-dot"></span>
+              <div>
+                <h4 id="cit-conn-title">● Offline — Emergency Mesh Active</h4>
+                <p id="cit-conn-desc">Your distress signal will be saved locally on this device and dispatched across all viable nearby communication paths.</p>
+              </div>
+            </div>
+            <div class="active-paths-pill-group" id="cit-active-paths-pills">
+              <span class="path-pill connected"><iconify-icon icon="lucide:bluetooth"></iconify-icon> BLE ACTIVE</span>
+              <span class="path-pill connected"><iconify-icon icon="lucide:radio"></iconify-icon> LORA 868MHz</span>
+              <span class="path-pill disconnected"><iconify-icon icon="lucide:cloud-off"></iconify-icon> CLOUD OFFLINE</span>
+            </div>
+          </div>
+
           <div class="victim-form-card">
             <div class="victim-form-header">
               <div class="step-heading-row" style="margin-bottom:0;">
@@ -487,6 +503,35 @@
               <div class="sync-metric-cell">
                 <span class="sync-metric-k">SYNC EPOCH</span>
                 <span class="sync-metric-v">171804.8s</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Phase 4: Tactical Bearer Diagnostics & Cockpit Card -->
+          <div class="mesh-sync-card" id="responder-bearer-diagnostics-card" style="margin-top:14px; background:#FAF6ED;">
+            <div class="sync-header-row">
+              <div class="sync-status-indicator">
+                <iconify-icon icon="lucide:cpu" style="color:var(--accent-orange);"></iconify-icon>
+                <span style="font-weight:700; font-size:11px;">BEARER DIAGNOSTICS</span>
+              </div>
+              <span class="badge-lqi" id="resp-cockpit-score">68% HEALTH</span>
+            </div>
+            <div class="sync-metrics-grid" style="grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;">
+              <div class="sync-metric-cell">
+                <span class="sync-metric-k">LORA RSSI / SNR</span>
+                <span class="sync-metric-v" id="resp-lora-signal">-74 dBm / +8.5 dB</span>
+              </div>
+              <div class="sync-metric-cell">
+                <span class="sync-metric-k">BLE (0xFFF0)</span>
+                <span class="sync-metric-v" id="resp-ble-status">CONNECTED</span>
+              </div>
+              <div class="sync-metric-cell">
+                <span class="sync-metric-k">OUTBOX QUEUE</span>
+                <span class="sync-metric-v" id="resp-outbox-count">0 PENDING</span>
+              </div>
+              <div class="sync-metric-cell">
+                <span class="sync-metric-k">BATTERY RESERVE</span>
+                <span class="sync-metric-v" id="resp-battery-cost">92%</span>
               </div>
             </div>
           </div>
@@ -811,6 +856,66 @@
             </div>
           </div>
 
+          <!-- Phase 4: System-Wide Connectivity Cockpit & Outbox Inspector -->
+          <div class="cockpit-dashboard-card" id="authority-cockpit-card">
+            <div class="cockpit-header-row">
+              <div class="cockpit-title-wrap">
+                <iconify-icon icon="lucide:network" style="color:var(--accent-orange); font-size:24px;"></iconify-icon>
+                <div>
+                  <h3 id="cockpit-card-title">UrSafe Rescue Connectivity Cockpit</h3>
+                  <span id="cockpit-card-subtitle" style="font-size:12px; color:var(--text-secondary);">Real-Time Bearer Link Health & Outbox Dispatch Pipeline</span>
+                </div>
+              </div>
+              <div class="cockpit-score-badge" id="cockpit-score-badge">
+                <iconify-icon icon="lucide:shield-check"></iconify-icon>
+                <span id="val-cockpit-score">68% CONNECTIVITY SCORE</span>
+              </div>
+            </div>
+
+            <div class="cockpit-explanation-box" id="cockpit-explanation-box">
+              <strong>Operational Status:</strong> <span id="cockpit-explanation-text">Internet unavailable. Emergency mesh (LoRa/BLE) remains 100% operational. P0 emergencies will preemptively dispatch over radio.</span>
+            </div>
+
+            <!-- Active Transports Grid with Live Failure Injection Toggles -->
+            <div class="transports-grid" id="cockpit-transports-container">
+              <!-- Populated dynamically via /api/v1/continuity/cockpit -->
+            </div>
+
+            <!-- Outbox & Dead Letter Queue Table -->
+            <div class="outbox-table-card">
+              <div class="outbox-table-header">
+                <div>
+                  <h4>Durable Outbox Queue (P0 - P5 Priority Preemption)</h4>
+                  <span style="font-size:12px; color:var(--text-secondary);">Guaranteed store-and-forward delivery across partitions and reconnects.</span>
+                </div>
+                <div style="display:flex; gap:10px;">
+                  <button class="btn-action-small" id="btn-refresh-outbox"><iconify-icon icon="lucide:refresh-cw"></iconify-icon> Refresh Queue</button>
+                  <button class="btn-action-small" id="btn-view-dead-letter" style="color:#B91C1C;"><iconify-icon icon="lucide:alert-octagon"></iconify-icon> Dead Letter Store</button>
+                </div>
+              </div>
+
+              <div class="table-responsive-container">
+                <table class="ursafe-table">
+                  <thead>
+                    <tr>
+                      <th>PRIORITY</th>
+                      <th>MESSAGE ID</th>
+                      <th>TYPE</th>
+                      <th>STATE</th>
+                      <th>TRANSPORT</th>
+                      <th>ATTEMPTS</th>
+                      <th>DELIVERY STATUS & EXPLANATION</th>
+                      <th>ACTION</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbody-outbox-queue">
+                    <!-- Populated dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
           <!-- Bottom: RECENT NETWORK ACTIVITY LOG (Master All Requests Feed) -->
           <div class="activity-log-card">
             <div class="activity-log-header">
@@ -1045,6 +1150,37 @@
               <!-- Populated dynamically with evidence cards -->
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: HARDWARE CONNECTION CENTER & DETAILED COCKPIT                     -->
+  <!-- ========================================================================= -->
+  <div id="modal-connection-center" class="modal-backdrop hidden">
+    <div class="modal-card modal-large" style="max-width: 860px; max-height: 85vh; overflow-y: auto;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="modal-title-group" style="display: flex; align-items: center; gap: 12px;">
+          <iconify-icon icon="lucide:cpu" style="font-size:24px; color:var(--accent-orange);"></iconify-icon>
+          <h3 style="margin: 0; font-family: var(--font-display);">Hardware Connection Center & Diagnostic Cockpit</h3>
+        </div>
+        <button class="modal-close btn-modal-close" data-close="modal-connection-center">✕</button>
+      </div>
+      <div class="modal-body" style="padding-top: 15px;">
+        <div class="cockpit-explanation-box">
+          UrSafe operates entirely offline-first. Messages persist in SQLite WAL storage on your device and continuously seek viable communication links without cloud dependency.
+        </div>
+        <div class="transports-grid" id="modal-transports-grid">
+          <!-- Populated with live transport cards -->
+        </div>
+        <div style="background:#FAF6ED; border:1px solid var(--border-color); border-radius:12px; padding:16px; margin-top:16px;">
+          <h4 style="margin:0 0 8px 0; font-size:13px; font-weight:700;">Deterministic Connectivity Metric</h4>
+          <p style="margin:0; font-size:12px; color:var(--text-secondary); line-height:1.4;">
+            Score is computed from observed bearer link qualities, mesh reachability, and battery reserve:
+            <code>Score = (Active Transports / Total) * 50 + (Mesh Connected ? 30 : 0) + (Battery % * 20)</code>.
+            Never fabricated.
+          </p>
         </div>
       </div>
     </div>

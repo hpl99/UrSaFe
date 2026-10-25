@@ -2938,3 +2938,330 @@ body.ursafe-theme {
 .device-item-card:hover {
   border-color: rgba(0, 229, 255, 0.4);
 }
+
+/* ========================================================================= */
+/* PHASE 4: CONNECTIVITY COCKPIT & RESCUE CONTINUITY ENGINE STYLING           */
+/* ========================================================================= */
+
+.connectivity-reassurance-card {
+  background: linear-gradient(135deg, rgba(255, 251, 242, 0.96) 0%, rgba(247, 238, 220, 0.96) 100%);
+  border: 1.5px solid var(--accent-orange);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 4px 20px rgba(255, 139, 61, 0.12);
+}
+
+.reassurance-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.status-pulse-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-top: 4px;
+  background: var(--accent-green);
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: pulse-green 2s infinite;
+  flex-shrink: 0;
+}
+
+.status-pulse-dot.warning {
+  background: var(--accent-orange);
+  box-shadow: 0 0 0 0 rgba(255, 139, 61, 0.7);
+  animation: pulse-orange 2s infinite;
+}
+
+.status-pulse-dot.offline {
+  background: var(--accent-red);
+  box-shadow: none;
+  animation: none;
+}
+
+@keyframes pulse-green {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+@keyframes pulse-orange {
+  0% { box-shadow: 0 0 0 0 rgba(255, 139, 61, 0.7); }
+  70% { box-shadow: 0 0 0 8px rgba(255, 139, 61, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 139, 61, 0); }
+}
+
+.reassurance-left h4 {
+  margin: 0 0 4px 0;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.reassurance-left p {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.active-paths-pill-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.path-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: #FFFFFF;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.path-pill.connected {
+  border-color: var(--accent-green);
+  color: #065F46;
+  background: #ECFDF5;
+}
+
+.path-pill.disconnected {
+  border-color: #E5E7EB;
+  color: #9CA3AF;
+  background: #F9FAFB;
+  opacity: 0.75;
+}
+
+.path-pill.degraded {
+  border-color: var(--accent-amber);
+  color: #92400E;
+  background: #FEF3C7;
+}
+
+/* Connectivity Cockpit Dashboard Module */
+.cockpit-dashboard-card {
+  background: #FFFFFF;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.cockpit-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 14px;
+  margin-bottom: 18px;
+}
+
+.cockpit-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cockpit-title-wrap h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.cockpit-score-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  background: #FAF6ED;
+  border: 1.5px solid var(--accent-orange);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-orange);
+}
+
+.transports-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.transport-card {
+  background: #FAF6ED;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.transport-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--accent-orange);
+}
+
+.tr-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tr-name {
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--text-primary);
+}
+
+.tr-status-pill {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+}
+
+.tr-status-pill.connected {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+.tr-status-pill.available {
+  background: #DBEAFE;
+  color: #1E40AF;
+}
+
+.tr-status-pill.disconnected {
+  background: #F3F4F6;
+  color: #6B7280;
+}
+
+.tr-status-pill.degraded {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.tr-metrics-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.btn-tr-toggle {
+  background: #FFFFFF;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-tr-toggle:hover {
+  background: var(--accent-orange);
+  color: #FFFFFF;
+  border-color: var(--accent-orange);
+}
+
+.cockpit-explanation-box {
+  background: #F8FAFC;
+  border-left: 4px solid var(--accent-blue);
+  padding: 12px 16px;
+  border-radius: 4px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.outbox-table-card {
+  background: #FFFFFF;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  margin-top: 18px;
+}
+
+.outbox-table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.outbox-table-header h4 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.badge-prio-0 {
+  background: #FEE2E2;
+  color: #B91C1C;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+}
+
+.badge-prio-low {
+  background: #F3F4F6;
+  color: #4B5563;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+}
+
+.btn-action-small {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid var(--border-color);
+  background: #FFFFFF;
+  cursor: pointer;
+}
+
+.btn-action-small:hover {
+  background: var(--accent-orange);
+  color: #FFFFFF;
+  border-color: var(--accent-orange);
+}
+
