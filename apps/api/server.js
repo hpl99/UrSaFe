@@ -329,10 +329,13 @@ function handleApiRequest(req, res) {
       // 7. Incidents: Create New SOS (Citizen, Responder or Authority)
       if (normPath === '/api/v1/incidents' && method === 'POST') {
         const session = authenticateRequest(req);
+        if (!session) {
+          return sendJson(401, { error: 'Authentication required to report an emergency incident' });
+        }
         const body = await parseJsonBody();
 
-        const reporterId = session ? session.userId : null;
-        const reporterRole = session ? session.role : 'CITIZEN';
+        const reporterId = session.userId;
+        const reporterRole = session.role || 'CITIZEN';
         const incidentId = body.id || 'inc-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1000);
         const now = Date.now();
 
@@ -717,6 +720,7 @@ function handleApiRequest(req, res) {
         logAuditEvent('EVIDENCE_UPLOADED', session.userId, 'RESCUE_EVIDENCE_ATTACHED', incidentId, { evidenceId, sha256, storageRef });
 
         const evidenceRecord = db.prepare('SELECT id, incident_id, uploader_user_id, uploader_role, evidence_type, file_name, file_size_bytes, mime_type, sha256_hash, storage_reference, description, verification_status, latitude, longitude, captured_at FROM evidence WHERE id = ?').get(evidenceId);
+        if (evidenceRecord) evidenceRecord.sha256 = evidenceRecord.sha256_hash;
         broadcastEvent('EVIDENCE_UPLOADED', { incidentId, evidence: evidenceRecord });
 
         return sendJson(201, { message: 'Evidence uploaded and verified with SHA-256 hash', evidence: evidenceRecord });
@@ -1150,7 +1154,8 @@ function handleApiRequest(req, res) {
           verified: chainValid,
           broken_index: brokenIndex,
           latest_hash: events.length > 0 ? events[events.length - 1].current_event_hash : null,
-          events: events.slice(-50) // last 50 events
+          events: events.slice(-50), // last 50 events
+          audit_trail: events.slice(-50)
         });
       }
 
@@ -1176,8 +1181,16 @@ function handleApiRequest(req, res) {
         });
       }
 
-      // 22. Users List (Admin / Authority)
+      // 22. Users List (Admin Only)
       if (pathname === '/api/v1/users' && method === 'GET') {
+        const session = authenticateRequest(req);
+        if (!session) {
+          return sendJson(401, { error: 'Authentication required to inspect user registry' });
+        }
+        if (session.role !== 'ADMIN' && session.role !== 'AUTHORITY') {
+          return sendJson(403, { error: 'Access forbidden: Administrator or Authority credentials required' });
+        }
+
         const users = db.prepare(`
           SELECT u.id, u.username, u.email, u.role, u.organization_id, u.full_name, u.phone_number, u.status, u.created_at, u.last_login_at,
                  o.name as organization_name
@@ -1185,7 +1198,7 @@ function handleApiRequest(req, res) {
           LEFT JOIN organizations o ON u.organization_id = o.id
           ORDER BY u.created_at DESC
         `).all();
-        return sendJson(200, users);
+        return sendJson(200, { status: 'ok', count: users.length, users });
       }
 
       // 23. Organizations List
