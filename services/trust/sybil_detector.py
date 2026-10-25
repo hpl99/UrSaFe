@@ -77,18 +77,18 @@ class SybilDetector:
         if location:
             prev_loc = self._last_locations.get(node_id)
             if prev_loc:
-                time_diff_hours = (location.timestamp - prev_loc.timestamp) / 3600000.0
-                if time_diff_hours > 0.001:
+                time_diff_sec = (location.timestamp - prev_loc.timestamp) / 1000.0
+                if time_diff_sec > 0:
                     # Approx distance in km (1 deg ~ 111 km)
                     dlat = (location.latitude - prev_loc.latitude) * 111.0
                     dlon = (location.longitude - prev_loc.longitude) * 111.0
                     distance_km = (dlat**2 + dlon**2)**0.5
-                    velocity_kmh = distance_km / time_diff_hours
+                    velocity_kmh = (distance_km / time_diff_sec) * 3600.0
                     if velocity_kmh > self.max_velocity_kmh:
                         flags.append(SybilAnomalyFlag(
                             anomaly_type="TELEPORTATION_ANOMALY",
                             severity="WARNING",
-                            evidence=f"Node moved {distance_km:.1f} km in {time_diff_hours*60:.1f} mins ({velocity_kmh:.0f} km/h)."
+                            evidence=f"Node moved {distance_km:.1f} km in {time_diff_sec:.1f}s ({velocity_kmh:.0f} km/h)."
                         ))
             self._last_locations[node_id] = location
 
