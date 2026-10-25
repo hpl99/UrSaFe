@@ -1265,3 +1265,151 @@ body.ursafe-dark {
     grid-template-columns: 1fr;
   }
 }
+
+/* ========================================================================= */
+/* 18-STATE COMPLETE EMERGENCY LIFECYCLE TIMELINE (SECTIONS 3, 4, 5)         */
+/* ========================================================================= */
+.progression-18-states {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.progression-18-states .step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.2s ease;
+}
+
+.progression-18-states .step.completed {
+  background: rgba(0, 230, 118, 0.08);
+  border-color: rgba(0, 230, 118, 0.3);
+}
+
+.progression-18-states .step.completed .step-marker {
+  background: var(--accent-green);
+  color: #0b0f19;
+}
+
+.progression-18-states .step.current {
+  background: rgba(0, 229, 255, 0.12);
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
+}
+
+.progression-18-states .step.current .step-marker {
+  background: var(--accent-cyan);
+  color: #0b0f19;
+  animation: pulse 1.5s infinite;
+}
+
+.progression-18-states .step.rejected {
+  background: rgba(255, 51, 75, 0.12);
+  border-color: var(--accent-red);
+}
+
+.progression-18-states .step.rejected .step-marker {
+  background: var(--accent-red);
+  color: #ffffff;
+}
+
+.progression-18-states .step.cancelled {
+  background: rgba(255, 145, 0, 0.1);
+  border-color: var(--accent-orange);
+}
+
+.step-actor {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* History Filter Pills */
+.filter-pill {
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.filter-pill.active {
+  background: var(--accent-blue);
+  color: #ffffff;
+  border-color: var(--accent-blue);
+}
+
+.filter-pill:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+/* Case Detail Modal Styles */
+.modal-large {
+  width: 90%;
+  max-width: 960px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  font-size: 13px;
+}
+
+.detail-row .k {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* Bluetooth Categorized Device Lists */
+.device-discovery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.device-category-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.device-category-box h4 {
+  margin: 0 0 10px 0;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  color: var(--accent-cyan);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 6px;
+}
+
+.device-item-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.device-item-card:hover {
+  border-color: rgba(0, 229, 255, 0.4);
+}

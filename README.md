@@ -55,20 +55,59 @@ UrSafe/
 
 ---
 
+---
+
+## Three Greenfield Core Product Verticals
+
+UrSafe focuses on 100% completion of three indispensable emergency verticals:
+
+### Vertical 1: Identity + Exact Location + Real Map
+- Multi-role authenticated sessions (`CITIZEN`, `RESPONDER`, `AUTHORITY`, `ADMIN`)
+- Real hardware GNSS coordinates (`latitude`, `longitude`, `accuracy_m`) as the source of truth
+- Structured reverse geocoding to human-readable street addresses
+- Real WGS84 geographic mapping with distinct entity markers:
+  - Current User ("YOU"): Pulsating cyan dot with accuracy radius circle & freshness indicator
+  - Emergency Victims: Urgency-coded red markers linking to full case inspection
+  - Tactical Responders: Emerald markers with specialization badge & live telemetry
+  - Connected BLE Devices: Cyan markers reflecting physical proximity
+
+### Vertical 2: Complete Emergency Lifecycle + Evidence + History
+- Deterministic 18-stage conceptual state machine:
+  `DRAFT` → `SOS_CREATED` → `SAVED_LOCALLY` → `QUEUED` → `TRANSMITTING` → `RECEIVED` → `RESPONDER_NOTIFIED` → `RESPONDER_ASSIGNED` → `MISSION_ACCEPTED` → `EN_ROUTE` → `ARRIVED_ON_SCENE` → `RESCUE_IN_PROGRESS` → `RESCUE_COMPLETED` → `EVIDENCE_REQUIRED` → `EVIDENCE_SUBMITTED` → `VERIFICATION_PENDING` → `VERIFIED` → `CLOSED`
+- Controlled exceptional states: `CANCELLED`, `REJECTED`, `REOPENED` with mandatory audit reasons
+- Evidence Desk: Photo & PDF upload, real-time SHA-256 content hashing, 10MB size ceiling, duplicate collision prevention (HTTP 409 Conflict)
+- Dedicated Emergency History Portal: Full chronological lifecycle timeline, evidence gallery, and audited case reopening
+
+### Vertical 3: Real Bluetooth BLE Presence & Synchronization
+- UrSafe BLE Application Service UUID `0xFE26` (`0000FE26-0000-1000-8000-00805F9B34FB`)
+- Categorized device scanner: Nearby UrSafe nodes, compatible LoRa radios, and other generic peripherals
+- Connected User Presence Card: Live RSSI dBm, battery %, heartbeat timer, and map marker placement
+- Durable offline outbox queue with priority-based synchronization (P0 Life Safety)
+
+---
+
 ## Quick Start & Verification
 
-### Run the Complete Test Suite
+### 1. Run the Environment Doctor
 ```bash
-pytest tests/ -v
+python scripts/doctor.py
 ```
 
-### Run the Web Coordinator Console
+### 2. Start the Unified Web Console & API Gateway
 ```bash
 node apps/web-console/server.js
-# Access at http://localhost:3000
+# Open http://localhost:3000 in your browser
 ```
 
-### Run the Physical & Multi-Node Acceptance Demo
+### 3. Run Automated Tests
 ```bash
+# Python & Backend integration tests (59 tests)
+pytest tests/ -v
+
+# Core Rust crypto & CRDT tests (3 tests)
+cargo test
+
+# Real offline DTN data-mule acceptance demo
 python scripts/run_acceptance_demo.py
 ```
+

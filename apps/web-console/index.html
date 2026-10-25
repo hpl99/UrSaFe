@@ -216,49 +216,88 @@
                 <h3>Live Emergency Status Lifecycle</h3>
                 <span class="status-badge" id="citizen-active-status-badge">NO ACTIVE SOS</span>
               </div>
-              <p class="card-sub">Every state transition is verified by cryptographic receipts across the mesh.</p>
+              <p class="card-sub">State transitions are recorded in the operational audit trail.</p>
 
-              <div class="progression-stepper" id="progression-stepper">
-                <div class="step" data-step="REPORTED">
+              <!-- 18-State Complete Lifecycle Stepper (Sections 3, 4, 5) -->
+              <div class="progression-stepper progression-18-states" id="progression-stepper">
+                <div class="step" data-step="DRAFT">
                   <div class="step-marker">1</div>
-                  <div class="step-info"><span class="step-title">SOS Created</span><span class="step-time" id="time-step-1">--:--:--</span></div>
+                  <div class="step-info"><span class="step-title">DRAFT</span><span class="step-time" id="time-step-DRAFT">--:--:--</span><span class="step-actor">Device Form</span></div>
                 </div>
-                <div class="step" data-step="STORED_LOCALLY">
+                <div class="step" data-step="SOS_CREATED">
                   <div class="step-marker">2</div>
-                  <div class="step-info"><span class="step-title">Saved Locally (SQLite)</span><span class="step-time" id="time-step-2">--:--:--</span></div>
+                  <div class="step-info"><span class="step-title">SOS Created</span><span class="step-time" id="time-step-SOS_CREATED">--:--:--</span><span class="step-actor">Help Seeker</span></div>
+                </div>
+                <div class="step" data-step="SAVED_LOCALLY">
+                  <div class="step-marker">3</div>
+                  <div class="step-info"><span class="step-title">Saved Locally</span><span class="step-time" id="time-step-SAVED_LOCALLY">--:--:--</span><span class="step-actor">Encrypted SQLite</span></div>
                 </div>
                 <div class="step" data-step="QUEUED">
-                  <div class="step-marker">3</div>
-                  <div class="step-info"><span class="step-title">Queued in Priority Outbox</span><span class="step-time" id="time-step-3">--:--:--</span></div>
+                  <div class="step-marker">4</div>
+                  <div class="step-info"><span class="step-title">Queued Outbox</span><span class="step-time" id="time-step-QUEUED">--:--:--</span><span class="step-actor">P0 Life Safety</span></div>
                 </div>
                 <div class="step" data-step="TRANSMITTING">
-                  <div class="step-marker">4</div>
-                  <div class="step-info"><span class="step-title">Transmitting over LoRa</span><span class="step-time" id="time-step-4">--:--:--</span></div>
-                </div>
-                <div class="step" data-step="DISPATCHED">
                   <div class="step-marker">5</div>
-                  <div class="step-info"><span class="step-title">Responder Dispatched</span><span class="step-time" id="time-step-5">--:--:--</span></div>
+                  <div class="step-info"><span class="step-title">Transmitting</span><span class="step-time" id="time-step-TRANSMITTING">--:--:--</span><span class="step-actor">BLE / LoRa Mesh</span></div>
                 </div>
-                <div class="step" data-step="ACCEPTED">
+                <div class="step" data-step="RECEIVED">
                   <div class="step-marker">6</div>
-                  <div class="step-info"><span class="step-title">Mission Accepted by Unit</span><span class="step-time" id="time-step-6">--:--:--</span></div>
+                  <div class="step-info"><span class="step-title">Received</span><span class="step-time" id="time-step-RECEIVED">--:--:--</span><span class="step-actor">Mesh Ingress Gateway</span></div>
+                </div>
+                <div class="step" data-step="RESPONDER_NOTIFIED">
+                  <div class="step-marker">7</div>
+                  <div class="step-info"><span class="step-title">Responder Notified</span><span class="step-time" id="time-step-RESPONDER_NOTIFIED">--:--:--</span><span class="step-actor">Broadcast Alert</span></div>
+                </div>
+                <div class="step" data-step="RESPONDER_ASSIGNED">
+                  <div class="step-marker">8</div>
+                  <div class="step-info"><span class="step-title">Responder Assigned</span><span class="step-time" id="time-step-RESPONDER_ASSIGNED">--:--:--</span><span class="step-actor">Command Coordinator</span></div>
+                </div>
+                <div class="step" data-step="MISSION_ACCEPTED">
+                  <div class="step-marker">9</div>
+                  <div class="step-info"><span class="step-title">Mission Accepted</span><span class="step-time" id="time-step-MISSION_ACCEPTED">--:--:--</span><span class="step-actor">Unit Alpha / Paramedic</span></div>
                 </div>
                 <div class="step" data-step="EN_ROUTE">
-                  <div class="step-marker">7</div>
-                  <div class="step-info"><span class="step-title">Unit En Route</span><span class="step-time" id="time-step-7">--:--:--</span></div>
+                  <div class="step-marker">10</div>
+                  <div class="step-info"><span class="step-title">En Route</span><span class="step-time" id="time-step-EN_ROUTE">--:--:--</span><span class="step-actor">Tracking Active</span></div>
                 </div>
-                <div class="step" data-step="ON_SCENE">
-                  <div class="step-marker">8</div>
-                  <div class="step-info"><span class="step-title">Arrived on Scene</span><span class="step-time" id="time-step-8">--:--:--</span></div>
+                <div class="step" data-step="ARRIVED_ON_SCENE">
+                  <div class="step-marker">11</div>
+                  <div class="step-info"><span class="step-title">Arrived on Scene</span><span class="step-time" id="time-step-ARRIVED_ON_SCENE">--:--:--</span><span class="step-actor">GNSS Verified</span></div>
                 </div>
-                <div class="step" data-step="RESCUE_SUBMITTED">
-                  <div class="step-marker">9</div>
-                  <div class="step-info"><span class="step-title">Rescue Submitted (Evidence Attached)</span><span class="step-time" id="time-step-9">--:--:--</span></div>
+                <div class="step" data-step="RESCUE_IN_PROGRESS">
+                  <div class="step-marker">12</div>
+                  <div class="step-info"><span class="step-title">Rescue in Progress</span><span class="step-time" id="time-step-RESCUE_IN_PROGRESS">--:--:--</span><span class="step-actor">Field Extraction</span></div>
+                </div>
+                <div class="step" data-step="RESCUE_COMPLETED">
+                  <div class="step-marker">13</div>
+                  <div class="step-info"><span class="step-title">Rescue Completed</span><span class="step-time" id="time-step-RESCUE_COMPLETED">--:--:--</span><span class="step-actor">Victims Evacuated</span></div>
+                </div>
+                <div class="step" data-step="EVIDENCE_REQUIRED">
+                  <div class="step-marker">14</div>
+                  <div class="step-info"><span class="step-title">Evidence Required</span><span class="step-time" id="time-step-EVIDENCE_REQUIRED">--:--:--</span><span class="step-actor">Proof Mandatory</span></div>
+                </div>
+                <div class="step" data-step="EVIDENCE_SUBMITTED">
+                  <div class="step-marker">15</div>
+                  <div class="step-info"><span class="step-title">Evidence Submitted</span><span class="step-time" id="time-step-EVIDENCE_SUBMITTED">--:--:--</span><span class="step-actor">Hashed Photo & Report</span></div>
+                </div>
+                <div class="step" data-step="VERIFICATION_PENDING">
+                  <div class="step-marker">16</div>
+                  <div class="step-info"><span class="step-title">Verification Pending</span><span class="step-time" id="time-step-VERIFICATION_PENDING">--:--:--</span><span class="step-actor">Authority Desk</span></div>
                 </div>
                 <div class="step" data-step="VERIFIED">
-                  <div class="step-marker">10</div>
-                  <div class="step-info"><span class="step-title">Verified & Recorded</span><span class="step-time" id="time-step-10">--:--:--</span></div>
+                  <div class="step-marker">17</div>
+                  <div class="step-info"><span class="step-title">Verified</span><span class="step-time" id="time-step-VERIFIED">--:--:--</span><span class="step-actor">Dual Co-Signed</span></div>
                 </div>
+                <div class="step" data-step="CLOSED">
+                  <div class="step-marker">18</div>
+                  <div class="step-info"><span class="step-title">Closed</span><span class="step-time" id="time-step-CLOSED">--:--:--</span><span class="step-actor">Archived to History</span></div>
+                </div>
+              </div>
+
+              <!-- Citizen Emergency Control Bar -->
+              <div class="citizen-actions-bar" style="margin-top: 15px; display: flex; gap: 10px;">
+                <button id="btn-citizen-cancel-sos" class="btn-secondary btn-sm" style="color: #ff334b;">✕ Cancel My SOS</button>
+                <button id="btn-citizen-view-active-case" class="btn-secondary btn-sm">📋 View Case Details</button>
               </div>
 
               <!-- Citizen Dual Confirmation Box -->
@@ -416,15 +455,18 @@
                   </div>
                 </div>
 
-                <div class="mission-actions">
+                <div class="mission-actions" style="display: flex; flex-wrap: wrap; gap: 8px;">
                   <button id="btn-resp-accept" class="btn-action btn-accept">Accept Mission</button>
+                  <button id="btn-resp-reject" class="btn-action btn-reject" style="background: rgba(255, 51, 75, 0.15); color: #ff334b; border: 1px solid #ff334b;">Reject Mission</button>
                   <button id="btn-resp-enroute" class="btn-action btn-enroute">Mark En Route</button>
-                  <button id="btn-resp-onscene" class="btn-action btn-onscene">Mark On Scene</button>
+                  <button id="btn-resp-onscene" class="btn-action btn-onscene">Arrived On Scene</button>
+                  <button id="btn-resp-startrescue" class="btn-action btn-rescue-start" style="background: rgba(0, 229, 255, 0.15); color: #00e5ff; border: 1px solid #00e5ff;">Start Rescue</button>
+                  <button id="btn-resp-completerescue" class="btn-action btn-rescue-complete" style="background: rgba(0, 230, 118, 0.15); color: #00e676; border: 1px solid #00e676;">Complete Rescue</button>
                 </div>
               </div>
             </div>
 
-            <!-- Rescue Evidence & Structured Report Submission (Section 27) -->
+            <!-- Rescue Evidence & Structured Report Submission (Sections 7, 8, 9) -->
             <div class="card card-evidence-desk">
               <div class="card-header">
                 <h3>Rescue Evidence & Structured Report</h3>
@@ -435,13 +477,37 @@
               <div class="evidence-workflow-grid">
                 <!-- Photo Upload / Camera Capture with SHA-256 Check -->
                 <div class="evidence-upload-box">
-                  <h4>1. Attach On-Scene Photo / Evidence</h4>
-                  <input type="file" id="evidence-file-input" accept="image/*" class="file-picker">
-                  <div class="file-meta" id="file-meta-box">
+                  <h4>1. Attach On-Scene Photo / PDF Evidence</h4>
+                  <input type="file" id="evidence-file-input" accept="image/jpeg,image/png,image/webp,application/pdf" class="file-picker">
+                  
+                  <!-- Live Preview Area -->
+                  <div id="evidence-preview-container" class="evidence-preview-box" style="margin-top: 10px; display: none;">
+                    <img id="evidence-img-preview" src="" alt="Evidence Preview" style="max-height: 180px; max-width: 100%; border-radius: 6px; border: 1px solid #334155; object-fit: contain;">
+                    <div id="evidence-pdf-preview" style="display: none; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 6px; text-align: center;">
+                      <span style="font-size: 32px;">📄</span>
+                      <p id="evidence-pdf-name" style="margin: 5px 0; font-weight: 600;">document.pdf</p>
+                    </div>
+                  </div>
+
+                  <div class="file-meta" id="file-meta-box" style="margin-top: 8px;">
                     <span>No file selected</span>
                   </div>
-                  <div class="hash-preview" id="hash-preview-box">
+
+                  <div class="form-row" style="margin-top: 10px;">
+                    <label for="evidence-description-input">Evidence Description</label>
+                    <input type="text" id="evidence-description-input" class="input-text" placeholder="e.g. Victim safely extracted from collapsed terrace">
+                  </div>
+
+                  <div class="hash-preview" id="hash-preview-box" style="margin-top: 8px;">
                     SHA-256 Hash: <code id="file-sha256-val">--</code>
+                  </div>
+
+                  <div class="evidence-loc-stamp" id="evidence-loc-stamp" style="font-size: 11px; color: #94a3b8; margin-top: 5px;">
+                    Location Stamp: <span id="evidence-stamp-val">GNSS coordinates acquired at capture</span>
+                  </div>
+
+                  <div class="evidence-actions-bar" style="margin-top: 10px; display: flex; gap: 8px;">
+                    <button id="btn-remove-evidence" class="btn-micro" style="display: none;">Remove File</button>
                   </div>
                 </div>
 
@@ -546,12 +612,16 @@
             <div class="map-container-wrapper">
               <div class="map-controls-bar">
                 <div class="map-legend">
+                  <span class="legend-item"><span class="dot" style="background:#00e5ff; box-shadow: 0 0 6px #00e5ff;"></span> Current User (YOU)</span>
                   <span class="legend-item"><span class="dot dot-critical"></span> Critical SOS</span>
                   <span class="legend-item"><span class="dot dot-high"></span> High SOS</span>
                   <span class="legend-item"><span class="dot dot-responder"></span> Responder Unit</span>
+                  <span class="legend-item"><span class="dot" style="background:#00bcd4; box-shadow: 0 0 5px #00bcd4;"></span> Connected BLE Device</span>
                   <span class="legend-item"><span class="dot dot-hazard"></span> Hazard Zone</span>
                 </div>
                 <div class="map-actions">
+                  <button id="btn-map-my-location" class="btn-micro">My Location</button>
+                  <button id="btn-map-fit-incidents" class="btn-micro">Fit Incidents</button>
                   <button id="btn-recenter-map" class="btn-micro">Center on Command</button>
                   <button id="btn-toggle-hazards" class="btn-micro">Toggle Hazard Zones</button>
                 </div>
@@ -799,6 +869,24 @@
               </div>
             </div>
 
+            <!-- CONNECTED URSAFE USER Card (Section 27) -->
+            <div class="card conn-card hidden" id="card-connected-ursafe-user">
+              <div class="card-header">
+                <h3>CONNECTED URSAFE USER</h3>
+                <span class="badge badge-success" id="connected-user-badge">BLE CONNECTED</span>
+              </div>
+              <div class="conn-details">
+                <div class="detail-row"><span class="k">Name:</span> <strong id="connected-user-name">Priya Sharma</strong></div>
+                <div class="detail-row"><span class="k">Role:</span> <span class="role-pill pill-responder" id="connected-user-role">RESPONDER</span></div>
+                <div class="detail-row"><span class="k">Protocol:</span> <code>UrSafe v1 (0xFE26)</code></div>
+                <div class="detail-row"><span class="k">RSSI:</span> <span id="connected-user-rssi">-61 dBm</span></div>
+                <div class="detail-row"><span class="k">Battery:</span> <span id="connected-user-batt">74%</span></div>
+                <div class="detail-row"><span class="k">Heartbeat:</span> <span id="connected-user-lastseen">3 sec ago</span></div>
+                <div class="detail-row"><span class="k">Location:</span> <span class="badge badge-success" id="connected-user-loc">Available on Map</span></div>
+                <button id="btn-disconnect-ursafe-user" class="btn-secondary btn-full" style="margin-top:10px;">Disconnect Peer</button>
+              </div>
+            </div>
+
             <!-- MESH & OUTBOX Card -->
             <div class="card conn-card">
               <div class="card-header">
@@ -812,6 +900,49 @@
                 <div class="detail-row"><span class="k">Sync Status:</span> <span class="badge badge-success">SYNCED</span></div>
               </div>
               <button id="btn-cc-open-diag" class="btn-secondary btn-full" style="margin-top:14px;">Open Low-Level Bluetooth Diagnostics</button>
+            </div>
+          </div>
+
+          <!-- Bluetooth Discovery & Categorized Scanner (Section 25) -->
+          <div class="card device-discovery-panel" style="margin-top: 20px;">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <h3>Bluetooth Device Discovery & Field Pairing (UrSafe Service 0xFE26)</h3>
+                <p class="card-sub" style="margin: 0;">Discovers nearby UrSafe peer nodes and hardware LoRa radios. Filtered by application protocol identity.</p>
+              </div>
+              <button id="btn-scan-ursafe-ble" class="btn-primary">🔍 Scan For Nearby Devices</button>
+            </div>
+            
+            <div class="device-discovery-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-top: 15px;">
+              <!-- Box 1: UrSafe Protocol Nodes -->
+              <div class="device-category-box">
+                <h4 style="color: #00e5ff; margin-top: 0; display: flex; align-items: center; gap: 8px;">
+                  <span>📱</span> NEARBY URSAFE NODES
+                </h4>
+                <div id="list-ursafe-devices" class="device-list-container">
+                  <div class="empty-state">Click Scan to discover active UrSafe devices.</div>
+                </div>
+              </div>
+
+              <!-- Box 2: Compatible Hardware Radios -->
+              <div class="device-category-box">
+                <h4 style="color: #00e676; margin-top: 0; display: flex; align-items: center; gap: 8px;">
+                  <span>📻</span> COMPATIBLE HARDWARE RADIOS
+                </h4>
+                <div id="list-compatible-radios" class="device-list-container">
+                  <div class="empty-state">No LoRa radios detected.</div>
+                </div>
+              </div>
+
+              <!-- Box 3: Other Bluetooth Devices -->
+              <div class="device-category-box">
+                <h4 style="color: #94a3b8; margin-top: 0; display: flex; align-items: center; gap: 8px;">
+                  <span>🎧</span> OTHER BLUETOOTH DEVICES
+                </h4>
+                <div id="list-other-ble-devices" class="device-list-container">
+                  <div class="empty-state">No generic peripherals in range.</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -898,6 +1029,30 @@
         </div>
       </section>
 
+      <!-- ===================================================================== -->
+      <!-- VIEW 8: DEDICATED EMERGENCY HISTORY PORTAL (SECTION 10, 11)           -->
+      <!-- ===================================================================== -->
+      <section id="view-emergency-history" class="portal-view">
+        <div class="card">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div>
+              <h2>UrSafe Emergency History & Closed Cases Archive</h2>
+              <p class="card-sub" style="margin: 0;">Permanent record of all resolved, verified, and closed emergency cases. Strictly separated from active incidents.</p>
+            </div>
+            <div class="history-filter-pills" style="display: flex; gap: 6px;">
+              <button class="filter-pill active" data-hist-filter="ALL">All Completed</button>
+              <button class="filter-pill" data-hist-filter="VERIFIED">Verified</button>
+              <button class="filter-pill" data-hist-filter="CLOSED">Closed</button>
+              <button class="filter-pill" data-hist-filter="CANCELLED">Cancelled</button>
+              <button class="filter-pill" data-hist-filter="REOPENED">Reopened</button>
+            </div>
+          </div>
+          <div id="emergency-history-list" class="history-grid" style="margin-top: 15px; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px;">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </section>
+
     </main>
   </div>
 
@@ -940,6 +1095,90 @@
 
         <div class="diag-note">
           <p>Location is retrieved directly from the device's hardware GNSS receiver via <code>navigator.geolocation</code>. Coordinates are never fabricated.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: COMPREHENSIVE CASE DETAIL VIEW (SECTION 12)                        -->
+  <!-- ========================================================================= -->
+  <div id="modal-case-detail" class="modal-backdrop hidden">
+    <div class="modal-card modal-large" style="max-width: 900px; max-height: 85vh; overflow-y: auto;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="modal-title-group" style="display: flex; align-items: center; gap: 12px;">
+          <h3 id="cd-title" style="margin: 0;">CASE #INC-2026-000042</h3>
+          <span class="status-badge" id="cd-status-badge">VERIFIED & CLOSED</span>
+        </div>
+        <button class="modal-close" id="btn-close-case-detail">✕</button>
+      </div>
+      <div class="modal-body case-detail-layout" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding-top: 15px;">
+        <!-- Left Column: Incident Summary, Location, Responder & Verification -->
+        <div class="cd-col-meta" style="display: flex; flex-direction: column; gap: 15px;">
+          <div class="card" style="padding: 15px;">
+            <h4 style="margin-top: 0; color: #00e5ff; border-bottom: 1px solid #334155; padding-bottom: 6px;">Incident Details</h4>
+            <div class="detail-row"><span class="k" style="color: #94a3b8;">Category:</span> <strong id="cd-category">MEDICAL</strong></div>
+            <div class="detail-row"><span class="k" style="color: #94a3b8;">Urgency:</span> <span class="urgency-pill pill-critical" id="cd-urgency">CRITICAL</span></div>
+            <div class="detail-row"><span class="k" style="color: #94a3b8;">Victims:</span> <span id="cd-victims">1 person</span></div>
+            <div class="detail-row"><span class="k" style="color: #94a3b8;">Reporter:</span> <span id="cd-reporter">Priya Sharma (CITIZEN)</span></div>
+            <div class="detail-row"><span class="k" style="color: #94a3b8;">Reported At:</span> <span id="cd-created">25 Oct 2026, 23:12</span></div>
+            <div class="detail-row" style="flex-direction: column; align-items: flex-start; margin-top: 6px;">
+              <span class="k" style="color: #94a3b8;">Description:</span>
+              <p id="cd-desc" style="margin: 4px 0 0 0; font-size: 13px; line-height: 1.4; color: #cbd5e1;">Trapped on 1st floor roof</p>
+            </div>
+          </div>
+
+          <div class="card" style="padding: 15px;">
+            <h4 style="margin-top: 0; color: #00e5ff; border-bottom: 1px solid #334155; padding-bottom: 6px;">Exact Location (GPS Source of Truth)</h4>
+            <div class="detail-row"><span class="k" style="color: #94a3b8;">Coordinates:</span> <strong id="cd-coords" style="font-family: monospace;">28.650805° N, 77.230014° E</strong></div>
+            <div class="detail-row"><span class="k" style="color: #94a3b8;">Accuracy:</span> <span id="cd-acc">±8 meters</span></div>
+            <div class="detail-row" style="flex-direction: column; align-items: flex-start; margin-top: 6px;">
+              <span class="k" style="color: #94a3b8;">Resolved Address:</span>
+              <span id="cd-address" style="margin-top: 4px; font-size: 13px; color: #cbd5e1;">Chandni Chowk, Old Delhi, Delhi 110006, India</span>
+            </div>
+          </div>
+
+          <div class="card" style="padding: 15px;">
+            <h4 style="margin-top: 0; color: #00e5ff; border-bottom: 1px solid #334155; padding-bottom: 6px;">Assigned Tactical Responder</h4>
+            <div class="detail-row"><span class="k" style="color: #94a3b8;">Unit / Medic:</span> <strong id="cd-responder">Capt. Vikram Singh</strong></div>
+            <div class="detail-row"><span class="k" style="color: #94a3b8;">Badge:</span> <span id="cd-badge">NDRF-B-108</span></div>
+            <div class="detail-row"><span class="k" style="color: #94a3b8;">Specialization:</span> <span id="cd-spec">TACTICAL_ALS_PARAMEDIC</span></div>
+          </div>
+
+          <div class="card" id="cd-verification-box" style="padding: 15px;">
+            <h4 style="margin-top: 0; color: #00e5ff; border-bottom: 1px solid #334155; padding-bottom: 6px;">Authority Verification Decision</h4>
+            <div class="detail-row"><span class="k" style="color: #94a3b8;">Decision:</span> <strong id="cd-verif-decision" class="text-success">VERIFIED & APPROVED</strong></div>
+            <div class="detail-row"><span class="k" style="color: #94a3b8;">Verified By:</span> <span id="cd-verifier">Commander Rajesh Kumar (SDMA)</span></div>
+            <div class="detail-row"><span class="k" style="color: #94a3b8;">Verified At:</span> <span id="cd-verif-time">25 Oct 2026, 23:27</span></div>
+            <div class="detail-row" style="flex-direction: column; align-items: flex-start; margin-top: 6px;">
+              <span class="k" style="color: #94a3b8;">Decision Notes / Reason:</span>
+              <span id="cd-verif-notes" style="margin-top: 4px; font-size: 13px; color: #cbd5e1;">Photographic evidence matches coordinates.</span>
+            </div>
+          </div>
+
+          <!-- Authority Reopen Action -->
+          <div class="cd-authority-actions" id="cd-auth-actions" style="margin-top: 5px;">
+            <button id="btn-reopen-case" class="btn-secondary btn-full" style="color: #ff9100; border: 1px solid #ff9100;">
+              ⚠️ Reopen Historical Case (Authority Action)
+            </button>
+          </div>
+        </div>
+
+        <!-- Right Column: Chronological State Timeline & Attached Evidence -->
+        <div class="cd-col-timeline" style="display: flex; flex-direction: column; gap: 15px;">
+          <div class="card" style="padding: 15px;">
+            <h4 style="margin-top: 0; color: #00e5ff; border-bottom: 1px solid #334155; padding-bottom: 6px;">Complete Chronological Lifecycle Timeline</h4>
+            <div class="cd-timeline-container" id="cd-timeline-events" style="max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+              <!-- Populated dynamically with full state transitions -->
+            </div>
+          </div>
+
+          <div class="card" style="padding: 15px;">
+            <h4 style="margin-top: 0; color: #00e5ff; border-bottom: 1px solid #334155; padding-bottom: 6px;">Rescue Evidence & Cryptographic Hashes</h4>
+            <div class="cd-evidence-gallery" id="cd-evidence-list" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+              <!-- Populated dynamically with evidence cards -->
+            </div>
+          </div>
         </div>
       </div>
     </div>
