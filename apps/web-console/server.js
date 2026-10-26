@@ -6,9 +6,9 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-// Auto-load root .env if present
+// Auto-load root .env if present (skip in test mode to protect isolated test database and routing)
 const envPath = path.join(__dirname, '../../.env');
-if (fs.existsSync(envPath)) {
+if (fs.existsSync(envPath) && process.env.NODE_ENV !== 'test') {
   try {
     const lines = fs.readFileSync(envPath, 'utf8').split('\n');
     for (const line of lines) {
@@ -53,9 +53,9 @@ const server = http.createServer((req, res) => {
     return res.end(`window.URSAFE_CONFIG = { googleMapsApiKey: ${JSON.stringify(key)}, isDev: ${isDev}, region: 'IN_865' };`);
   }
 
-  // API requests: Handle locally or proxy if BACKEND_PORT explicitly configured
+  // API requests: Handle locally or proxy if BACKEND_PORT explicitly configured (never proxy in test mode)
   if (pathname.startsWith('/api/')) {
-    if (process.env.BACKEND_PORT) {
+    if (process.env.BACKEND_PORT && process.env.NODE_ENV !== 'test') {
       const backendPort = process.env.BACKEND_PORT;
       const proxyReq = http.request({
         hostname: '127.0.0.1',

@@ -74,6 +74,7 @@ def session_api_server(isolated_test_database):
     env["PORT"] = str(TEST_PORT)
     env["NODE_ENV"] = "test"
     env["URSAFE_DB_PATH"] = isolated_test_database
+    env.pop("BACKEND_PORT", None)
 
     proc = subprocess.Popen(
         ["node", "apps/web-console/server.js"],
