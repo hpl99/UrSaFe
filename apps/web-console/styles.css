@@ -2678,8 +2678,9 @@ body.ursafe-theme {
   padding: 20px;
 }
 
+.hidden,
 .modal-backdrop.hidden {
-  display: none;
+  display: none !important;
 }
 
 .modal-card {
@@ -3340,7 +3341,7 @@ body.ursafe-theme {
   box-shadow: 0 2px 6px rgba(255, 139, 61, 0.35);
 }
 
-/* Training Mode Full-Width Banner */
+/* Training Mode Full-Width Banner */ 
 .training-banner {
   width: 100%;
   background: #DC2626;
@@ -4153,4 +4154,100 @@ body.ursafe-theme {
   filter: brightness(0.92);
   transform: scale(0.99);
 }
+
+/* Subview Transitions */
+.resp-subview, .orch-subview {
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+/* Authentication Tabs */
+.auth-subtab {
+  transition: all 0.2s ease;
+}
+.auth-subtab:hover {
+  color: var(--accent-orange) !important;
+}
+.auth-subtab.active {
+  color: var(--accent-orange) !important;
+  border-bottom: 2px solid var(--accent-orange) !important;
+}
+
+/* Nearby Responders Grid & Cards */
+.nearby-responder-card {
+  background: #FFFFFF;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.nearby-responder-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border-color: var(--accent-orange);
+}
+
+.nearby-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nearby-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+/* W3C Credential Passport Card */
+.credential-passport-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.cred-detail-box {
+  background: #FFFFFF;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.cred-detail-label {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  display: block;
+}
+
+.cred-detail-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-top: 2px;
+  display: block;
+}
+
+/* Admin Rail Active Links */
+.admin-nav-link {
+  cursor: pointer;
+}
+.admin-nav-link.active {
+  background: #FFE6D5;
+  color: #D95A00;
+  font-weight: 700;
+}
+
 

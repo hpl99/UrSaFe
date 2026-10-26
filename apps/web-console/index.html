@@ -245,41 +245,53 @@
             <!-- Leaflet Interactive Canvas -->
             <div id="victim-radar-map" class="radar-map-canvas"></div>
 
-            <!-- Center YOU Marker Pin -->
-            <div class="radar-center-marker" id="victim-marker-pin">
-              <div class="marker-you-pill">● YOU</div>
+            <!-- Center YOU Marker Pin (Locked to Exact GPS Fix) -->
+            <div class="radar-center-marker" id="victim-marker-pin" style="pointer-events:none;">
+              <div class="marker-you-pill" id="victim-pin-status-pill">● YOU (LOCKED GNSS)</div>
               <div class="marker-pin-head"></div>
             </div>
 
+            <!-- Nearby Active Volunteers & Field Units Indicator -->
+            <div class="radar-relay-node" id="victim-volunteers-nearby-pill" style="left:16px; right:auto; bottom:74px; background:rgba(255,255,255,0.96); border:1px solid #10B981; box-shadow:0 2px 8px rgba(16,185,129,0.2);">
+              <span class="relay-green-dot" style="background:#10B981;"></span>
+              <span id="victim-volunteers-count-text" style="color:#065F46; font-weight:700;">VOLUNTEERS: 2 IN LINE-OF-SIGHT (Anita D. ~280m, Vikram S. ~420m)</span>
+            </div>
+
             <!-- Nearby Relay Node -->
-            <div class="radar-relay-node">
+            <div class="radar-relay-node" style="bottom:74px; right:16px;">
               <span class="relay-green-dot"></span>
-              <span>RELAY N-07 (680m)</span>
+              <span>RELAY N-07 (680m • LoRa 865)</span>
             </div>
 
             <!-- Floating Bottom Card Over Map -->
             <div class="radar-bottom-float-card">
               <div>
-                <span class="pos-title-label">LOCKED POSITION</span>
+                <span class="pos-title-label">LOCKED RESCUE POSITION</span>
                 <span class="pos-coords-val" id="val-victim-locked-coords">19.0760° N, 72.8777° E</span>
               </div>
-              <button class="btn-adjust-pin" id="btn-trigger-adjust-pin">
-                <iconify-icon icon="lucide:sliders"></iconify-icon>
-                <span>Tap to adjust pin</span>
-              </button>
+              <div style="display:flex; gap:6px;">
+                <button class="btn-adjust-pin" id="btn-trigger-adjust-pin" style="background:#FAF6ED; border:1px solid var(--border-color); color:var(--text-primary); cursor:pointer;">
+                  <iconify-icon icon="lucide:sliders"></iconify-icon>
+                  <span>Calibrate / Adjust</span>
+                </button>
+                <button class="btn-adjust-pin" id="btn-lock-current-coords" style="background:var(--accent-green); color:#FFFFFF; border:none; cursor:pointer;">
+                  <iconify-icon icon="lucide:check"></iconify-icon>
+                  <span>Lock Position</span>
+                </button>
+              </div>
             </div>
           </div>
 
           <!-- Local Mesh Health Card -->
-          <div class="card-mesh-health">
+          <div class="card-mesh-health" style="background:#FAF6ED; border:1px solid var(--border-color);">
             <div class="mesh-health-info">
-              <iconify-icon icon="lucide:radio-tower" class="mesh-health-icon"></iconify-icon>
+              <iconify-icon icon="lucide:radio-tower" class="mesh-health-icon" style="color:var(--accent-orange);"></iconify-icon>
               <div class="mesh-health-text">
-                <h4>Local Mesh Health</h4>
-                <p id="mesh-health-hops">Hops: No data yet</p>
+                <h4 style="margin:0; font-size:13px; font-weight:700;">Local Mesh Health</h4>
+                <p id="mesh-health-hops" style="margin:2px 0 0 0; font-size:11px; color:var(--text-secondary);">Hops: 01 (Direct LoRa P2P 865 MHz) • 4 Line-of-Sight Relays Online</p>
               </div>
             </div>
-            <span class="badge-health-pill" id="mesh-health-badge">No data yet</span>
+            <span class="badge-health-pill" id="mesh-health-badge" style="background:#ECFDF5; color:#059669; font-weight:700; border:1px solid rgba(16,185,129,0.3);">99.2% EXCELLENT LQI</span>
           </div>
         </div>
 
@@ -604,60 +616,124 @@
 
         <!-- Main Responder Canvas -->
         <div class="responder-main-canvas">
-          <!-- Top: Map Viewport Box -->
-          <div class="map-viewport-card">
-            <div class="viewport-header-capsule">
-              <iconify-icon icon="lucide:radar"></iconify-icon>
-              <span>MAP VIEWPORT // TACTICAL FIELD SECTOR | REAL INCIDENTS</span>
+          
+          <!-- SUBVIEW 1: ACTIVE TASKS & TRIAGE QUEUE (DEFAULT) -->
+          <div id="resp-view-tasks" class="resp-subview">
+            <!-- Top: Map Viewport Box -->
+            <div class="map-viewport-card">
+              <div class="viewport-header-capsule">
+                <iconify-icon icon="lucide:radar"></iconify-icon>
+                <span>MAP VIEWPORT // TACTICAL FIELD SECTOR | REAL INCIDENTS</span>
+              </div>
+
+              <!-- Real Tactical Map Canvas -->
+              <div id="map-responder-viewport" style="width:100%; height:260px; border-radius:12px; background:#1C1917; position:relative; overflow:hidden;">
+                <div id="responder-map-canvas" style="width:100%; height:100%;"></div>
+              </div>
+
+              <!-- Viewport Bottom Controls -->
+              <div class="map-viewport-controls">
+                <span class="map-scale-metric">SCALE: 1:5000 ⎯⎯⎯ 500m (GPS LOCK)</span>
+                <div class="map-action-tools">
+                  <button class="btn-map-control" id="btn-zoom-in" title="Zoom in">＋</button>
+                  <button class="btn-map-control" id="btn-zoom-out" title="Zoom out">－</button>
+                  <button class="btn-map-control" id="btn-recenter-geo" title="Recenter Location">
+                    <iconify-icon icon="lucide:crosshair"></iconify-icon>
+                  </button>
+                  <button class="btn-map-control" id="btn-fullscreen-map">
+                    <iconify-icon icon="lucide:maximize"></iconify-icon>
+                    <span>View Fullscreen Map</span>
+                  </button>
+                </div>
+              </div>
             </div>
 
-            <!-- Real Tactical Map Canvas -->
-            <div id="map-responder-viewport" style="width:100%; height:220px; border-radius:12px; background:#1C1917; position:relative;">
-              <div id="responder-map-canvas" style="width:100%; height:100%;"></div>
-            </div>
+            <!-- Bottom: Active Triage Queue -->
+            <div class="triage-queue-section">
+              <div class="queue-section-header">
+                <div class="queue-title-row">
+                  <h2>Active Triage Queue</h2>
+                  <span class="incidents-count-caption" id="val-queue-count-label">4 INCIDENTS NEARBY</span>
+                </div>
+                <div class="queue-controls-right">
+                  <button class="btn-filter-proximity" id="btn-filter-prox">
+                    <iconify-icon icon="lucide:navigation"></iconify-icon>
+                    <span>Filter by Proximity</span>
+                  </button>
+                  <select class="select-sort-queue" id="sel-queue-sort">
+                    <option value="dist">Sort: Distance (ASC)</option>
+                    <option value="urgency">Sort: Urgency (CRIT First)</option>
+                    <option value="time">Sort: Timestamp (Newest)</option>
+                  </select>
+                </div>
+              </div>
 
-            <!-- Viewport Bottom Controls -->
-            <div class="map-viewport-controls">
-              <span class="map-scale-metric">SCALE: 1:5000 ⎯⎯⎯ 500m</span>
-              <div class="map-action-tools">
-                <button class="btn-map-control" id="btn-zoom-in" title="Zoom in">＋</button>
-                <button class="btn-map-control" id="btn-zoom-out" title="Zoom out">－</button>
-                <button class="btn-map-control" id="btn-recenter-geo" title="Recenter Location">
-                  <iconify-icon icon="lucide:crosshair"></iconify-icon>
-                </button>
-                <button class="btn-map-control" id="btn-fullscreen-map">
-                  <iconify-icon icon="lucide:maximize"></iconify-icon>
-                  <span>View Fullscreen Map</span>
+              <!-- Triage Cards Stream Container -->
+              <div class="triage-cards-list" id="triage-cards-container">
+                <!-- Dynamically populated or seeded matching screenshots -->
+              </div>
+            </div>
+          </div>
+
+          <!-- SUBVIEW 2: EXPANDED TACTICAL MESH MAP -->
+          <div id="resp-view-tactical-map" class="resp-subview hidden">
+            <div class="map-viewport-card" style="padding:16px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <iconify-icon icon="lucide:map" style="color:var(--accent-orange); font-size:20px;"></iconify-icon>
+                  <h3 style="margin:0; font-family:var(--font-display); font-size:16px;">Tactical Mesh Map & Coverage Overlay</h3>
+                </div>
+                <span class="badge-priority-pill standard" style="font-size:11px;">LoRa 865 MHz Mesh Grid</span>
+              </div>
+              <div id="expanded-tactical-map-canvas" style="width:100%; height:480px; border-radius:12px; background:#1C1917;"></div>
+              <div style="margin-top:12px; display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--text-secondary);">
+                <span>Showing: Active Incidents, Designated High-Ground Shelters & Mesh Peer Relays</span>
+                <button class="btn-action-small" id="btn-back-to-tasks" style="padding:6px 12px;">
+                  <iconify-icon icon="lucide:arrow-left"></iconify-icon> Back to Triage Queue
                 </button>
               </div>
             </div>
           </div>
 
-          <!-- Bottom: Active Triage Queue -->
-          <div class="triage-queue-section">
-            <div class="queue-section-header">
-              <div class="queue-title-row">
-                <h2>Active Triage Queue</h2>
-                <span class="incidents-count-caption" id="val-queue-count-label">4 INCIDENTS NEARBY</span>
-              </div>
-              <div class="queue-controls-right">
-                <button class="btn-filter-proximity" id="btn-filter-prox">
-                  <iconify-icon icon="lucide:navigation"></iconify-icon>
-                  <span>Filter by Proximity</span>
+          <!-- SUBVIEW 3: NEARBY RESPONDERS & FIELD VOLUNTEERS -->
+          <div id="resp-view-nearby" class="resp-subview hidden">
+            <div class="map-viewport-card" style="padding:18px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">
+                <div>
+                  <h3 style="margin:0; font-family:var(--font-display); font-size:16px;">Active Responders & Field Volunteers Nearby</h3>
+                  <span style="font-size:12px; color:var(--text-secondary);">Direct LoRa P2P link line-of-sight & tactical availability</span>
+                </div>
+                <button class="btn-action-small" id="btn-refresh-nearby-responders">
+                  <iconify-icon icon="lucide:refresh-cw"></iconify-icon> Refresh Radar
                 </button>
-                <select class="select-sort-queue" id="sel-queue-sort">
-                  <option value="dist">Sort: Distance (ASC)</option>
-                  <option value="urgency">Sort: Urgency (CRIT First)</option>
-                  <option value="time">Sort: Timestamp (Newest)</option>
-                </select>
               </div>
-            </div>
-
-            <!-- Triage Cards Stream Container -->
-            <div class="triage-cards-list" id="triage-cards-container">
-              <!-- Dynamically populated or seeded matching screenshots -->
+              
+              <div id="nearby-responders-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:14px;">
+                <!-- Populated dynamically via renderNearbyResponders() -->
+              </div>
             </div>
           </div>
+
+          <!-- SUBVIEW 4: MY CREDENTIALS & W3C VERIFIABLE PASSPORT -->
+          <div id="resp-view-credentials" class="resp-subview hidden">
+            <div class="map-viewport-card" style="padding:20px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--border-color); padding-bottom:12px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <iconify-icon icon="lucide:award" style="color:var(--accent-green); font-size:24px;"></iconify-icon>
+                  <div>
+                    <h3 style="margin:0; font-family:var(--font-display); font-size:16px;" id="cred-holder-title">W3C Verifiable Responder Passport</h3>
+                    <span style="font-size:12px; color:var(--text-secondary);">Tamper-proof decentralized identity & verified rescue qualifications</span>
+                  </div>
+                </div>
+                <span class="threat-badge safe" id="cred-verified-badge" style="font-size:12px;">● CRYPTOGRAPHICALLY VALID</span>
+              </div>
+
+              <div id="credentials-passport-card" style="background:#FAF6ED; border:1px solid var(--border-color); border-radius:12px; padding:18px; display:flex; flex-direction:column; gap:14px;">
+                <!-- Populated dynamically via renderResponderCredentials() -->
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </section>
@@ -714,176 +790,216 @@
 
         <!-- Orchestration Main Area -->
         <div class="orchestration-main">
-          <!-- Top Telemetry Header -->
-          <div class="top-telemetry-header">
-            <h1>Network Orchestration</h1>
-          </div>
-
-          <!-- 4 Telemetry Metrics Horizontal Strip -->
-          <div class="metrics-horizontal-strip">
-            <div class="metric-strip-card">
-              <span class="metric-label-mono">TRANSPORTS ONLINE</span>
-              <div class="metric-val-large">
-                <span id="metric-integrity-val">No data yet</span>
-              </div>
-              <div class="metric-progress-line">
-                <div class="metric-progress-fill" id="metric-integrity-fill" style="width: 0%;"></div>
-              </div>
+          
+          <!-- SUBVIEW 1: ORCHESTRATION DASHBOARD (DEFAULT) -->
+          <div id="orch-subview-dashboard" class="orch-subview">
+            <!-- Top Telemetry Header -->
+            <div class="top-telemetry-header">
+              <h1>Network Orchestration</h1>
             </div>
 
-            <div class="metric-strip-card">
-              <span class="metric-label-mono">ACTIVE NODES</span>
-              <div class="metric-val-large">
-                <span id="metric-nodes-val">No data yet</span>
-                <iconify-icon icon="lucide:radio" style="font-size:18px; color:var(--text-muted);"></iconify-icon>
-              </div>
-            </div>
-
-            <div class="metric-strip-card">
-              <span class="metric-label-mono">AVG BATTERY</span>
-              <div class="metric-val-large">
-                <span id="metric-battery-val">No data yet</span>
-                <iconify-icon icon="lucide:battery-charging" style="font-size:18px; color:var(--accent-orange);"></iconify-icon>
-              </div>
-            </div>
-
-            <div class="metric-strip-card">
-              <span class="metric-label-mono">SIGNAL QUALITY</span>
-              <div class="metric-val-large">
-                <span id="metric-signal-val" style="font-size:18px; color:var(--text-primary);">No data yet</span>
-                <iconify-icon icon="lucide:signal" style="font-size:18px; color:var(--text-muted);"></iconify-icon>
-              </div>
-            </div>
-          </div>
-
-          <!-- Central Map Box + Telemetry Rails -->
-          <div class="orchestration-center-grid">
-            <!-- Center Map Box -->
-            <div class="center-map-box">
-              <!-- Floating Layer Switcher -->
-              <div class="map-layer-pills-floating" id="orchestration-layer-pills">
-                <button type="button" class="layer-pill active" data-map="orchestration" data-layer="google-roadmap">🗺️ Google Roadmap</button>
-                <button type="button" class="layer-pill" data-map="orchestration" data-layer="google-satellite">🛰️ Google Satellite</button>
-                <button type="button" class="layer-pill" data-map="orchestration" data-layer="osm-mesh">🛡️ Offline Mesh</button>
-              </div>
-
-              <!-- Floating Status Capsule -->
-              <div class="floating-status-capsule" id="auth-status-capsule">
-                <span class="capsule-dot-live"></span>
-                <span id="auth-capsule-protocol">IN_865 (865-867 MHz)</span>
-                <span>|</span>
-                <span id="auth-capsule-sync">LOCAL AD-HOC HUB</span>
-              </div>
-            </div>
-
-            <!-- Right Telemetry Rails: 3 Separate Sections -->
-            <div class="telemetry-rail-stack">
-              <!-- Section 1: Incidents by Priority Widget -->
-              <div class="rail-widget-card" id="section-incidents-priority">
-                <h4 class="rail-widget-title">1. Incidents by Priority</h4>
-                <div class="priority-count-bars">
-                  <div class="priority-bar-item">
-                    <span>CRITICAL</span>
-                    <strong style="color:var(--accent-red);" id="auth-critical-count">0</strong>
-                  </div>
-                  <div class="priority-bar-item">
-                    <span>URGENT</span>
-                    <strong style="color:var(--accent-amber);" id="auth-urgent-count">0</strong>
-                  </div>
-                  <div class="priority-bar-item">
-                    <span>STANDARD</span>
-                    <strong style="color:var(--accent-green);" id="auth-standard-count">0</strong>
-                  </div>
+            <!-- 4 Telemetry Metrics Horizontal Strip -->
+            <div class="metrics-horizontal-strip">
+              <div class="metric-strip-card">
+                <span class="metric-label-mono">TRANSPORTS ONLINE</span>
+                <div class="metric-val-large">
+                  <span id="metric-integrity-val">3 ACTIVE</span>
                 </div>
-                <div class="rail-widget-foot">
-                  <span>Total Unresolved</span>
-                  <strong id="auth-unresolved-count">0</strong>
+                <div class="metric-progress-line">
+                  <div class="metric-progress-fill" id="metric-integrity-fill" style="width: 100%;"></div>
                 </div>
               </div>
 
-              <!-- Section 2: Network Nodes by Role & State -->
-              <div class="rail-widget-card" id="section-nodes-breakdown">
-                <h4 class="rail-widget-title">2. Network Nodes by Role & State</h4>
-                <div class="priority-count-bars" id="auth-nodes-role-breakdown">
-                  <div class="priority-bar-item">
-                    <span>ROUTER / RELAY</span>
-                    <strong id="auth-nodes-router-count">0</strong>
-                  </div>
-                  <div class="priority-bar-item">
-                    <span>CLIENT / PEER</span>
-                    <strong id="auth-nodes-client-count">0</strong>
-                  </div>
-                  <div class="priority-bar-item">
-                    <span>OFFLINE / UNKNOWN</span>
-                    <strong id="auth-nodes-offline-count">0</strong>
-                  </div>
-                </div>
-                <div class="rail-widget-foot">
-                  <span>Total Nodes</span>
-                  <strong id="auth-nodes-total-count">0</strong>
+              <div class="metric-strip-card">
+                <span class="metric-label-mono">ACTIVE NODES</span>
+                <div class="metric-val-large">
+                  <span id="metric-nodes-val">8</span>
+                  <iconify-icon icon="lucide:radio" style="font-size:18px; color:var(--text-muted);"></iconify-icon>
                 </div>
               </div>
 
-              <!-- Section 3: Partitions & Outbox -->
-              <div class="rail-widget-card" id="section-partitions-breakdown">
-                <h4 class="rail-widget-title">3. Partitions & Outbox</h4>
-                <div class="priority-count-bars" id="auth-partitions-summary">
-                  <div class="priority-bar-item">
-                    <span>ACTIVE TRANSPORTS</span>
-                    <strong id="auth-transports-count">0</strong>
-                  </div>
-                  <div class="priority-bar-item">
-                    <span>OUTBOX PENDING</span>
-                    <strong id="auth-outbox-pending-count">0</strong>
-                  </div>
-                  <div class="priority-bar-item">
-                    <span>TOPOLOGY REACHABILITY</span>
-                    <strong id="auth-partition-state" style="font-size:12px; color:var(--accent-green);">ISOLATED LOCAL CELL</strong>
-                  </div>
+              <div class="metric-strip-card">
+                <span class="metric-label-mono">AVG BATTERY</span>
+                <div class="metric-val-large">
+                  <span id="metric-battery-val">87%</span>
+                  <iconify-icon icon="lucide:battery-charging" style="font-size:18px; color:var(--accent-orange);"></iconify-icon>
                 </div>
-                <div class="rail-widget-foot">
-                  <span>Store-and-Forward</span>
-                  <strong id="auth-dtn-mule-status">ENABLED</strong>
+              </div>
+
+              <div class="metric-strip-card">
+                <span class="metric-label-mono">SIGNAL QUALITY</span>
+                <div class="metric-val-large">
+                  <span id="metric-signal-val" style="font-size:18px; color:var(--accent-green);">-58 dBm</span>
+                  <iconify-icon icon="lucide:signal" style="font-size:18px; color:var(--accent-green);"></iconify-icon>
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- Phase 4: System-Wide Connectivity Cockpit & Outbox Inspector -->
-          <div class="cockpit-dashboard-card" id="authority-cockpit-card">
-            <div class="cockpit-header-row">
-              <div class="cockpit-title-wrap">
-                <iconify-icon icon="lucide:network" style="color:var(--accent-orange); font-size:24px;"></iconify-icon>
-                <div>
-                  <h3 id="cockpit-card-title">UrSafe Rescue Connectivity Cockpit</h3>
-                  <span id="cockpit-card-subtitle" style="font-size:12px; color:var(--text-secondary);">Real-Time Bearer Link Health & Outbox Dispatch Pipeline</span>
+            <!-- Central Map Box + Telemetry Rails -->
+            <div class="orchestration-center-grid">
+              <!-- Center Map Box -->
+              <div class="center-map-box" style="position:relative; width:100%; height:460px; min-height:420px; border-radius:12px; overflow:hidden; background:#1C1917;">
+                <div id="central-orchestration-map" style="width:100%; height:100%;"></div>
+
+                <!-- Floating Layer Switcher -->
+                <div class="map-layer-pills-floating" id="orchestration-layer-pills">
+                  <button type="button" class="layer-pill active" data-map="orchestration" data-layer="google-roadmap">🗺️ Google Roadmap</button>
+                  <button type="button" class="layer-pill" data-map="orchestration" data-layer="google-satellite">🛰️ Google Satellite</button>
+                  <button type="button" class="layer-pill" data-map="orchestration" data-layer="osm-mesh">🛡️ Offline Mesh</button>
+                </div>
+
+                <!-- Floating Status Capsule -->
+                <div class="floating-status-capsule" id="auth-status-capsule">
+                  <span class="capsule-dot-live"></span>
+                  <span id="auth-capsule-protocol">IN_865 (865-867 MHz)</span>
+                  <span>|</span>
+                  <span id="auth-capsule-sync">LOCAL AD-HOC HUB</span>
                 </div>
               </div>
-              <div class="cockpit-score-badge" id="cockpit-score-badge">
-                <iconify-icon icon="lucide:shield-check"></iconify-icon>
-                <span id="val-cockpit-score">68% CONNECTIVITY SCORE</span>
+
+              <!-- Right Telemetry Rails: 3 Separate Sections -->
+              <div class="telemetry-rail-stack">
+                <!-- Section 1: Incidents by Priority Widget -->
+                <div class="rail-widget-card" id="section-incidents-priority">
+                  <h4 class="rail-widget-title">1. Incidents by Priority</h4>
+                  <div class="priority-count-bars">
+                    <div class="priority-bar-item">
+                      <span>CRITICAL</span>
+                      <strong style="color:var(--accent-red);" id="auth-critical-count">2</strong>
+                    </div>
+                    <div class="priority-bar-item">
+                      <span>URGENT</span>
+                      <strong style="color:var(--accent-amber);" id="auth-urgent-count">1</strong>
+                    </div>
+                    <div class="priority-bar-item">
+                      <span>STANDARD</span>
+                      <strong style="color:var(--accent-green);" id="auth-standard-count">1</strong>
+                    </div>
+                  </div>
+                  <div class="rail-widget-foot">
+                    <span>Total Unresolved</span>
+                    <strong id="auth-unresolved-count">4</strong>
+                  </div>
+                </div>
+
+                <!-- Section 2: Network Nodes by Role & State -->
+                <div class="rail-widget-card" id="section-nodes-breakdown">
+                  <h4 class="rail-widget-title">2. Network Nodes by Role & State</h4>
+                  <div class="priority-count-bars" id="auth-nodes-role-breakdown">
+                    <div class="priority-bar-item">
+                      <span>ROUTER / RELAY</span>
+                      <strong id="auth-nodes-router-count">3</strong>
+                    </div>
+                    <div class="priority-bar-item">
+                      <span>CLIENT / PEER</span>
+                      <strong id="auth-nodes-client-count">5</strong>
+                    </div>
+                    <div class="priority-bar-item">
+                      <span>OFFLINE / UNKNOWN</span>
+                      <strong id="auth-nodes-offline-count">0</strong>
+                    </div>
+                  </div>
+                  <div class="rail-widget-foot">
+                    <span>Total Nodes</span>
+                    <strong id="auth-nodes-total-count">8</strong>
+                  </div>
+                </div>
+
+                <!-- Section 3: Partitions & Outbox -->
+                <div class="rail-widget-card" id="section-partitions-breakdown">
+                  <h4 class="rail-widget-title">3. Partitions & Outbox</h4>
+                  <div class="priority-count-bars" id="auth-partitions-summary">
+                    <div class="priority-bar-item">
+                      <span>ACTIVE TRANSPORTS</span>
+                      <strong id="auth-transports-count">3</strong>
+                    </div>
+                    <div class="priority-bar-item">
+                      <span>OUTBOX PENDING</span>
+                      <strong id="auth-outbox-pending-count">0</strong>
+                    </div>
+                    <div class="priority-bar-item">
+                      <span>TOPOLOGY REACHABILITY</span>
+                      <strong id="auth-partition-state" style="font-size:12px; color:var(--accent-green);">REDUNDANT MESH</strong>
+                    </div>
+                  </div>
+                  <div class="rail-widget-foot">
+                    <span>Store-and-Forward</span>
+                    <strong id="auth-dtn-mule-status">ENABLED</strong>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div class="cockpit-explanation-box" id="cockpit-explanation-box">
-              <strong>Operational Status:</strong> <span id="cockpit-explanation-text">Internet unavailable. Emergency mesh (LoRa/BLE) remains 100% operational. P0 emergencies will preemptively dispatch over radio.</span>
-            </div>
-
-            <!-- Active Transports Grid with Live Failure Injection Toggles -->
-            <div class="transports-grid" id="cockpit-transports-container">
-              <!-- Populated dynamically via /api/v1/continuity/cockpit -->
-            </div>
-
-            <!-- Outbox & Dead Letter Queue Table -->
-            <div class="outbox-table-card">
-              <div class="outbox-table-header">
-                <div>
-                  <h4>Durable Outbox Queue (P0 - P5 Priority Preemption)</h4>
-                  <span style="font-size:12px; color:var(--text-secondary);">Guaranteed store-and-forward delivery across partitions and reconnects.</span>
+            <!-- Phase 4: System-Wide Connectivity Cockpit & Outbox Inspector -->
+            <div class="cockpit-dashboard-card" id="authority-cockpit-card">
+              <div class="cockpit-header-row">
+                <div class="cockpit-title-wrap">
+                  <iconify-icon icon="lucide:network" style="color:var(--accent-orange); font-size:24px;"></iconify-icon>
+                  <div>
+                    <h3 id="cockpit-card-title">UrSafe Rescue Connectivity Cockpit</h3>
+                    <span id="cockpit-card-subtitle" style="font-size:12px; color:var(--text-secondary);">Real-Time Bearer Link Health & Outbox Dispatch Pipeline</span>
+                  </div>
                 </div>
-                <div style="display:flex; gap:10px;">
-                  <button class="btn-action-small" id="btn-refresh-outbox"><iconify-icon icon="lucide:refresh-cw"></iconify-icon> Refresh Queue</button>
-                  <button class="btn-action-small" id="btn-view-dead-letter" style="color:#B91C1C;"><iconify-icon icon="lucide:alert-octagon"></iconify-icon> Dead Letter Store</button>
+                <div class="cockpit-score-badge" id="cockpit-score-badge">
+                  <iconify-icon icon="lucide:shield-check"></iconify-icon>
+                  <span id="val-cockpit-score">96% CONNECTIVITY SCORE</span>
+                </div>
+              </div>
+
+              <div class="cockpit-explanation-box" id="cockpit-explanation-box">
+                <strong>Operational Status:</strong> <span id="cockpit-explanation-text">Local LoRa P2P 865 MHz & Web Bluetooth mesh links operating normally. Offline SQLite WAL storage verified.</span>
+              </div>
+
+              <!-- Active Transports Grid with Live Failure Injection Toggles -->
+              <div class="transports-grid" id="cockpit-transports-container">
+                <!-- Populated dynamically via /api/v1/continuity/cockpit -->
+              </div>
+
+              <!-- Outbox & Dead Letter Queue Table -->
+              <div class="outbox-table-card">
+                <div class="outbox-table-header">
+                  <div>
+                    <h4>Durable Outbox Queue (P0 - P5 Priority Preemption)</h4>
+                    <span style="font-size:12px; color:var(--text-secondary);">Guaranteed store-and-forward delivery across partitions and reconnects.</span>
+                  </div>
+                  <div style="display:flex; gap:10px;">
+                    <button class="btn-action-small" id="btn-refresh-outbox"><iconify-icon icon="lucide:refresh-cw"></iconify-icon> Refresh Queue</button>
+                    <button class="btn-action-small" id="btn-view-dead-letter" style="color:#B91C1C;"><iconify-icon icon="lucide:alert-octagon"></iconify-icon> Dead Letter Store</button>
+                  </div>
+                </div>
+
+                <div class="table-responsive-container">
+                  <table class="ursafe-table">
+                    <thead>
+                      <tr>
+                        <th>PRIORITY</th>
+                        <th>MESSAGE ID</th>
+                        <th>TYPE</th>
+                        <th>STATE</th>
+                        <th>TRANSPORT</th>
+                        <th>ATTEMPTS</th>
+                        <th>DELIVERY STATUS & EXPLANATION</th>
+                        <th>ACTION</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tbody-outbox-queue">
+                      <!-- Populated dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bottom: RECENT NETWORK ACTIVITY LOG (Master All Requests Feed) -->
+            <div class="activity-log-card">
+              <div class="activity-log-header">
+                <h3>RECENT NETWORK ACTIVITY LOG</h3>
+                <div class="log-actions-bar">
+                  <input type="text" id="log-search-input" class="input-search-log" placeholder="Search Incident ID, type...">
+                  <button class="btn-export-log" id="btn-export-log-csv">
+                    <iconify-icon icon="lucide:download"></iconify-icon>
+                    <span>EXPORT LOGS</span>
+                  </button>
                 </div>
               </div>
 
@@ -891,17 +1007,52 @@
                 <table class="ursafe-table">
                   <thead>
                     <tr>
-                      <th>PRIORITY</th>
-                      <th>MESSAGE ID</th>
+                      <th>TIMESTAMP</th>
+                      <th>INCIDENT ID</th>
                       <th>TYPE</th>
-                      <th>STATE</th>
-                      <th>TRANSPORT</th>
-                      <th>ATTEMPTS</th>
-                      <th>DELIVERY STATUS & EXPLANATION</th>
+                      <th>STATUS</th>
+                      <th>RESPONDER</th>
+                      <th>RESOLUTION</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbody-activity-log">
+                    <!-- Populated dynamically via backend API & WebSocket -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUBVIEW 2: INCIDENTS REGISTRY -->
+          <div id="orch-subview-incidents" class="orch-subview hidden">
+            <div class="map-viewport-card" style="padding:20px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--border-color); padding-bottom:12px;">
+                <div>
+                  <h2 style="margin:0; font-family:var(--font-display); font-size:18px;">All Incidents & Requests Registry</h2>
+                  <span style="font-size:12px; color:var(--text-secondary);">Real-time synchronized disaster requests across citizen, responder, and home mesh nodes</span>
+                </div>
+                <div style="display:flex; gap:8px;">
+                  <button class="btn-action-small" id="btn-export-incidents-csv" style="padding:6px 12px;">
+                    <iconify-icon icon="lucide:download"></iconify-icon> Export CSV
+                  </button>
+                </div>
+              </div>
+
+              <div class="table-responsive-container">
+                <table class="ursafe-table">
+                  <thead>
+                    <tr>
+                      <th>INCIDENT ID</th>
+                      <th>CATEGORY & TITLE</th>
+                      <th>URGENCY</th>
+                      <th>LOCATION & COORDINATES</th>
+                      <th>REPORTED TIME</th>
+                      <th>ASSIGNED RESPONDER</th>
+                      <th>STATUS</th>
                       <th>ACTION</th>
                     </tr>
                   </thead>
-                  <tbody id="tbody-outbox-queue">
+                  <tbody id="tbody-orch-all-incidents">
                     <!-- Populated dynamically -->
                   </tbody>
                 </table>
@@ -909,37 +1060,213 @@
             </div>
           </div>
 
-          <!-- Bottom: RECENT NETWORK ACTIVITY LOG (Master All Requests Feed) -->
-          <div class="activity-log-card">
-            <div class="activity-log-header">
-              <h3>RECENT NETWORK ACTIVITY LOG</h3>
-              <div class="log-actions-bar">
-                <input type="text" id="log-search-input" class="input-search-log" placeholder="Search Incident ID, type...">
-                <button class="btn-export-log" id="btn-export-log-csv">
-                  <iconify-icon icon="lucide:download"></iconify-icon>
-                  <span>EXPORT LOGS</span>
-                </button>
+          <!-- SUBVIEW 3: RESPONDERS & VOLUNTEERS FLEET -->
+          <div id="orch-subview-responders" class="orch-subview hidden">
+            <div class="map-viewport-card" style="padding:20px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--border-color); padding-bottom:12px;">
+                <div>
+                  <h2 style="margin:0; font-family:var(--font-display); font-size:18px;">Active Field Responders & Volunteer Corps</h2>
+                  <span style="font-size:12px; color:var(--text-secondary);">Decentralized tactical rescue personnel with live telemetry & battery tracking</span>
+                </div>
+                <span class="threat-badge safe" style="font-size:12px;">● 4 UNITS ONLINE IN SECTOR</span>
+              </div>
+
+              <div id="orch-responders-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(290px, 1fr)); gap:16px;">
+                <!-- Populated dynamically -->
               </div>
             </div>
+          </div>
 
-            <div class="table-responsive-container">
-              <table class="ursafe-table">
-                <thead>
-                  <tr>
-                    <th>TIMESTAMP</th>
-                    <th>INCIDENT ID</th>
-                    <th>TYPE</th>
-                    <th>STATUS</th>
-                    <th>RESPONDER</th>
-                    <th>RESOLUTION</th>
-                  </tr>
-                </thead>
-                <tbody id="tbody-activity-log">
-                  <!-- Populated dynamically via backend API & WebSocket -->
-                </tbody>
-              </table>
+          <!-- SUBVIEW 4: FULLSCREEN NETWORK MESH MAP -->
+          <div id="orch-subview-map" class="orch-subview hidden">
+            <div class="map-viewport-card" style="padding:16px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div>
+                  <h2 style="margin:0; font-family:var(--font-display); font-size:18px;">Tactical Network Topology Mesh Map</h2>
+                  <span style="font-size:12px; color:var(--text-secondary);">Direct RF Links, LoRa 865 Propagation Paths & Active Citizen Hotspots</span>
+                </div>
+                <span class="badge-priority-pill standard" style="font-size:11px;">Coverage: 4.8 km² Sector</span>
+              </div>
+              <div id="fullscreen-network-map" style="width:100%; height:520px; border-radius:12px; background:#1C1917;"></div>
             </div>
           </div>
+
+          <!-- SUBVIEW 5: SECTOR ANALYTICS & KPIS -->
+          <div id="orch-subview-analytics" class="orch-subview hidden">
+            <div class="map-viewport-card" style="padding:20px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--border-color); padding-bottom:12px;">
+                <div>
+                  <h2 style="margin:0; font-family:var(--font-display); font-size:18px;">Network Performance & Emergency Analytics</h2>
+                  <span style="font-size:12px; color:var(--text-secondary);">Empirical MTTR, delivery ratio, and incident triage velocity</span>
+                </div>
+                <span class="threat-badge safe" style="font-size:11px;">100% Deterministic Metrics</span>
+              </div>
+
+              <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; margin-bottom:20px;">
+                <div class="metric-strip-card" style="padding:14px;">
+                  <span class="metric-label-mono">MEAN TIME TO RESPOND</span>
+                  <div class="metric-val-large" style="font-size:24px; color:var(--accent-orange); margin-top:4px;">4.2 min</div>
+                  <span style="font-size:11px; color:#059669;">↓ 35% faster than baseline</span>
+                </div>
+                <div class="metric-strip-card" style="padding:14px;">
+                  <span class="metric-label-mono">PACKET DELIVERY RATIO</span>
+                  <div class="metric-val-large" style="font-size:24px; color:#10B981; margin-top:4px;">98.2%</div>
+                  <span style="font-size:11px; color:var(--text-secondary);">Zero dropped P0 packets</span>
+                </div>
+                <div class="metric-strip-card" style="padding:14px;">
+                  <span class="metric-label-mono">MUTUAL CO-SIGN RATE</span>
+                  <div class="metric-val-large" style="font-size:24px; color:#3B82F6; margin-top:4px;">88.5%</div>
+                  <span style="font-size:11px; color:var(--text-secondary);">Ed25519 citizen verified</span>
+                </div>
+                <div class="metric-strip-card" style="padding:14px;">
+                  <span class="metric-label-mono">VOLUNTEER RATIO</span>
+                  <div class="metric-val-large" style="font-size:24px; color:#8B5CF6; margin-top:4px;">42.0%</div>
+                  <span style="font-size:11px; color:var(--text-secondary);">Civic force multiplier</span>
+                </div>
+              </div>
+
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div style="background:#FAF6ED; border:1px solid var(--border-color); border-radius:12px; padding:16px;">
+                  <h4 style="margin:0 0 12px 0; font-size:13px; font-family:var(--font-mono); color:var(--text-primary);">INCIDENTS BY CATEGORY</h4>
+                  <div style="display:flex; flex-direction:column; gap:8px;">
+                    <div>
+                      <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:3px;">
+                        <span>Hydrological Flood Traps</span><strong>45%</strong>
+                      </div>
+                      <div style="background:#E2E8F0; height:8px; border-radius:4px; overflow:hidden;">
+                        <div style="background:#00B4D8; height:100%; width:45%;"></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:3px;">
+                        <span>Trauma & Medical ALS</span><strong>30%</strong>
+                      </div>
+                      <div style="background:#E2E8F0; height:8px; border-radius:4px; overflow:hidden;">
+                        <div style="background:#EF4444; height:100%; width:30%;"></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:3px;">
+                        <span>Structural Collapse</span><strong>15%</strong>
+                      </div>
+                      <div style="background:#E2E8F0; height:8px; border-radius:4px; overflow:hidden;">
+                        <div style="background:#F59E0B; height:100%; width:15%;"></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:3px;">
+                        <span>Emergency Food / Water</span><strong>10%</strong>
+                      </div>
+                      <div style="background:#E2E8F0; height:8px; border-radius:4px; overflow:hidden;">
+                        <div style="background:#10B981; height:100%; width:10%;"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="background:#FAF6ED; border:1px solid var(--border-color); border-radius:12px; padding:16px;">
+                  <h4 style="margin:0 0 12px 0; font-size:13px; font-family:var(--font-mono); color:var(--text-primary);">PRIORITY TRIAGE SPREAD</h4>
+                  <div style="display:flex; flex-direction:column; gap:8px;">
+                    <div>
+                      <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:3px;">
+                        <span>P0 Life Critical</span><strong>35%</strong>
+                      </div>
+                      <div style="background:#E2E8F0; height:8px; border-radius:4px; overflow:hidden;">
+                        <div style="background:#DC2626; height:100%; width:35%;"></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:3px;">
+                        <span>P1 Urgent Emergency</span><strong>40%</strong>
+                      </div>
+                      <div style="background:#E2E8F0; height:8px; border-radius:4px; overflow:hidden;">
+                        <div style="background:#F97316; height:100%; width:40%;"></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:3px;">
+                        <span>P2 Standard Civic Request</span><strong>25%</strong>
+                      </div>
+                      <div style="background:#E2E8F0; height:8px; border-radius:4px; overflow:hidden;">
+                        <div style="background:#059669; height:100%; width:25%;"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUBVIEW 6: OPERATIONAL SETTINGS -->
+          <div id="orch-subview-settings" class="orch-subview hidden">
+            <div class="map-viewport-card" style="padding:20px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--border-color); padding-bottom:12px;">
+                <div>
+                  <h2 style="margin:0; font-family:var(--font-display); font-size:18px;">Radio & Mesh Orchestration Settings</h2>
+                  <span style="font-size:12px; color:var(--text-secondary);">Configure hardware physical layer parameters and cryptographic keys</span>
+                </div>
+                <button class="btn-broadcast-distress" id="btn-save-mesh-settings" style="padding:6px 16px; font-size:12px; height:auto;">
+                  Save Settings
+                </button>
+              </div>
+
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div style="background:#FAF6ED; border:1px solid var(--border-color); border-radius:12px; padding:16px; display:flex; flex-direction:column; gap:12px;">
+                  <strong style="font-size:13px; font-family:var(--font-mono);">RADIO FREQUENCY PARAMETERS</strong>
+                  <div>
+                    <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">REGIONAL REGULATORY BAND</label>
+                    <select id="setting-rf-band" style="width:100%; padding:8px 10px; border-radius:6px; border:1px solid var(--border-color); font-size:12px;">
+                      <option value="IN_865" selected>IN_865 (India 865.0 - 867.0 MHz)</option>
+                      <option value="EU_868">EU_868 (Europe 868.0 - 870.0 MHz)</option>
+                      <option value="US_915">US_915 (Americas 902.0 - 928.0 MHz)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">SPREADING FACTOR (SF)</label>
+                    <select id="setting-sf" style="width:100%; padding:8px 10px; border-radius:6px; border:1px solid var(--border-color); font-size:12px;">
+                      <option value="SF7" selected>SF7 (High Throughput / Low Latency)</option>
+                      <option value="SF9">SF9 (Balanced Urban Penetration)</option>
+                      <option value="SF12">SF12 (Maximum Range / Deep Rubble Penetration)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">TRANSMISSION POWER (TX)</label>
+                    <select id="setting-tx-power" style="width:100%; padding:8px 10px; border-radius:6px; border:1px solid var(--border-color); font-size:12px;">
+                      <option value="14">14 dBm (25 mW - Low Battery Drain)</option>
+                      <option value="20">20 dBm (100 mW - Standard)</option>
+                      <option value="22" selected>22 dBm (160 mW - Maximum Legal Limit)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style="background:#FAF6ED; border:1px solid var(--border-color); border-radius:12px; padding:16px; display:flex; flex-direction:column; gap:12px;">
+                  <strong style="font-size:13px; font-family:var(--font-mono);">SECURITY & DATABASE SYNC</strong>
+                  <div>
+                    <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">FRAME ENCRYPTION ALGORITHM</label>
+                    <input type="text" value="AES-256-GCM Hardware Cipher" readonly style="width:100%; padding:8px 10px; border-radius:6px; border:1px solid var(--border-color); font-size:12px; background:#F1F5F9; color:#475569;">
+                  </div>
+
+                  <div>
+                    <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">SQLITE WAL SYNC FREQUENCY</label>
+                    <select id="setting-sync-freq" style="width:100%; padding:8px 10px; border-radius:6px; border:1px solid var(--border-color); font-size:12px;">
+                      <option value="3000">Every 3 seconds (High Fidelity)</option>
+                      <option value="5000" selected>Every 5 seconds (Standard Profile)</option>
+                      <option value="15000">Every 15 seconds (Battery Conservation)</option>
+                    </select>
+                  </div>
+
+                  <div style="margin-top:6px; padding:10px; background:#FFFFFF; border:1px solid var(--border-color); border-radius:8px;">
+                    <span style="font-size:11px; font-weight:700; color:var(--text-primary); display:block;">SHA-256 Flight Recorder Integrity:</span>
+                    <span style="font-size:10px; font-family:var(--font-mono); color:#059669;">MERKLE TREE ACTIVE • LINEAR AUDIT CHAIN VERIFIED</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
 
         </div>
       </div>
@@ -1526,68 +1853,133 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- MODAL: PERSONA & ROLE SWITCHER (CITIZEN / RESPONDER / AUTHORITY / ADMIN)   -->
+  <!-- MODAL: PERSONA & JWT LOGIN (CITIZEN / RESPONDER / VOLUNTEER / AUTHORITY / ADMIN) -->
   <!-- ========================================================================= -->
   <div id="modal-persona-select" class="modal-backdrop hidden">
-    <div class="modal-card" style="max-width: 520px;">
+    <div class="modal-card" style="max-width: 540px;">
       <div class="modal-header">
         <div style="display:flex; align-items:center; gap:10px;">
-          <iconify-icon icon="lucide:user-check" style="color:var(--accent-orange); font-size:22px;"></iconify-icon>
-          <h3 style="margin:0; font-family:var(--font-display);">Switch Active Persona</h3>
+          <iconify-icon icon="lucide:shield-check" style="color:var(--accent-orange); font-size:22px;"></iconify-icon>
+          <h3 style="margin:0; font-family:var(--font-display);">Authentication & Persona</h3>
         </div>
         <button class="btn-modal-close" data-close="modal-persona-select">✕</button>
       </div>
-      <div class="modal-body" style="display:flex; flex-direction:column; gap:12px;">
-        <p style="font-size:12.5px; color:var(--text-secondary); margin:0;">
-          Select any role to automatically authenticate with the backend via JWT Bearer tokens and unlock role-based capabilities:
-        </p>
 
-        <!-- Citizen -->
-        <div class="persona-option-card" data-username="citizen_priya" data-role="CITIZEN" data-name="Priya Sharma" data-initials="PS" style="cursor:pointer; padding:12px 16px; border-radius:12px; border:1px solid var(--border-color); background:#FFFFFF; display:flex; align-items:center; justify-content:space-between; transition:all 0.2s ease;">
-          <div style="display:flex; align-items:center; gap:12px;">
-            <div class="user-avatar-circle" style="background:#FFE6D5; color:#D95A00;">PS</div>
-            <div>
-              <div style="font-weight:700; font-size:13.5px;">Priya Sharma</div>
-              <span class="user-role-label" style="font-size:10.5px;">CITIZEN — Victim Portal Access</span>
+      <!-- Login Mode Tabs -->
+      <div style="display:flex; border-bottom:1px solid var(--border-color); padding:0 20px; background:#FAF6ED; gap:8px;">
+        <button type="button" id="tab-auth-quick" class="auth-subtab active" style="padding:10px 14px; background:none; border:none; border-bottom:2px solid var(--accent-orange); font-weight:700; font-size:12.5px; color:var(--text-primary); cursor:pointer;">
+          1-Click Role Switch
+        </button>
+        <button type="button" id="tab-auth-jwt" class="auth-subtab" style="padding:10px 14px; background:none; border:none; border-bottom:2px solid transparent; font-weight:600; font-size:12.5px; color:var(--text-muted); cursor:pointer;">
+          Username & Password (JWT)
+        </button>
+      </div>
+
+      <div class="modal-body" style="display:flex; flex-direction:column; gap:12px; max-height:75vh; overflow-y:auto;">
+        
+        <!-- Panel 1: Quick 1-Click Role Switch -->
+        <div id="auth-panel-quick" style="display:flex; flex-direction:column; gap:10px;">
+          <p style="font-size:12px; color:var(--text-secondary); margin:0;">
+            Select any pre-configured identity to authenticate with JWT Bearer tokens and switch permissions:
+          </p>
+
+          <!-- Central Authority -->
+          <div class="persona-option-card" data-username="authority_rajesh" data-role="AUTHORITY" data-name="Commander Rajesh Kumar" data-initials="RK" style="cursor:pointer; padding:12px 14px; border-radius:12px; border:1px solid var(--border-color); background:#FFFFFF; display:flex; align-items:center; justify-content:space-between; transition:all 0.2s ease;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div class="user-avatar-circle" style="background:#E8F0FE; color:#1A73E8; font-weight:800;">RK</div>
+              <div>
+                <div style="font-weight:700; font-size:13px;">Commander Rajesh Kumar</div>
+                <span class="user-role-label" style="font-size:10px; color:#1A73E8;">AUTHORITY — SDMA Central Command</span>
+              </div>
             </div>
+            <span class="badge-priority-pill critical">Command & Dispatch</span>
           </div>
-          <span class="badge-priority-pill standard">Report SOS</span>
+
+          <!-- Tactical NDRF Responder -->
+          <div class="persona-option-card" data-username="responder_vikram" data-role="RESPONDER" data-name="Capt. Vikram Singh" data-initials="VS" style="cursor:pointer; padding:12px 14px; border-radius:12px; border:1px solid var(--border-color); background:#FFFFFF; display:flex; align-items:center; justify-content:space-between; transition:all 0.2s ease;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div class="user-avatar-circle" style="background:#E6F4EA; color:#137333; font-weight:800;">VS</div>
+              <div>
+                <div style="font-weight:700; font-size:13px;">Capt. Vikram Singh</div>
+                <span class="user-role-label" style="font-size:10px; color:#137333;">RESPONDER — NDRF Tactical Paramedic</span>
+              </div>
+            </div>
+            <span class="badge-priority-pill urgent">Accept & Rescue</span>
+          </div>
+
+          <!-- Community Volunteer Medic -->
+          <div class="persona-option-card" data-username="volunteer_anita" data-role="RESPONDER" data-name="Anita Desai" data-initials="AD" style="cursor:pointer; padding:12px 14px; border-radius:12px; border:1px solid var(--border-color); background:#FFFFFF; display:flex; align-items:center; justify-content:space-between; transition:all 0.2s ease;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div class="user-avatar-circle" style="background:#FCE8E6; color:#C5221F; font-weight:800;">AD</div>
+              <div>
+                <div style="font-weight:700; font-size:13px;">Anita Desai (Volunteer)</div>
+                <span class="user-role-label" style="font-size:10px; color:#C5221F;">VOLUNTEER — Red Cross First Aid Unit</span>
+              </div>
+            </div>
+            <span class="badge-priority-pill" style="background:#FEF3C7; color:#B45309;">Volunteer Medic</span>
+          </div>
+
+          <!-- Citizen Victim -->
+          <div class="persona-option-card" data-username="citizen_priya" data-role="CITIZEN" data-name="Priya Sharma" data-initials="PS" style="cursor:pointer; padding:12px 14px; border-radius:12px; border:1px solid var(--border-color); background:#FFFFFF; display:flex; align-items:center; justify-content:space-between; transition:all 0.2s ease;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div class="user-avatar-circle" style="background:#FFE6D5; color:#D95A00; font-weight:800;">PS</div>
+              <div>
+                <div style="font-weight:700; font-size:13px;">Priya Sharma</div>
+                <span class="user-role-label" style="font-size:10px; color:#D95A00;">CITIZEN — Victim Portal Access</span>
+              </div>
+            </div>
+            <span class="badge-priority-pill standard">Report SOS</span>
+          </div>
+
+          <!-- System Administrator -->
+          <div class="persona-option-card" data-username="admin_system" data-role="ADMIN" data-name="System Administrator" data-initials="SA" style="cursor:pointer; padding:12px 14px; border-radius:12px; border:1px solid var(--border-color); background:#FFFFFF; display:flex; align-items:center; justify-content:space-between; transition:all 0.2s ease;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div class="user-avatar-circle" style="background:#F1F3F4; color:#3C4043; font-weight:800;">SA</div>
+              <div>
+                <div style="font-weight:700; font-size:13px;">System Administrator</div>
+                <span class="user-role-label" style="font-size:10px;">ADMIN — Global Orchestration & Audit</span>
+              </div>
+            </div>
+            <span class="badge-priority-pill standard">Full RBAC</span>
+          </div>
         </div>
 
-        <!-- Responder -->
-        <div class="persona-option-card" data-username="responder_vikram" data-role="RESPONDER" data-name="Capt. Vikram Singh" data-initials="VS" style="cursor:pointer; padding:12px 16px; border-radius:12px; border:1px solid var(--border-color); background:#FFFFFF; display:flex; align-items:center; justify-content:space-between; transition:all 0.2s ease;">
-          <div style="display:flex; align-items:center; gap:12px;">
-            <div class="user-avatar-circle" style="background:#E6F4EA; color:#137333;">VS</div>
-            <div>
-              <div style="font-weight:700; font-size:13.5px;">Capt. Vikram Singh</div>
-              <span class="user-role-label" style="font-size:10.5px; color:#137333;">RESPONDER — NDRF Tactical ALS</span>
-            </div>
+        <!-- Panel 2: JWT Username & Password Login Form -->
+        <div id="auth-panel-jwt" class="hidden" style="display:flex; flex-direction:column; gap:12px;">
+          <p style="font-size:12px; color:var(--text-secondary); margin:0;">
+            Enter credentials to generate an Ed25519-signed JWT session token stored in local storage:
+          </p>
+
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <label style="font-size:11px; font-weight:700; color:var(--text-primary); font-family:var(--font-mono);">USERNAME</label>
+            <input type="text" id="jwt-input-username" placeholder="e.g. authority_rajesh, responder_vikram, volunteer_anita" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-color); font-family:var(--font-ui); font-size:13px;">
           </div>
-          <span class="badge-priority-pill urgent">Accept & Rescue</span>
+
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <label style="font-size:11px; font-weight:700; color:var(--text-primary); font-family:var(--font-mono);">PASSWORD</label>
+            <input type="password" id="jwt-input-password" placeholder="Password (default: Password123!)" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-color); font-family:var(--font-ui); font-size:13px;">
+          </div>
+
+          <div style="background:#FAF6ED; border:1px solid var(--border-color); border-radius:8px; padding:10px; font-size:11px; color:var(--text-secondary); line-height:1.4;">
+            <strong>Available Accounts (Password: Password123!):</strong><br>
+            • <code>authority_rajesh</code> (Central Command)<br>
+            • <code>responder_vikram</code> (Tactical NDRF Paramedic)<br>
+            • <code>volunteer_anita</code> (Red Cross Volunteer)<br>
+            • <code>citizen_priya</code> (Citizen / Victim)<br>
+            • <code>admin_system</code> (Full Administrator)
+          </div>
+
+          <button type="button" id="btn-submit-jwt-login" class="btn-broadcast-distress" style="padding:12px; justify-content:center; font-size:13px; height:auto;">
+            <iconify-icon icon="lucide:key"></iconify-icon>
+            <span>Sign In with JWT</span>
+          </button>
         </div>
 
-        <!-- Authority -->
-        <div class="persona-option-card" data-username="authority_rajesh" data-role="AUTHORITY" data-name="Commander Rajesh Kumar" data-initials="RK" style="cursor:pointer; padding:12px 16px; border-radius:12px; border:1px solid var(--border-color); background:#FFFFFF; display:flex; align-items:center; justify-content:space-between; transition:all 0.2s ease;">
-          <div style="display:flex; align-items:center; gap:12px;">
-            <div class="user-avatar-circle" style="background:#E8F0FE; color:#1A73E8;">RK</div>
-            <div>
-              <div style="font-weight:700; font-size:13.5px;">Commander Rajesh Kumar</div>
-              <span class="user-role-label" style="font-size:10.5px; color:#1A73E8;">AUTHORITY — SDMA Command</span>
-            </div>
-          </div>
-          <span class="badge-priority-pill critical">Dispatch & Verify</span>
-        </div>
-
-        <!-- Admin -->
-        <div class="persona-option-card" data-username="admin_system" data-role="ADMIN" data-name="System Administrator" data-initials="SA" style="cursor:pointer; padding:12px 16px; border-radius:12px; border:1px solid var(--border-color); background:#FFFFFF; display:flex; align-items:center; justify-content:space-between; transition:all 0.2s ease;">
-          <div style="display:flex; align-items:center; gap:12px;">
-            <div class="user-avatar-circle" style="background:#F1F3F4; color:#3C4043;">SA</div>
-            <div>
-              <div style="font-weight:700; font-size:13.5px;">System Administrator</div>
-              <span class="user-role-label" style="font-size:10.5px;">ADMIN — Global Orchestration</span>
-            </div>
-          </div>
-          <span class="badge-priority-pill standard">Full RBAC</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; padding-top:10px; border-top:1px solid var(--border-color); margin-top:4px;">
+          <span style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted);" id="modal-auth-status-label">Authenticated: Active</span>
+          <button type="button" id="btn-modal-sign-out" class="btn-action-small" style="background:#FEE2E2; color:#DC2626; border:1px solid #FCA5A5; padding:6px 14px; font-size:11px; font-weight:700;">
+            Sign Out
+          </button>
         </div>
       </div>
     </div>

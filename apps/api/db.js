@@ -229,16 +229,69 @@ seedInitialData();
 function seedPredictiveData() {
   const now = Date.now();
 
-  // 1. Seed additional community citizens if missing
+  // 1. Seed additional community citizens & volunteer responders if missing
   const insertUser = db.prepare(`
-    INSERT OR IGNORE INTO users (id, username, email, password_hash, password_salt, role, full_name, phone_number, public_key, status, created_at)
-    VALUES (?, ?, ?, ?, ?, 'CITIZEN', ?, ?, ?, 'ACTIVE', ?)
+    INSERT OR IGNORE INTO users (id, username, email, password_hash, password_salt, role, organization_id, full_name, phone_number, public_key, status, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?)
   `);
   const pass = hashPassword('Password123!');
-  insertUser.run('usr-citizen-02', 'citizen_amit', 'amit.verma@example.com', pass.hash, pass.salt, 'Amit Verma', '+91-98201-99881', 'ed25519_pk_amit_02', now);
-  insertUser.run('usr-citizen-03', 'citizen_sunita', 'sunita.rao@example.com', pass.hash, pass.salt, 'Sunita Rao', '+91-98334-55667', 'ed25519_pk_sunita_03', now);
-  insertUser.run('usr-citizen-04', 'citizen_aarav', 'aarav.mehta@example.com', pass.hash, pass.salt, 'Aarav Mehta', '+91-98199-44332', 'ed25519_pk_aarav_04', now);
-  insertUser.run('usr-citizen-05', 'citizen_neha', 'neha.patel@example.com', pass.hash, pass.salt, 'Neha Patel', '+91-98205-11778', 'ed25519_pk_neha_05', now);
+  insertUser.run('usr-citizen-02', 'citizen_amit', 'amit.verma@example.com', pass.hash, pass.salt, 'CITIZEN', null, 'Amit Verma', '+91-98201-99881', 'ed25519_pk_amit_02', now);
+  insertUser.run('usr-citizen-03', 'citizen_sunita', 'sunita.rao@example.com', pass.hash, pass.salt, 'CITIZEN', null, 'Sunita Rao', '+91-98334-55667', 'ed25519_pk_sunita_03', now);
+  insertUser.run('usr-citizen-04', 'citizen_aarav', 'aarav.mehta@example.com', pass.hash, pass.salt, 'CITIZEN', null, 'Aarav Mehta', '+91-98199-44332', 'ed25519_pk_aarav_04', now);
+  insertUser.run('usr-citizen-05', 'citizen_neha', 'neha.patel@example.com', pass.hash, pass.salt, 'CITIZEN', null, 'Neha Patel', '+91-98205-11778', 'ed25519_pk_neha_05', now);
+
+  // Volunteer Medic User
+  insertUser.run('usr-volunteer-01', 'volunteer_anita', 'anita.desai@redcross.org', pass.hash, pass.salt, 'RESPONDER', 'org-redcross', 'Anita Desai (Volunteer Medic)', '+91-98700-55443', 'ed25519_pk_anita_01', now);
+  // Tactical Responder 2
+  insertUser.run('usr-responder-02', 'responder_arjun', 'arjun.nair@ndrf.gov.in', pass.hash, pass.salt, 'RESPONDER', 'org-ndrf', 'Lt. Arjun Nair (Swift Water Rescue)', '+91-98600-11229', 'ed25519_pk_arjun_02', now);
+
+  // Insert or ignore Responder Profiles for Volunteer & Responder 2
+  const insertRespProfile = db.prepare(`
+    INSERT OR IGNORE INTO responder_profiles (user_id, badge_number, specialization, availability_status, current_latitude, current_longitude, last_location_time)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `);
+  insertRespProfile.run('usr-volunteer-01', 'VOL-RED-204', 'FIRST_AID_TRIAGE', 'ONLINE', 19.0772, 72.8765, now - 60000);
+  insertRespProfile.run('usr-responder-02', 'NDRF-W-042', 'WATER_RESCUE', 'ONLINE', 19.0750, 72.8730, now - 90000);
+
+  // Insert or ignore Credentials for Volunteer & Responder 2
+  const insertCred = db.prepare(`
+    INSERT OR IGNORE INTO credentials (id, user_id, issuer_org_id, credential_type, role_authorized, capabilities_json, signature, issued_at, expires_at, revocation_status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE')
+  `);
+  insertCred.run(
+    'cred-vol-anita-01', 'usr-volunteer-01', 'org-redcross', 'VOLUNTEER_BADGE', 'COMMUNITY_FIRST_RESPONDER',
+    JSON.stringify(['FIRST_AID', 'CPR_AED', 'TRIAGE_SUPPORT', 'EVACUATION_ASSIST']),
+    'sig_ed25519_vol_anita_verified', now - 86400000 * 15, now + 86400000 * 350
+  );
+  insertCred.run(
+    'cred-ndrf-arjun-02', 'usr-responder-02', 'org-ndrf', 'RESPONDER_PASSPORT', 'TACTICAL_WATER_RESCUE',
+    JSON.stringify(['SWIFT_WATER_RESCUE', 'BOAT_OPERATOR', 'NIGHT_RECON', 'TRAUMA_BLS']),
+    'sig_ed25519_ndrf_arjun_verified', now - 86400000 * 45, now + 86400000 * 320
+  );
+
+  // Seed additional realistic active incidents for Triage Queue
+  const insertIncident = db.prepare(`
+    INSERT OR IGNORE INTO incidents (id, reporter_user_id, category, urgency, latitude, longitude, accuracy_m, location_description, victim_count, description, status, assigned_responder_id, is_simulation, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+  `);
+  insertIncident.run(
+    'inc-2026-003', 'usr-citizen-02', 'MEDICAL', 'CRITICAL', 19.0768, 72.8785, 3.0,
+    'Near Milan Subway West Ramp, Santacruz', 1,
+    'Elderly patient with severe dyspnea and chest pain. Oxygen tank depleted, floodwaters knee-deep outside.',
+    'REPORTED', null, now - 450000, now - 450000
+  );
+  insertIncident.run(
+    'inc-2026-004', 'usr-citizen-03', 'RESCUE', 'URGENT', 19.0810, 72.8750, 4.2,
+    'Vakola Nullah Footbridge, Santacruz East', 3,
+    '3 people stranded on elevated median barrier surrounded by rapid monsoon runoff. Need life vests and throw rope.',
+    'REPORTED', null, now - 720000, now - 720000
+  );
+  insertIncident.run(
+    'inc-2026-005', 'usr-citizen-04', 'SUPPLIES', 'STABLE', 19.0870, 72.8850, 5.0,
+    'BKC High Ground Shelter Annex, Sector 2', 12,
+    'Shelter requests clean potable water packets and infant formula for displaced families. Situation calm and stable.',
+    'REPORTED', null, now - 1200000, now - 1200000
+  );
 
   // 2. Seed User Last Known Locations into locations table
   const insertLocation = db.prepare(`
@@ -254,6 +307,8 @@ function seedPredictiveData() {
   insertLocation.run('loc-seed-06', 'usr-citizen-03', 'dev-amb-07', 'inc-2026-002', 19.0840, 72.8815, 6.2, 11.5, 270, 0.0, 'BLE_BEACON', 'Nehru Industrial Area, Block 7, Kurla West, Mumbai', now - 360000);
   insertLocation.run('loc-seed-07', 'usr-citizen-04', null, null, 19.0950, 72.8920, 3.0, 48.0, 0, 0, 'GPS', 'Chembur High-Ground Relief Shelter, Chembur, Mumbai', now - 420000);
   insertLocation.run('loc-seed-08', 'usr-citizen-05', null, null, 19.0710, 72.8680, 3.8, 2.1, 135, 1.2, 'CELLULAR_CACHE', 'Khar Danda Coastal Pier, Fisherman Settlement, Mumbai', now - 480000);
+  insertLocation.run('loc-seed-09', 'usr-volunteer-01', 'dev-amb-01', null, 19.0772, 72.8765, 3.0, 10.2, 60, 1.5, 'GPS', 'Milan Subway Volunteer Station, Santacruz West, Mumbai', now - 60000);
+  insertLocation.run('loc-seed-10', 'usr-responder-02', 'dev-amb-04', null, 19.0750, 72.8730, 2.0, 6.0, 120, 3.0, 'GPS', 'Coastal Rescue Launchpoint, Juhu Outpost, Mumbai', now - 90000);
 
   // 3. Seed Ambient Active Devices (Smartwatches, Laptops, Earbuds, BLE Beacons, Home IoT)
   const ambientCount = db.prepare('SELECT COUNT(*) as count FROM ambient_devices').get().count;
