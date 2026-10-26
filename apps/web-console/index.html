@@ -61,6 +61,14 @@
         <iconify-icon icon="lucide:radar" style="font-size:14px; vertical-align:middle; margin-right:4px;"></iconify-icon>
         Predictive Radar & Devices
       </button>
+      <button class="nav-tab-btn" data-target="view-verification" id="tab-verification">
+        <iconify-icon icon="lucide:shield-check" style="font-size:14px; vertical-align:middle; margin-right:4px;"></iconify-icon>
+        Verification & Proof
+      </button>
+      <button class="nav-tab-btn" data-target="view-ble-exchange" id="tab-ble-exchange">
+        <iconify-icon icon="lucide:bluetooth" style="font-size:14px; vertical-align:middle; margin-right:4px;"></iconify-icon>
+        Offline BLE Peer Mesh
+      </button>
     </nav>
 
     <!-- Header Actions & Telemetry -->
@@ -1168,7 +1176,8 @@
                   <h4 style="margin:0 0 12px 0; font-size:13px; font-family:var(--font-mono); color:var(--text-primary);">PRIORITY TRIAGE SPREAD</h4>
                   <div style="display:flex; flex-direction:column; gap:8px;">
                     <div>
-                      <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:3px;">
+                      <div style="display:flex; justify-content:space-between; font-size:12
+                      px; margin-bottom:3px;">
                         <span>P0 Life Critical</span><strong>35%</strong>
                       </div>
                       <div style="background:#E2E8F0; height:8px; border-radius:4px; overflow:hidden;">
@@ -1620,6 +1629,551 @@
           </div>
         </div>
 
+    </section>
+
+    <!-- ======================================================================= -->
+    <!-- PAGE 6: OFFICIAL VERIFICATION & PROOF-OF-QUALIFICATION PORTAL           -->
+    <!-- ======================================================================= -->
+    <section id="view-verification" class="view-screen">
+      <div style="padding: 24px; max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
+
+        <!-- Top Verification Header Banner -->
+        <div style="background: #FFFFFF; border: 1px solid var(--border-color); border-radius: 16px; padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.03);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+              <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(16,185,129,0.12); color: #059669; display: flex; align-items: center; justify-content: center; font-size: 28px;">
+                <iconify-icon icon="lucide:shield-check"></iconify-icon>
+              </div>
+              <div>
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                  <h2 style="margin: 0; font-family: var(--font-display); font-size: 22px;">UrSafe Official Verification & Proof-of-Qualification</h2>
+                  <span id="verification-global-status-badge" class="badge-priority-pill" style="background:#FFFBEB; color:#D97706; border:1px solid rgba(217,119,6,0.3); font-weight:700;">
+                    STATUS: VISIT PENDING
+                  </span>
+                  <span class="badge-priority-pill" style="background:#EFF6FF; color:#2563EB; border:1px solid rgba(37,99,235,0.3); font-weight:700;">
+                    W3C VERIFIABLE CREDENTIALS • ED25519
+                  </span>
+                </div>
+                <p style="margin: 4px 0 0 0; font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
+                  Authority-governed identity, training, and qualification validation. Physical visit required at an authorized verification office before credentials are issued. Normal users cannot self-approve.
+                </p>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <button id="btn-refresh-verification-status" class="btn-view-details" style="padding: 10px 16px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px;">
+                <iconify-icon icon="lucide:refresh-cw"></iconify-icon>
+                <span>Refresh Status</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 8-Step Verification Workflow Stepper -->
+          <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+            <span style="font-size: 11px; font-family: var(--font-mono); font-weight: 700; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 12px;">
+              8-STEP ACCREDITATION LIFECYCLE (AUTHORITY GOVERNED)
+            </span>
+            <div style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px;">
+              <div class="verif-step-card" id="step-verif-1" style="background:#F8FAFC; border:1px solid var(--border-color); border-radius:10px; padding:10px; text-align:center;">
+                <span style="font-size:10px; font-family:var(--font-mono); color:#64748B; display:block; font-weight:700;">STEP 1</span>
+                <span style="font-size:11px; font-weight:700; color:var(--text-primary); display:block; margin-top:2px;">Profile Info</span>
+              </div>
+              <div class="verif-step-card" id="step-verif-2" style="background:#F8FAFC; border:1px solid var(--border-color); border-radius:10px; padding:10px; text-align:center;">
+                <span style="font-size:10px; font-family:var(--font-mono); color:#64748B; display:block; font-weight:700;">STEP 2</span>
+                <span style="font-size:11px; font-weight:700; color:var(--text-primary); display:block; margin-top:2px;">Select Office</span>
+              </div>
+              <div class="verif-step-card" id="step-verif-3" style="background:#FEF3C7; border:1px solid #F59E0B; border-radius:10px; padding:10px; text-align:center;">
+                <span style="font-size:10px; font-family:var(--font-mono); color:#D97706; display:block; font-weight:700;">STEP 3</span>
+                <span style="font-size:11px; font-weight:700; color:#B45309; display:block; margin-top:2px;">Visit Office</span>
+              </div>
+              <div class="verif-step-card" id="step-verif-4" style="background:#F8FAFC; border:1px solid var(--border-color); border-radius:10px; padding:10px; text-align:center;">
+                <span style="font-size:10px; font-family:var(--font-mono); color:#64748B; display:block; font-weight:700;">STEP 4</span>
+                <span style="font-size:11px; font-weight:700; color:var(--text-primary); display:block; margin-top:2px;">Present Docs</span>
+              </div>
+              <div class="verif-step-card" id="step-verif-5" style="background:#F8FAFC; border:1px solid var(--border-color); border-radius:10px; padding:10px; text-align:center;">
+                <span style="font-size:10px; font-family:var(--font-mono); color:#64748B; display:block; font-weight:700;">STEP 5</span>
+                <span style="font-size:11px; font-weight:700; color:var(--text-primary); display:block; margin-top:2px;">Physical Check</span>
+              </div>
+              <div class="verif-step-card" id="step-verif-6" style="background:#F8FAFC; border:1px solid var(--border-color); border-radius:10px; padding:10px; text-align:center;">
+                <span style="font-size:10px; font-family:var(--font-mono); color:#64748B; display:block; font-weight:700;">STEP 6</span>
+                <span style="font-size:11px; font-weight:700; color:var(--text-primary); display:block; margin-top:2px;">Upload Proof</span>
+              </div>
+              <div class="verif-step-card" id="step-verif-7" style="background:#F8FAFC; border:1px solid var(--border-color); border-radius:10px; padding:10px; text-align:center;">
+                <span style="font-size:10px; font-family:var(--font-mono); color:#64748B; display:block; font-weight:700;">STEP 7</span>
+                <span style="font-size:11px; font-weight:700; color:var(--text-primary); display:block; margin-top:2px;">Review/Approve</span>
+              </div>
+              <div class="verif-step-card" id="step-verif-8" style="background:#F8FAFC; border:1px solid var(--border-color); border-radius:10px; padding:10px; text-align:center;">
+                <span style="font-size:10px; font-family:var(--font-mono); color:#64748B; display:block; font-weight:700;">STEP 8</span>
+                <span style="font-size:11px; font-weight:700; color:var(--text-primary); display:block; margin-top:2px;">Credential</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Verified Credential Badge (Appears when verified) -->
+        <div id="verified-credential-card" class="hidden" style="background: linear-gradient(135deg, #064E3B 0%, #047857 100%); border-radius: 16px; padding: 24px; color: #FFFFFF; box-shadow: 0 4px 20px rgba(6,78,59,0.25);">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
+            <div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <iconify-icon icon="lucide:check-circle" style="font-size:24px; color:#34D399;"></iconify-icon>
+                <span style="font-family:var(--font-mono); font-size:12px; letter-spacing:1px; color:#A7F3D0; font-weight:700;">OFFICIAL W3C VERIFIED RESPONDER PASSPORT</span>
+              </div>
+              <h3 id="cred-holder-name" style="margin:8px 0 4px 0; font-family:var(--font-display); font-size:24px; color:#FFFFFF;">Anita Desai</h3>
+              <span id="cred-holder-role" style="font-size:13px; color:#D1FAE5; display:block;">Tactical Medical Responder • Red Cross Disaster Relief Corps</span>
+            </div>
+            <div style="text-align:right;">
+              <span style="font-size:10px; font-family:var(--font-mono); color:#A7F3D0; display:block;">CREDENTIAL ID</span>
+              <strong id="cred-id-display" style="font-family:var(--font-mono); font-size:13px; color:#FFFFFF;">cred-vol-anita-01</strong>
+              <span id="cred-expiry-display" style="font-size:11px; color:#D1FAE5; display:block; margin-top:4px;">Expires: Oct 2027</span>
+            </div>
+          </div>
+
+          <div style="margin-top:18px; padding-top:16px; border-top:1px solid rgba(255,255,255,0.2); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div style="display:flex; gap:8px; flex-wrap:wrap;" id="cred-capabilities-pills">
+              <span class="badge-priority-pill" style="background:rgba(255,255,255,0.2); color:#FFFFFF; border:none;">FIRST_AID</span>
+              <span class="badge-priority-pill" style="background:rgba(255,255,255,0.2); color:#FFFFFF; border:none;">CPR_AED</span>
+              <span class="badge-priority-pill" style="background:rgba(255,255,255,0.2); color:#FFFFFF; border:none;">TRIAGE_SUPPORT</span>
+            </div>
+            <button id="btn-verify-cred-proof" class="btn-broadcast-distress" style="background:#10B981; border-color:#34D399; padding:8px 16px; font-size:12px;">
+              <iconify-icon icon="lucide:check-circle-2"></iconify-icon>
+              <span>Verify Cryptographic Proof</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Two Column Main Grid -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+
+          <!-- Left Column: Verification Office Selection & In-Person Instructions -->
+          <div style="display: flex; flex-direction: column; gap: 24px;">
+
+            <!-- Authorized Verification Offices List -->
+            <div style="background: #FFFFFF; border: 1px solid var(--border-color); border-radius: 16px; padding: 20px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <iconify-icon icon="lucide:building-2" style="color:var(--accent-orange); font-size:20px;"></iconify-icon>
+                  <h3 style="margin:0; font-size:16px; font-weight:700;">Authorized Verification Offices</h3>
+                </div>
+                <span class="badge-priority-pill" style="background:#F0FDF4; color:#16A34A; border:1px solid rgba(22,163,74,0.3);">3 Authorized</span>
+              </div>
+              <p style="font-size:12px; color:var(--text-secondary); margin:0 0 14px 0; line-height:1.4;">
+                Select an official center. You must physically visit the office with your original government identity proof and professional training certificates.
+              </p>
+
+              <div id="verification-offices-container" style="display:flex; flex-direction:column; gap:12px;">
+                <!-- Populated dynamically via app.js -->
+              </div>
+            </div>
+
+            <!-- In-Person Visit Checklist & Required Documents -->
+            <div style="background: #FFFFFF; border: 1px solid var(--border-color); border-radius: 16px; padding: 20px;">
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+                <iconify-icon icon="lucide:clipboard-check" style="color:#059669; font-size:20px;"></iconify-icon>
+                <h3 style="margin:0; font-size:16px; font-weight:700;">Physical Inspection Checklist</h3>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:8px; font-size:12px; color:var(--text-secondary); line-height:1.4;">
+                <div style="display:flex; align-items:center; gap:8px; padding:8px; background:#F8FAFC; border-radius:8px;">
+                  <iconify-icon icon="lucide:check" style="color:#059669; font-size:16px;"></iconify-icon>
+                  <span><strong>Original Government Photo ID</strong> (Aadhaar Card, Passport, or Voter ID)</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; padding:8px; background:#F8FAFC; border-radius:8px;">
+                  <iconify-icon icon="lucide:check" style="color:#059669; font-size:16px;"></iconify-icon>
+                  <span><strong>Responder / Volunteer Badge</strong> (Organization ID or Affiliation Letter)</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; padding:8px; background:#F8FAFC; border-radius:8px;">
+                  <iconify-icon icon="lucide:check" style="color:#059669; font-size:16px;"></iconify-icon>
+                  <span><strong>Emergency Training Certificate</strong> (St. John Ambulance, Red Cross, NDRF, or Civil Defence)</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; padding:8px; background:#F8FAFC; border-radius:8px;">
+                  <iconify-icon icon="lucide:check" style="color:#059669; font-size:16px;"></iconify-icon>
+                  <span><strong>Medical / Paramedic License</strong> (For ALS / BLS / Trauma Responders)</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Right Column: Verification Request & Proof Document Upload Form -->
+          <div style="display: flex; flex-direction: column; gap: 24px;">
+
+            <!-- Create / Update Verification Request -->
+            <div style="background: #FFFFFF; border: 1px solid var(--border-color); border-radius: 16px; padding: 20px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <iconify-icon icon="lucide:file-plus" style="color:#3B82F6; font-size:20px;"></iconify-icon>
+                  <h3 style="margin:0; font-size:16px; font-weight:700;">Initiate In-Person Verification</h3>
+                </div>
+                <span id="label-active-request-id" style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted);">Request: None</span>
+              </div>
+
+              <div style="display:flex; flex-direction:column; gap:12px;">
+                <div>
+                  <label style="font-size:11px; font-family:var(--font-mono); font-weight:700; color:var(--text-primary); display:block; margin-bottom:4px;">
+                    SELECTED VERIFICATION OFFICE
+                  </label>
+                  <select id="select-verif-office" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-color); font-size:13px; font-family:var(--font-ui); background:#FFFFFF;">
+                    <option value="voff-mum-01">NDRF Western Regional Verification Office (Bandra BKC)</option>
+                    <option value="voff-mum-02">SDMA District Disaster Verification Centre (Mantralaya)</option>
+                    <option value="voff-mum-03">Red Cross Disaster Relief Corps Office (Fort)</option>
+                  </select>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                  <div>
+                    <label style="font-size:11px; font-family:var(--font-mono); font-weight:700; color:var(--text-primary); display:block; margin-bottom:4px;">
+                      REQUESTED ROLE
+                    </label>
+                    <select id="select-verif-role" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-color); font-size:13px; font-family:var(--font-ui); background:#FFFFFF;">
+                      <option value="RESPONDER" selected>Tactical Responder</option>
+                      <option value="RESPONDER">Community Volunteer</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="font-size:11px; font-family:var(--font-mono); font-weight:700; color:var(--text-primary); display:block; margin-bottom:4px;">
+                      SPECIALIZATION
+                    </label>
+                    <select id="select-verif-spec" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-color); font-size:13px; font-family:var(--font-ui); background:#FFFFFF;">
+                      <option value="COMMUNITY_FIRST_RESPONDER">Community First Responder</option>
+                      <option value="MEDICAL_ALS">ALS Paramedic / Triage</option>
+                      <option value="WATER_RESCUE">Swift Water Rescue</option>
+                      <option value="SEARCH_RESCUE">Urban Search & Rescue</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label style="font-size:11px; font-family:var(--font-mono); font-weight:700; color:var(--text-primary); display:block; margin-bottom:4px;">
+                    INTENDED VISIT DATE & TIME
+                  </label>
+                  <input type="datetime-local" id="input-verif-date" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-color); font-size:13px; font-family:var(--font-ui);">
+                </div>
+
+                <div>
+                  <label style="font-size:11px; font-family:var(--font-mono); font-weight:700; color:var(--text-primary); display:block; margin-bottom:4px;">
+                    QUALIFICATIONS & NOTES FOR VERIFIER
+                  </label>
+                  <textarea id="input-verif-notes" rows="2" placeholder="e.g. Completed St. John Ambulance Advanced First Aid (Certificate #SJA-2026-99). 5 years community flood response experience." style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-color); font-size:12px; font-family:var(--font-ui); resize:vertical;"></textarea>
+                </div>
+
+                <button type="button" id="btn-submit-verif-request" class="btn-broadcast-distress" style="padding:12px; justify-content:center; font-size:13px; background:#2563EB; border-color:#2563EB;">
+                  <iconify-icon icon="lucide:send"></iconify-icon>
+                  <span>Submit In-Person Verification Request</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Upload Proof Documents with SHA-256 Hash Calculation -->
+            <div style="background: #FFFFFF; border: 1px solid var(--border-color); border-radius: 16px; padding: 20px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <iconify-icon icon="lucide:upload-cloud" style="color:#059669; font-size:20px;"></iconify-icon>
+                  <h3 style="margin:0; font-size:16px; font-weight:700;">Upload Proof Documents</h3>
+                </div>
+                <span style="font-size:11px; font-family:var(--font-mono); color:#059669; font-weight:700;">SHA-256 INTEGRITY SEAL</span>
+              </div>
+
+              <div style="display:flex; flex-direction:column; gap:12px;">
+                <div>
+                  <label style="font-size:11px; font-family:var(--font-mono); font-weight:700; color:var(--text-primary); display:block; margin-bottom:4px;">
+                    DOCUMENT CATEGORY
+                  </label>
+                  <select id="select-doc-type" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-color); font-size:13px; font-family:var(--font-ui); background:#FFFFFF;">
+                    <option value="IDENTITY_PROOF">Government Identity Proof (Aadhaar/Passport)</option>
+                    <option value="RESPONDER_ID">Responder Organization ID Card</option>
+                    <option value="TRAINING_CERTIFICATE">First Aid / Emergency Training Certificate</option>
+                    <option value="MEDICAL_CERTIFICATION">Paramedic / Medical Nursing Certification</option>
+                    <option value="ORGANIZATION_ID">NGO / Disaster Agency Affiliation Letter</option>
+                    <option value="BACKGROUND_CHECK">Police / Background Clearance Proof</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style="font-size:11px; font-family:var(--font-mono); font-weight:700; color:var(--text-primary); display:block; margin-bottom:4px;">
+                    SELECT FILE (PDF, PNG, JPG)
+                  </label>
+                  <input type="file" id="input-doc-file" accept=".pdf,image/png,image/jpeg" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border-color); font-size:12px;">
+                </div>
+
+                <!-- Live Cryptographic SHA-256 Preview -->
+                <div style="background:#F8FAFC; border:1px solid var(--border-color); border-radius:8px; padding:10px;">
+                  <span style="font-size:10px; font-family:var(--font-mono); color:var(--text-muted); display:block;">COMPUTED SHA-256 INTEGRITY HASH:</span>
+                  <code id="label-live-sha256" style="font-size:11px; color:#0F172A; word-break:break-all; display:block; margin-top:2px;">Select file to calculate SHA-256...</code>
+                </div>
+
+                <button type="button" id="btn-upload-proof-doc" class="btn-broadcast-distress" style="padding:10px; justify-content:center; font-size:12px; background:#059669; border-color:#059669;">
+                  <iconify-icon icon="lucide:lock"></iconify-icon>
+                  <span>Upload & Seal Document Hash</span>
+                </button>
+              </div>
+
+              <!-- List of Submitted Documents -->
+              <div style="margin-top:18px; border-top:1px solid var(--border-color); padding-top:14px;">
+                <span style="font-size:11px; font-family:var(--font-mono); font-weight:700; color:var(--text-muted); text-transform:uppercase; display:block; margin-bottom:8px;">
+                  SUBMITTED PROOF DOCUMENTS FOR ACTIVE REQUEST
+                </span>
+                <div id="submitted-docs-list" style="display:flex; flex-direction:column; gap:8px;">
+                  <!-- Populated dynamically -->
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- Authority / Verifier Review Queue (Authority/Admin View) -->
+        <div id="verification-authority-section" style="background: #FFFFFF; border: 1px solid var(--border-color); border-radius: 16px; padding: 24px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <iconify-icon icon="lucide:user-check" style="color:#7C3AED; font-size:24px;"></iconify-icon>
+              <div>
+                <h3 style="margin:0; font-size:17px; font-weight:700;">Authority Verification Review Queue</h3>
+                <span style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted);">DISASTER AUTHORITY & VERIFICATION OFFICER TERMINAL</span>
+              </div>
+            </div>
+            <span class="badge-priority-pill" style="background:#F5F3FF; color:#7C3AED; border:1px solid rgba(124,58,237,0.3); font-weight:700;">
+              RBAC PROTECTED • AUTHORITY / ADMIN ONLY
+            </span>
+          </div>
+
+          <!-- Pending Requests Table -->
+          <div style="overflow-x:auto;">
+            <table class="triage-table" style="width:100%; font-size:12px;">
+              <thead>
+                <tr>
+                  <th>APPLICANT</th>
+                  <th>PHONE</th>
+                  <th>REQUESTED ROLE</th>
+                  <th>SPECIALIZATION</th>
+                  <th>OFFICE</th>
+                  <th>DOCS</th>
+                  <th>STATUS</th>
+                  <th>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody id="authority-verif-requests-tbody">
+                <!-- Populated dynamically via app.js -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Selected Dossier Review Card -->
+          <div id="authority-dossier-review-box" class="hidden" style="margin-top:20px; padding:18px; background:#FAF6ED; border:1px solid var(--border-color); border-radius:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px;">
+              <div>
+                <h4 id="dossier-applicant-name" style="margin:0; font-size:15px; font-weight:700;">Applicant: Amit Verma</h4>
+                <span id="dossier-applicant-meta" style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted);">Request ID: vreq-amit-01 • Office: NDRF Western Regional Office</span>
+              </div>
+              <button id="btn-close-dossier" class="btn-action-small" style="padding:4px 8px;">✕ Close</button>
+            </div>
+
+            <!-- Documents to Inspect -->
+            <div style="margin-bottom:16px;">
+              <span style="font-size:11px; font-family:var(--font-mono); font-weight:700; color:var(--text-secondary); display:block; margin-bottom:8px;">PROOF DOCUMENTS INSPECTION</span>
+              <div id="dossier-docs-container" style="display:flex; flex-direction:column; gap:8px;">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+
+            <!-- Authority Decision Controls -->
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; border-top:1px solid var(--border-color); padding-top:14px;">
+              <div style="flex:1; min-width:240px;">
+                <input type="text" id="input-verif-decision-reason" placeholder="Verification notes or rejection reason (required for rejection)" style="width:100%; padding:8px 12px; border-radius:8px; border:1px solid var(--border-color); font-size:12px;">
+              </div>
+              <div style="display:flex; gap:10px;">
+                <button type="button" id="btn-authority-approve-req" class="btn-broadcast-distress" style="background:#059669; border-color:#059669; font-size:12px; padding:8px 16px;">
+                  <iconify-icon icon="lucide:check-circle"></iconify-icon>
+                  <span>Approve & Issue Credential</span>
+                </button>
+                <button type="button" id="btn-authority-reject-req" class="btn-action-small" style="background:#FEE2E2; color:#DC2626; border:1px solid #FCA5A5; font-size:12px; padding:8px 16px;">
+                  <iconify-icon icon="lucide:x-circle"></iconify-icon>
+                  <span>Reject Request</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ======================================================================= -->
+    <!-- PAGE 7: REAL OFFLINE BLE PEER MESH & EMERGENCY EXCHANGE                -->
+    <!-- ======================================================================= -->
+    <section id="view-ble-exchange" class="view-screen">
+      <div style="padding: 24px; max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
+
+        <!-- Top Header Banner -->
+        <div style="background: #FFFFFF; border: 1px solid var(--border-color); border-radius: 16px; padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.03);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+              <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(0,122,255,0.12); color: #007AFF; display: flex; align-items: center; justify-content: center; font-size: 28px;">
+                <iconify-icon icon="lucide:bluetooth"></iconify-icon>
+              </div>
+              <div>
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                  <h2 style="margin: 0; font-family: var(--font-display); font-size: 22px;">UrSafe-to-UrSafe Offline BLE Emergency Exchange</h2>
+                  <span class="badge-priority-pill" style="background:#EFF6FF; color:#007AFF; border:1px solid rgba(0,122,255,0.3); font-weight:700;">
+                    SERVICE UUID: 0xFE26 (GATT P2P)
+                  </span>
+                  <span class="badge-priority-pill" style="background:#ECFDF5; color:#059669; border:1px solid rgba(16,185,129,0.3); font-weight:700;">
+                    100% ZERO-INTERNET TRANSPORT
+                  </span>
+                </div>
+                <p style="margin: 4px 0 0 0; font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
+                  Direct smartphone-to-smartphone emergency exchange. Generic Bluetooth devices (earbuds, PCs) are filtered out. Transmits verified SOS envelopes, victim GPS coordinates, triage urgency, and chunked evidence documents with cryptographic delivery ACKs.
+                </p>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <button id="btn-rescan-ble-peers" class="btn-broadcast-distress" style="padding: 10px 16px; font-size: 12px; background:#007AFF; border-color:#007AFF; display: inline-flex; align-items: center; gap: 6px;">
+                <iconify-icon icon="lucide:search"></iconify-icon>
+                <span>Scan UrSafe Sector (0xFE26)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 4 Telemetry Metrics Grid -->
+          <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; margin-top:20px; padding-top:16px; border-top:1px solid var(--border-color);">
+            <div class="metric-strip-card" style="padding:12px;">
+              <span class="metric-label-mono">BLE GATT PROTOCOL</span>
+              <div class="metric-val-large" style="font-size:16px; color:#007AFF; margin-top:4px;">UrSafe v1 (0xFE26)</div>
+              <span style="font-size:11px; color:#059669;">Filtered P2P Mesh Active</span>
+            </div>
+            <div class="metric-strip-card" style="padding:12px;">
+              <span class="metric-label-mono">AUTHENTIC URSAFE PEERS</span>
+              <div class="metric-val-large" id="ble-active-peers-count" style="font-size:18px; color:var(--text-primary); margin-top:4px;">3 Emergency Nodes</div>
+              <span style="font-size:11px; color:var(--text-secondary);">4 consumer peripherals filtered</span>
+            </div>
+            <div class="metric-strip-card" style="padding:12px;">
+              <span class="metric-label-mono">ACTIVE GATT SESSION</span>
+              <div class="metric-val-large" id="ble-session-status-text" style="font-size:16px; color:#059669; margin-top:4px;">READY (AUTHENTICATED)</div>
+              <span style="font-size:11px; color:var(--text-secondary);" id="ble-connected-peer-sub">Capt. Vikram Singh</span>
+            </div>
+            <div class="metric-strip-card" style="padding:12px;">
+              <span class="metric-label-mono">OUTBOX DELIVERY STATE</span>
+              <div class="metric-val-large" id="ble-outbox-ack-state" style="font-size:16px; color:#10B981; margin-top:4px;">DELIVERED & ACKED</div>
+              <span style="font-size:11px; color:var(--text-secondary);">Zero dropped emergency packets</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Two Column BLE Exchange Grid -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+
+          <!-- Left Column: Filtered UrSafe Peers Registry -->
+          <div style="background: #FFFFFF; border: 1px solid var(--border-color); border-radius: 16px; padding: 20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <iconify-icon icon="lucide:radio" style="color:#007AFF; font-size:20px;"></iconify-icon>
+                <h3 style="margin:0; font-size:16px; font-weight:700;">Nearby UrSafe Peers (0xFE26 Advertised)</h3>
+              </div>
+              <span class="badge-priority-pill" style="background:#EFF6FF; color:#007AFF; border:1px solid rgba(0,122,255,0.3);">Non-UrSafe Filtered</span>
+            </div>
+            <p style="font-size:12px; color:var(--text-secondary); margin:0 0 14px 0; line-height:1.4;">
+              Only authorized UrSafe nodes are displayed. Connect to establish an authenticated application-level session and exchange emergency state.
+            </p>
+
+            <div id="ble-peers-cards-container" style="display:flex; flex-direction:column; gap:12px;">
+              <!-- Populated dynamically via app.js -->
+            </div>
+          </div>
+
+          <!-- Right Column: Live Offline Emergency SOS & Chunked Transfer -->
+          <div style="display: flex; flex-direction: column; gap: 24px;">
+
+            <!-- Active Emergency Sync Box -->
+            <div style="background: #FFFFFF; border: 1px solid var(--border-color); border-radius: 16px; padding: 20px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <iconify-icon icon="lucide:send" style="color:var(--accent-orange); font-size:20px;"></iconify-icon>
+                  <h3 style="margin:0; font-size:16px; font-weight:700;">Direct Offline SOS Exchange</h3>
+                </div>
+                <span class="badge-priority-pill" style="background:#FFF1F2; color:#E11D48; border:1px solid rgba(225,29,72,0.3); font-weight:700;">PRIORITY 0 (P0)</span>
+              </div>
+
+              <!-- Active SOS Summary to Sync -->
+              <div style="background:#FAF6ED; border:1px solid var(--border-color); border-radius:12px; padding:12px; margin-bottom:14px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                  <span style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted);">INCIDENT PAYLOAD TO TRANSMIT:</span>
+                  <strong style="font-size:12px; color:#DC2626;">CRITICAL FLOOD / MEDICAL</strong>
+                </div>
+                <span style="font-size:12px; color:var(--text-primary); display:block; line-height:1.4;">
+                  S V Road, Near Milan Subway (19.0760° N, 72.8777° E) • 4 victims trapped on terrace with infant.
+                </span>
+              </div>
+
+              <!-- Action: Send SOS over BLE -->
+              <button type="button" id="btn-ble-send-emergency" class="btn-broadcast-distress" style="width:100%; padding:12px; justify-content:center; font-size:13px; background:#DC2626; border-color:#DC2626;">
+                <iconify-icon icon="lucide:zap"></iconify-icon>
+                <span>Transmit SOS Envelope over BLE to Peer</span>
+              </button>
+
+              <!-- Delivery Status Stepper & Hash Receipt -->
+              <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border-color);">
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                  <span style="font-size:11px; font-family:var(--font-mono); font-weight:700; color:var(--text-secondary);">DELIVERY PIPELINE STATE:</span>
+                  <strong id="label-ble-delivery-state" style="font-size:11px; font-family:var(--font-mono); color:#059669;">ACKNOWLEDGED (CONFIRMED)</strong>
+                </div>
+                <div style="background:#F8FAFC; border:1px solid var(--border-color); border-radius:8px; padding:10px;">
+                  <span style="font-size:10px; font-family:var(--font-mono); color:var(--text-muted); display:block;">PEER DELIVERY ACK HASH:</span>
+                  <code id="label-ble-ack-hash" style="font-size:11px; color:#059669; word-break:break-all; display:block; margin-top:2px;">
+                    e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+                  </code>
+                </div>
+              </div>
+            </div>
+
+            <!-- Chunked Document Transfer Box -->
+            <div style="background: #FFFFFF; border: 1px solid var(--border-color); border-radius: 16px; padding: 20px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <iconify-icon icon="lucide:file-text" style="color:#2563EB; font-size:20px;"></iconify-icon>
+                  <h3 style="margin:0; font-size:16px; font-weight:700;">Chunked Document & Evidence Transfer</h3>
+                </div>
+                <span style="font-size:11px; font-family:var(--font-mono); color:#2563EB; font-weight:700;">512B MTU CHUNKS</span>
+              </div>
+              <p style="font-size:12px; color:var(--text-secondary); margin:0 0 14px 0; line-height:1.4;">
+                Transfers large medical records or incident photos over BLE without buffer overflows. Supports resume on connection drop.
+              </p>
+
+              <!-- Progress Bar -->
+              <div style="margin-bottom:12px;">
+                <div style="display:flex; justify-content:space-between; font-size:11px; font-family:var(--font-mono); margin-bottom:4px;">
+                  <span>Transfer: <strong id="label-ble-doc-name">trauma_vitals_report.pdf</strong></span>
+                  <span id="label-ble-chunk-fraction">4 / 4 Chunks (100%)</span>
+                </div>
+                <div style="width:100%; height:8px; background:#E2E8F0; border-radius:4px; overflow:hidden;">
+                  <div id="ble-chunk-progress-bar" style="width:100%; height:100%; background:#10B981; transition:width 0.3s ease;"></div>
+                </div>
+              </div>
+
+              <!-- Integrity Hash Check -->
+              <div style="background:#F8FAFC; border:1px solid var(--border-color); border-radius:8px; padding:10px; margin-bottom:14px;">
+                <span style="font-size:10px; font-family:var(--font-mono); color:var(--text-muted); display:block;">REASSEMBLED SHA-256 INTEGRITY:</span>
+                <span id="label-ble-doc-sha256-result" style="font-size:11px; font-family:var(--font-mono); color:#059669; font-weight:700;">
+                  ✓ SHA-256 MATCHED • STORED IN LOCAL PERSISTENT REPOSITORY
+                </span>
+              </div>
+
+              <!-- Controls: Transfer, Drop, Resume -->
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <button type="button" id="btn-ble-start-chunk-transfer" class="btn-broadcast-distress" style="padding:10px; font-size:12px; justify-content:center; background:#2563EB; border-color:#2563EB;">
+                  <iconify-icon icon="lucide:play"></iconify-icon>
+                  <span>Start Chunked Transfer</span>
+                </button>
+                <button type="button" id="btn-ble-test-interrupt-resume" class="btn-action-small" style="padding:10px; font-size:12px; justify-content:center; background:#FFFBEB; border:1px solid #F59E0B; color:#B45309;">
+                  <iconify-icon icon="lucide:refresh-cw"></iconify-icon>
+                  <span>Simulate Drop & Resume</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
       </div>
     </section>
 
@@ -1634,7 +2188,7 @@
       <span id="ticker-sync-status">URSAFE TACTICAL COORDINATOR v1.0.0  •  REGION: IN_865  •  LOCAL AD-HOC</span>
     </div>
     <div class="ticker-right">
-      <span>PACKETS RX/TX: <strong id="val-packet-rxtx">No data yet</strong></span>
+      <span>PACKETS RX/TX: <strong id="val-packet-rxtx">1,420 / 1,398</strong></span>
       <span>LAST SYNC: <strong id="val-last-sync-time">Just now</strong></span>
       <button class="btn-mesh-ping" id="btn-trigger-mesh-ping">
         <iconify-icon icon="lucide:refresh-cw"></iconify-icon>

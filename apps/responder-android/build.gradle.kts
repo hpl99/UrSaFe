@@ -54,4 +54,6 @@ dependencies {
 
     // SQLCipher encrypted database
     implementation(libs.net.zetetic.sqlcipher)
+
+    testImplementation("junit:junit:4.13.2")
 }

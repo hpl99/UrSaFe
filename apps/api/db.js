@@ -625,10 +625,201 @@ function seedPredictiveData() {
 
 seedPredictiveData();
 
+// Seed Authorized Verification Offices, Requests, and BLE Peers
+function seedVerificationAndBleData() {
+  const now = Date.now();
+  const officeCount = db.prepare('SELECT COUNT(*) as count FROM verification_offices').get().count;
+  if (officeCount === 0) {
+    const insertOffice = db.prepare(`
+      INSERT INTO verification_offices (
+        id, name, organization_id, office_code, address_street, address_locality, address_city,
+        latitude, longitude, contact_phone, contact_email, operating_hours, verification_types_json,
+        authorized, authorized_by_user_id, status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'usr-admin-01', 'ACTIVE', ?, ?)
+    `);
+
+    insertOffice.run(
+      'voff-mum-01',
+      'NDRF Western Regional Verification Office',
+      'org-ndrf',
+      'NDRF-WR-VO1',
+      'Plot C-14, G-Block, Bandra Kurla Complex',
+      'Bandra East',
+      'Mumbai',
+      19.0657,
+      72.8680,
+      '+91-22-2659-1000',
+      'verification.west@ndrf.gov.in',
+      'Mon - Sat: 08:00 - 18:00 IST',
+      JSON.stringify(['IDENTITY_PROOF', 'RESPONDER_PASSPORT', 'ALS_PARAMEDIC', 'WATER_RESCUE', 'SEARCH_RESCUE']),
+      now, now
+    );
+
+    insertOffice.run(
+      'voff-mum-02',
+      'SDMA District Disaster Verification Centre',
+      'org-sdma',
+      'SDMA-MUM-EOC',
+      '1st Floor, Mantralaya Annex, Madam Cama Road',
+      'Nariman Point',
+      'Mumbai',
+      18.9288,
+      72.8277,
+      '+91-22-2202-7990',
+      'eoc.verification@sdma.gov.in',
+      '24/7 Emergency Operations',
+      JSON.stringify(['IDENTITY_PROOF', 'RESPONDER_PASSPORT', 'FIRST_AID', 'INCIDENT_COMMAND', 'COMMUNITY_VOLUNTEER']),
+      now, now
+    );
+
+    insertOffice.run(
+      'voff-mum-03',
+      'Red Cross Disaster Relief Corps Verification Office',
+      'org-redcross',
+      'ICRC-REG-VO3',
+      '141 Shahid Bhagat Singh Road',
+      'Fort',
+      'Mumbai',
+      18.9350,
+      72.8360,
+      '+91-22-2266-1524',
+      'field.verification@redcross.org',
+      'Mon - Fri: 09:00 - 17:00 IST',
+      JSON.stringify(['IDENTITY_PROOF', 'COMMUNITY_FIRST_RESPONDER', 'FIRST_AID_TRIAGE', 'CPR_AED']),
+      now, now
+    );
+  }
+
+  // Seed sample verification request for citizen Amit Verma applying for Volunteer Responder
+  const reqCount = db.prepare('SELECT COUNT(*) as count FROM verification_requests').get().count;
+  if (reqCount === 0) {
+    db.prepare(`
+      INSERT INTO verification_requests (
+        id, user_id, office_id, requested_role, specialization, status,
+        appointment_date, appointment_notes, submitted_at, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      'vreq-amit-01',
+      'usr-citizen-02',
+      'voff-mum-01',
+      'RESPONDER',
+      'COMMUNITY_FIRST_RESPONDER',
+      'UNDER_REVIEW',
+      '2026-10-28 10:30',
+      'Physical inspection scheduled at BKC NDRF center. Bring original Aadhaar Card and St. John Ambulance First Aid certificate.',
+      now - 86400000,
+      now - 86400000,
+      now
+    );
+
+    // Seed proof documents for Amit Verma
+    const insertDoc = db.prepare(`
+      INSERT INTO verification_documents (
+        id, verification_request_id, user_id, document_type, file_name, file_reference,
+        mime_type, file_size_bytes, sha256_hash, file_data_base64, verification_status, uploaded_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', ?)
+    `);
+
+    const idHash = crypto.createHash('sha256').update('GOVT_ID_PROOF_AMIT_VERMA_AADHAAR').digest('hex');
+    insertDoc.run(
+      'vdoc-amit-01',
+      'vreq-amit-01',
+      'usr-citizen-02',
+      'IDENTITY_PROOF',
+      'government_id_card_amit.pdf',
+      'storage://verification_docs/vreq-amit-01/vdoc-amit-01_government_id_card_amit.pdf',
+      'application/pdf',
+      145820,
+      idHash,
+      Buffer.from('URSAFE_MOCK_PDF_DATA_GOVT_ID').toString('base64'),
+      now - 86400000
+    );
+
+    const certHash = crypto.createHash('sha256').update('TRAINING_CERTIFICATE_AMIT_FIRST_AID_2026').digest('hex');
+    insertDoc.run(
+      'vdoc-amit-02',
+      'vreq-amit-01',
+      'usr-citizen-02',
+      'TRAINING_CERTIFICATE',
+      'red_cross_first_aid_qualification.pdf',
+      'storage://verification_docs/vreq-amit-01/vdoc-amit-02_red_cross_first_aid_qualification.pdf',
+      'application/pdf',
+      294800,
+      certHash,
+      Buffer.from('URSAFE_MOCK_PDF_DATA_FIRST_AID_CERT').toString('base64'),
+      now - 86400000
+    );
+  }
+
+  // Seed sample real UrSafe BLE Peers (Filtered on 0xFE26 UrSafe protocol)
+  const peerCount = db.prepare('SELECT COUNT(*) as count FROM ble_peers').get().count;
+  if (peerCount === 0) {
+    const insertPeer = db.prepare(`
+      INSERT INTO ble_peers (
+        peer_id, device_id, user_id, public_key, role, verification_status, display_name,
+        connection_state, rssi_dbm, battery_level, is_ursafe_compatible, protocol_version,
+        last_handshake_at, last_seen_at, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'v1', ?, ?, ?)
+    `);
+
+    insertPeer.run(
+      'USF-8A42-VIKRAM',
+      'ble-ursafe-vikram-01',
+      'usr-responder-01',
+      'ed25519_pk_vikram_01',
+      'RESPONDER',
+      'VERIFIED',
+      'Capt. Vikram Singh (Tactical Paramedic)',
+      'DISCOVERED',
+      -56.0,
+      88.0,
+      now - 12000,
+      now - 2000,
+      now
+    );
+
+    insertPeer.run(
+      'USF-3C19-ANITA',
+      'ble-ursafe-anita-02',
+      'usr-volunteer-01',
+      'ed25519_pk_anita_01',
+      'RESPONDER',
+      'VERIFIED',
+      'Anita Desai (Volunteer Medic)',
+      'DISCOVERED',
+      -62.0,
+      94.0,
+      now - 15000,
+      now - 3000,
+      now
+    );
+
+    insertPeer.run(
+      'USF-9F81-PRIYA',
+      'ble-ursafe-priya-03',
+      'usr-citizen-01',
+      'ed25519_pk_priya_01',
+      'CITIZEN',
+      'UNVERIFIED',
+      'Priya Sharma (Citizen Node)',
+      'READY',
+      -48.0,
+      82.0,
+      now - 5000,
+      now - 1000,
+      now
+    );
+  }
+}
+
+seedVerificationAndBleData();
+
 module.exports = {
   db,
   hashPassword,
   verifyPassword,
-  seedPredictiveData
+  seedPredictiveData,
+  seedVerificationAndBleData
 };
+
 

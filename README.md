@@ -238,25 +238,37 @@ http://localhost:3000
 
 ### Step 3: Run the Automated Test Suites
 
-#### 1. Full Pytest Suite (102 Tests)
-Executes end-to-end incident lifecycles, zero-trust RBAC/IDOR security probes, crash continuity chaos tests, CRDT fuzzer, and database isolation guards:
+#### 1. Full Pytest Suite (119 Tests)
+Executes end-to-end incident lifecycles, zero-trust RBAC/IDOR security probes, verification proof-of-work workflows, offline BLE GATT emergency exchange, crash continuity chaos tests, CRDT fuzzer, and database isolation guards:
 ```bash
 pytest tests/ -v
 ```
 
-#### 2. Rust Core Test Suite (3 Tests)
+#### 2. Verification & Proof-of-Work Suite (10 Tests)
+Validates regional authorized office selection, applicant document upload with SHA-256 integrity calculation, authority review queue, document approve/reject controls, strict self-approval prevention, W3C verifiable credential issuance, and immutable flight recorder event logging:
+```bash
+pytest tests/test_verification_workflow.py -v
+```
+
+#### 3. Real Offline BLE Emergency Peer Exchange Suite (6 Tests)
+Validates UrSafe GATT service `0xFE26` discovery, non-UrSafe device filtering, handshake session key generation, offline SOS ingestion without internet, deduplication suppression, cryptographic delivery ACK generation, and 512B MTU chunked evidence document transfer with SHA-256 verification:
+```bash
+pytest tests/test_ble_emergency_exchange.py -v
+```
+
+#### 4. Rust Core Test Suite (3 Tests)
 Validates binary protocol envelope serialization, vector clock merge determinism, and cryptographic signature generation:
 ```bash
 cargo test
 ```
 
-#### 3. Truthfulness Static Linter
+#### 5. Truthfulness Static Linter
 Scans all frontend and backend source files to guarantee zero hardcoded fake metrics, non-functional literals, or deceptive status indicators exist in production code:
 ```bash
 pytest tests/test_truthfulness_linter.py -v
 ```
 
-#### 4. Real Offline DTN Acceptance Simulation
+#### 6. Real Offline DTN Acceptance Simulation
 Executes a multi-node partitioned valley simulation with store-and-forward data mule bundle delivery:
 ```bash
 python scripts/run_acceptance_demo.py

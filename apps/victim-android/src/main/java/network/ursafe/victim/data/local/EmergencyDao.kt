@@ -24,7 +24,13 @@ interface EmergencyDao {
     suspend fun markDelivered(id: String)
 }
 
-@Database(entities = [EmergencyEntity::class], version = 1, exportSchema = false)
+@Database(
+    entities = [EmergencyEntity::class, ContinuityMessageEntity::class, PeerEntity::class],
+    version = 2,
+    exportSchema = false
+)
 abstract class UrsafeDatabase : RoomDatabase() {
     abstract fun emergencyDao(): EmergencyDao
+    abstract fun continuityDao(): ContinuityDao
+    abstract fun peerDao(): PeerDao
 }
