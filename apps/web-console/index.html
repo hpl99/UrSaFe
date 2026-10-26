@@ -21,7 +21,7 @@
   <script src="/config.js"></script>
   
   <!-- UrSafe Warm Compassion Theme Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=5">
+  <link rel="stylesheet" href="styles.css?v=7">
 </head>
 <body class="ursafe-theme">
   <!-- Full-Width Sticky Training Mode Banner -->
@@ -57,6 +57,10 @@
       <button class="nav-tab-btn" data-target="view-victim" id="tab-victim">Victim Portal</button>
       <button class="nav-tab-btn" data-target="view-responder" id="tab-responder">Responder Portal</button>
       <button class="nav-tab-btn" data-target="view-dashboard" id="tab-dashboard">Global Dashboard</button>
+      <button class="nav-tab-btn" data-target="view-hazard-radar" id="tab-hazard-radar">
+        <iconify-icon icon="lucide:radar" style="font-size:14px; vertical-align:middle; margin-right:4px;"></iconify-icon>
+        Predictive Radar & Devices
+      </button>
     </nav>
 
     <!-- Header Actions & Telemetry -->
@@ -941,6 +945,357 @@
       </div>
     </section>
 
+    <!-- ======================================================================= -->
+    <!-- PAGE 5: PREDICTIVE HAZARD & USER AMBIENT RADAR (OFFLINE MULTI-DEVICE)   -->
+    <!-- ======================================================================= -->
+    <section id="view-hazard-radar" class="view-screen">
+      <div class="hazard-radar-layout">
+
+        <!-- Top Sector Operational Banner & Telemetry Chips -->
+        <div class="hazard-radar-banner">
+          <div class="radar-banner-header">
+            <div class="radar-title-badge-group">
+              <div class="radar-live-beacon-pulse">
+                <span class="pulse-ring"></span>
+                <iconify-icon icon="lucide:radar" style="font-size:24px; color:#FF8B3D;"></iconify-icon>
+              </div>
+              <div>
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                  <h2 style="margin:0; font-family:var(--font-display); font-size:22px;">Predictive Hazard Intelligence & Ambient Device Radar</h2>
+                  <span class="badge-priority-pill" style="background:#ECFDF5; color:#059669; border:1px solid rgba(16,185,129,0.3); font-weight:700;">
+                    <iconify-icon icon="lucide:database" style="font-size:11px;"></iconify-icon>
+                    LOCAL SQLITE WAL • 100% OFFLINE AVAILABLE
+                  </span>
+                  <span class="badge-priority-pill" style="background:#FFFBEB; color:#D97706; border:1px solid rgba(245,158,11,0.3); font-weight:700;">
+                    <iconify-icon icon="lucide:radio" style="font-size:11px;"></iconify-icon>
+                    BLE 0xFE26 • LORA 865 MHZ • WI-FI PROBE
+                  </span>
+                </div>
+                <p style="margin:4px 0 0 0; font-size:12px; color:var(--text-secondary); line-height:1.4;">
+                  Real-time multi-hazard kinematic projection (Flood Inundation • Tsunami Coastal Surge • Seismic Shakemap • Cyclone Doppler Track) overlapping local community last-known locations and ambient hardware emitters (Smartwatches, Laptops, Earbuds, Home IoT).
+                </p>
+              </div>
+            </div>
+
+            <div class="radar-banner-actions">
+              <button id="btn-refresh-radar-data" class="btn-view-details" style="padding:8px 14px; font-size:12px; display:inline-flex; align-items:center; gap:6px;">
+                <iconify-icon icon="lucide:refresh-cw" id="icon-spin-refresh"></iconify-icon>
+                <span>Rescan Sector</span>
+              </button>
+              <button id="btn-export-offline-manifest" class="btn-broadcast-distress" style="padding:8px 14px; font-size:12px; background:#10B981; border-color:#10B981; display:inline-flex; align-items:center; gap:6px;">
+                <iconify-icon icon="lucide:download"></iconify-icon>
+                <span>Export Local Manifest (JSON)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 5 Sector Metric Tiles -->
+          <div class="radar-metrics-grid">
+            <div class="radar-metric-card">
+              <div class="metric-icon-wrap" style="background:#EFF6FF; color:#2563EB;">
+                <iconify-icon icon="lucide:users"></iconify-icon>
+              </div>
+              <div class="metric-data">
+                <span class="metric-label">LOCALLY TRACKED CITIZENS</span>
+                <strong class="metric-val" id="radar-metric-users-count">8 Citizens</strong>
+                <span class="metric-sub" id="radar-metric-users-sync">In Local SQLite WAL</span>
+              </div>
+            </div>
+
+            <div class="radar-metric-card">
+              <div class="metric-icon-wrap" style="background:#FEF2F2; color:#DC2626;">
+                <iconify-icon icon="lucide:alert-octagon"></iconify-icon>
+              </div>
+              <div class="metric-data">
+                <span class="metric-label">IN HAZARD DANGER FRONT</span>
+                <strong class="metric-val" style="color:#DC2626;" id="radar-metric-danger-count">3 In Danger</strong>
+                <span class="metric-sub" id="radar-metric-danger-action">Evacuation Required</span>
+              </div>
+            </div>
+
+            <div class="radar-metric-card">
+              <div class="metric-icon-wrap" style="background:#FAF5FF; color:#9333EA;">
+                <iconify-icon icon="lucide:cpu"></iconify-icon>
+              </div>
+              <div class="metric-data">
+                <span class="metric-label">AMBIENT DETECTED HARDWARE</span>
+                <strong class="metric-val" id="radar-metric-ambient-count">8 Devices Nearby</strong>
+                <span class="metric-sub">Laptops • Earbuds • Watches</span>
+              </div>
+            </div>
+
+            <div class="radar-metric-card">
+              <div class="metric-icon-wrap" style="background:#FEF3C7; color:#D97706;">
+                <iconify-icon icon="lucide:waves"></iconify-icon>
+              </div>
+              <div class="metric-data">
+                <span class="metric-label">ACTIVE HAZARD FORECASTS</span>
+                <strong class="metric-val" id="radar-metric-hazards-count">4 Models Projected</strong>
+                <span class="metric-sub">Flood • Tsunami • Quake • Storm</span>
+              </div>
+            </div>
+
+            <div class="radar-metric-card">
+              <div class="metric-icon-wrap" style="background:#ECFDF5; color:#059669;">
+                <iconify-icon icon="lucide:cloud-rain"></iconify-icon>
+              </div>
+              <div class="metric-data">
+                <span class="metric-label">BAROMETRIC & TIDAL BUOY</span>
+                <strong class="metric-val" id="radar-metric-buoy-val">968 hPa • +3.4m</strong>
+                <span class="metric-sub" id="radar-metric-rain-rate">Monsoon Rain: 58 mm/h</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upper Operational Grid: Tactical Leaflet Radar Map + Multi-Hazard Forecasting Cards -->
+        <div class="radar-main-split">
+
+          <!-- Left: Tactical Leaflet Radar Map with Layer Controls -->
+          <div class="radar-map-panel">
+            <div class="radar-map-toolbar">
+              <div class="map-toolbar-left">
+                <span class="toolbar-title">
+                  <iconify-icon icon="lucide:map-pin" style="color:var(--accent-orange);"></iconify-icon>
+                  TACTICAL WGS84 PREDICTIVE RADAR
+                </span>
+                <span class="toolbar-subtitle" id="radar-map-projection-badge">PROJECTION: T+0 (REAL-TIME GROUND TRUTH)</span>
+              </div>
+
+              <!-- Time Projection Kinematic Forward Simulator Controls -->
+              <div class="time-projection-controls">
+                <span class="projection-label">KINEMATIC FORWARD TIME:</span>
+                <div class="projection-btn-group">
+                  <button class="btn-proj active" data-time="0">T+0 (NOW)</button>
+                  <button class="btn-proj" data-time="15">+15 MIN</button>
+                  <button class="btn-proj" data-time="30">+30 MIN</button>
+                  <button class="btn-proj" data-time="60">+1 HOUR</button>
+                  <button class="btn-proj" data-time="120">+2 HOURS</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Map Viewport -->
+            <div class="radar-map-container" id="hazard-radar-map" style="height: 520px; width: 100%; border-radius: 12px; position: relative;">
+              <!-- Map loaded via Leaflet -->
+            </div>
+
+            <!-- In-Map Layer Toggles Bar -->
+            <div class="radar-map-layers-strip">
+              <span class="layers-strip-title">TOGGLE GEOSPATIAL LAYERS:</span>
+              <label class="layer-toggle-chip">
+                <input type="checkbox" id="chk-layer-flood" checked>
+                <span class="chip-label" style="border-left: 3px solid #00B4D8;">🌊 Flood Inundation</span>
+              </label>
+              <label class="layer-toggle-chip">
+                <input type="checkbox" id="chk-layer-tsunami" checked>
+                <span class="chip-label" style="border-left: 3px solid #E63946;">🌊 Tsunami Surge</span>
+              </label>
+              <label class="layer-toggle-chip">
+                <input type="checkbox" id="chk-layer-quake" checked>
+                <span class="chip-label" style="border-left: 3px solid #D00000;">⚡ Seismic Shakemap</span>
+              </label>
+              <label class="layer-toggle-chip">
+                <input type="checkbox" id="chk-layer-cyclone" checked>
+                <span class="chip-label" style="border-left: 3px solid #7209B7;">🌀 Cyclone Track</span>
+              </label>
+              <label class="layer-toggle-chip">
+                <input type="checkbox" id="chk-layer-users" checked>
+                <span class="chip-label" style="border-left: 3px solid #FF8B3D;">📍 Citizens Last Known</span>
+              </label>
+              <label class="layer-toggle-chip">
+                <input type="checkbox" id="chk-layer-ambient" checked>
+                <span class="chip-label" style="border-left: 3px solid #10B981;">📡 Ambient Devices</span>
+              </label>
+              <label class="layer-toggle-chip">
+                <input type="checkbox" id="chk-layer-corridors" checked>
+                <span class="chip-label" style="border-left: 3px solid #2EC4B6;">🟢 Evacuation Corridors</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Right: Multi-Hazard Forecasting & Weather Intelligence Cards -->
+          <div class="radar-forecast-panel">
+            <div class="panel-section-title">
+              <iconify-icon icon="lucide:cloud-lightning" style="color:var(--accent-orange); font-size:18px;"></iconify-icon>
+              <span>PREDICTIVE HAZARD & WEATHER FORECAST MODELS</span>
+            </div>
+
+            <div class="forecast-models-list" id="hazard-models-container">
+              <!-- Populated dynamically: Flood, Tsunami, Earthquake, Cyclone -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Middle Section: Locally Available Users Directory with Last Known Location -->
+        <div class="users-location-section">
+          <div class="section-header-row">
+            <div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <iconify-icon icon="lucide:map-pin" style="color:var(--accent-orange); font-size:20px;"></iconify-icon>
+                <h3 style="margin:0; font-family:var(--font-display); font-size:18px;">Locally Available Community Members & Last Known Coordinates</h3>
+              </div>
+              <span style="font-size:12px; color:var(--text-secondary);">
+                Continuously synchronized into local SQLite WAL store. Accessible 100% offline with zero cloud dependency during complete infrastructure collapse.
+              </span>
+            </div>
+
+            <!-- Filter Controls -->
+            <div class="users-filter-bar">
+              <input type="text" id="input-search-users" class="input-search-log" placeholder="Search by name, phone, device, address..." style="width:260px;">
+              <div class="filter-chips-group">
+                <button class="filter-chip active" data-filter="ALL">All (8)</button>
+                <button class="filter-chip" data-filter="DANGER">🔴 In Danger (3)</button>
+                <button class="filter-chip" data-filter="ADVISORY">🟡 Advisory (2)</button>
+                <button class="filter-chip" data-filter="SAFE">🟢 Safe / Sheltered (3)</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- User Dossiers Table / Grid -->
+          <div class="table-responsive-container" style="border-radius:12px; border:1px solid var(--border-color); background:#FFFFFF; box-shadow:var(--shadow-sm);">
+            <table class="ursafe-table">
+              <thead>
+                <tr>
+                  <th>COMMUNITY MEMBER</th>
+                  <th>ROLE</th>
+                  <th>LAST ACTIVE LOCATION (HARDWARE GNSS)</th>
+                  <th>LAST SEEN & BEARER</th>
+                  <th>DETECTED PROXIMITY DEVICES</th>
+                  <th>HAZARD THREAT ASSESSMENT</th>
+                  <th>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-users-last-locations">
+                <!-- Populated dynamically via /api/v1/users/locations/last-known -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Lower Section: Ambient Hardware Device Radar (Laptops, Earbuds, Smartwatches, Home IoT) -->
+        <div class="ambient-radar-section">
+          <div class="section-header-row">
+            <div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <iconify-icon icon="lucide:bluetooth" style="color:#007AFF; font-size:20px;"></iconify-icon>
+                <h3 style="margin:0; font-family:var(--font-display); font-size:18px;">Hyper-Local Ambient Hardware Radar (Laptops, Earbuds, Smartwatches, IoT)</h3>
+              </div>
+              <span style="font-size:12px; color:var(--text-secondary);">
+                Victims under debris or cut off from mobile phones emit ambient Bluetooth Low Energy (0xFE26, Apple Find My, Google Find My Device), Wi-Fi Direct probes, and home smart sensors. Distance computed via RF Friis Path Loss equation.
+              </span>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span class="badge-priority-pill" style="background:#EFF6FF; color:#1D4ED8; font-weight:700;">
+                <iconify-icon icon="lucide:radio" style="font-size:11px;"></iconify-icon>
+                RF SNIFFER PASSIVE SCAN ACTIVE
+              </span>
+            </div>
+          </div>
+
+          <!-- Ambient Device Cards Grid -->
+          <div class="ambient-devices-grid" id="grid-ambient-devices">
+            <!-- Populated dynamically via /api/v1/devices/ambient-radar -->
+          </div>
+        </div>
+
+        <!-- Bottom Section: Home & Multi-Device Emergency Transmission Simulator -->
+        <div class="home-dispatch-section">
+          <div class="home-dispatch-card">
+            <div class="dispatch-header">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div class="dispatch-badge-icon">
+                  <iconify-icon icon="lucide:send" style="font-size:20px; color:#FFFFFF;"></iconify-icon>
+                </div>
+                <div>
+                  <h3 style="margin:0; font-family:var(--font-display); font-size:17px;">Household Multi-Device Emergency Dispatch Simulator</h3>
+                  <p style="margin:2px 0 0 0; font-size:12px; color:var(--text-secondary);">
+                    In emergency scenarios where a resident's smartphone is damaged or out of reach, send verified distress telemetry directly from smartwatches, laptops, wireless earbuds, or home flood sensors into the local mesh.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="dispatch-triggers-grid">
+              <!-- Trigger 1: Smartwatch Fall Detection -->
+              <div class="dispatch-trigger-box">
+                <div class="trigger-box-top">
+                  <iconify-icon icon="lucide:watch" class="trigger-box-icon" style="color:#EF4444;"></iconify-icon>
+                  <div>
+                    <strong style="display:block; font-size:14px;">Smartwatch Fall & Cardiac Alarm</strong>
+                    <span style="font-size:11px; color:var(--text-muted);">Biometric Impact Event (128 BPM)</span>
+                  </div>
+                </div>
+                <p style="font-size:12px; color:var(--text-secondary); margin:8px 0 12px 0; line-height:1.4;">
+                  Transmits high-priority P0 life-safety beacon with heart rate spike, accelerometer impact vector, and wearable GNSS.
+                </p>
+                <button class="btn-trigger-action" id="btn-trigger-watch-fall" style="background:#EF4444; border-color:#EF4444; color:#FFFFFF;">
+                  <iconify-icon icon="lucide:alert-triangle"></iconify-icon>
+                  <span>Transmit Watch Fall SOS</span>
+                </button>
+              </div>
+
+              <!-- Trigger 2: Laptop Wi-Fi Mesh SOS -->
+              <div class="dispatch-trigger-box">
+                <div class="trigger-box-top">
+                  <iconify-icon icon="lucide:laptop" class="trigger-box-icon" style="color:#3B82F6;"></iconify-icon>
+                  <div>
+                    <strong style="display:block; font-size:14px;">Laptop Wi-Fi Direct Mesh SOS</strong>
+                    <span style="font-size:11px; color:var(--text-muted);">PC / Mac Disaster Workstation</span>
+                  </div>
+                </div>
+                <p style="font-size:12px; color:var(--text-secondary); margin:8px 0 12px 0; line-height:1.4;">
+                  Switches local network adapter to ad-hoc Wi-Fi Direct probe mode and dumps encrypted store-and-forward outbox to mesh.
+                </p>
+                <button class="btn-trigger-action" id="btn-trigger-laptop-sos" style="background:#3B82F6; border-color:#3B82F6; color:#FFFFFF;">
+                  <iconify-icon icon="lucide:wifi"></iconify-icon>
+                  <span>Transmit Laptop Mesh SOS</span>
+                </button>
+              </div>
+
+              <!-- Trigger 3: Home Flood Sentry Water Sensor -->
+              <div class="dispatch-trigger-box">
+                <div class="trigger-box-top">
+                  <iconify-icon icon="lucide:home" class="trigger-box-icon" style="color:#00B4D8;"></iconify-icon>
+                  <div>
+                    <strong style="display:block; font-size:14px;">Home Flood Sentry Alert</strong>
+                    <span style="font-size:11px; color:var(--text-muted);">Ground Water Intrusion (42cm Depth)</span>
+                  </div>
+                </div>
+                <p style="font-size:12px; color:var(--text-secondary); margin:8px 0 12px 0; line-height:1.4;">
+                  Autonomous Zigbee/BLE home disaster gateway broadcasts structural water ingress alert and solar islanded power status.
+                </p>
+                <button class="btn-trigger-action" id="btn-trigger-flood-sentry" style="background:#00B4D8; border-color:#00B4D8; color:#FFFFFF;">
+                  <iconify-icon icon="lucide:droplets"></iconify-icon>
+                  <span>Trigger Home Flood Alert</span>
+                </button>
+              </div>
+
+              <!-- Trigger 4: Earbuds Acoustic Locator Beacon -->
+              <div class="dispatch-trigger-box">
+                <div class="trigger-box-top">
+                  <iconify-icon icon="lucide:headphones" class="trigger-box-icon" style="color:#10B981;"></iconify-icon>
+                  <div>
+                    <strong style="display:block; font-size:14px;">Earbud Acoustic Chirp Ping</strong>
+                    <span style="font-size:11px; color:var(--text-muted);">Acoustic + BLE Proximity Pulse</span>
+                  </div>
+                </div>
+                <p style="font-size:12px; color:var(--text-secondary); margin:8px 0 12px 0; line-height:1.4;">
+                  Pulses high-frequency 1000Hz locator chime through speaker drivers and transmits maximum TX power BLE RSSI chirps for SAR dogs/responders.
+                </p>
+                <button class="btn-trigger-action" id="btn-trigger-earbud-pulse" style="background:#10B981; border-color:#10B981; color:#FFFFFF;">
+                  <iconify-icon icon="lucide:volume-2"></iconify-icon>
+                  <span>Pulse Acoustic Beacon</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
   </main>
 
   <!-- ========================================================================= -->
@@ -1417,7 +1772,28 @@
     </div>
   </div>
 
+  <!-- ========================================================================= -->
+  <!-- MODAL: USER & DEVICE TACTICAL INSPECTION DOSSIER                          -->
+  <!-- ========================================================================= -->
+  <div id="modal-hazard-user-dossier" class="modal-backdrop hidden">
+    <div class="modal-card modal-large" style="max-width: 780px; max-height: 88vh; overflow-y: auto;">
+      <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <iconify-icon icon="lucide:file-text" style="color:var(--accent-orange); font-size:24px;"></iconify-icon>
+          <div>
+            <h3 style="margin:0; font-family:var(--font-display);" id="dossier-user-name">Tactical Community Dossier</h3>
+            <span style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted);" id="dossier-user-id">OFFLINE SQLITE WAL CACHE</span>
+          </div>
+        </div>
+        <button class="modal-close btn-modal-close" data-close="modal-hazard-user-dossier">✕</button>
+      </div>
+      <div class="modal-body" id="dossier-modal-content" style="display:flex; flex-direction:column; gap:16px;">
+        <!-- Populated dynamically -->
+      </div>
+    </div>
+  </div>
+
   <!-- UrSafe Client Logic -->
-  <script src="app.js?v=5"></script>
+  <script src="app.js?v=6"></script>
 </body>
 </html>

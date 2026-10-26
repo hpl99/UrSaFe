@@ -469,3 +469,77 @@ def test_locations_and_device_presence(api_server):
     assert "categorized" in devs_data
     assert "ursafe_devices" in devs_data["categorized"]
     assert "other_devices" in devs_data["categorized"]
+
+
+def test_hazard_predictions_and_ambient_radar(api_server):
+    """
+    Validates predictive hazard models, last known locations with threat intersections,
+    ambient sniffer radar, and multi-device emergency dispatches.
+    """
+    # 1. Fetch Hazard Predictions
+    status_hz, hz_data = make_request(f"{api_server}/api/v1/hazards/predictions")
+    assert status_hz == 200
+    assert hz_data["count"] >= 4
+    hazard_types = [p["hazard_type"] for p in hz_data["predictions"]]
+    assert "FLOOD" in hazard_types
+    assert "TSUNAMI" in hazard_types
+    assert "EARTHQUAKE" in hazard_types
+    assert "CYCLONE" in hazard_types
+
+    # 2. Fetch Users Last Known Locations
+    status_usr, usr_data = make_request(f"{api_server}/api/v1/users/locations/last-known")
+    assert status_usr == 200
+    assert usr_data["total_users"] >= 8
+    first_usr = usr_data["users"][0]
+    assert "last_location" in first_usr
+    assert "latitude" in first_usr["last_location"]
+    assert "threat_assessment" in first_usr
+    assert "threat_level" in first_usr["threat_assessment"]
+    assert first_usr["local_wal_stored"] is True
+
+    # 3. Ambient Sniffer Radar
+    status_amb, amb_data = make_request(f"{api_server}/api/v1/devices/ambient-radar")
+    assert status_amb == 200
+    assert amb_data["count"] >= 8
+    categories = [d["category"] for d in amb_data["devices"]]
+    assert "SMARTWATCH" in categories
+    assert "LAPTOP" in categories
+    assert "EARBUDS" in categories
+    assert "BLE_BEACON" in categories
+    assert "HOME_IOT" in categories
+
+    # 4. Multi-device emergency dispatch
+    status_disp, disp_data = make_request(
+        f"{api_server}/api/v1/devices/home-dispatch",
+        method="POST",
+        data={
+            "device_id": "amb-watch-priya-01",
+            "device_category": "SMARTWATCH",
+            "source_device_name": "Garmin Fenix 7 Pro",
+            "resident_id": "usr-cit-01",
+            "dispatch_type": "SMARTWATCH_FALL_DETECTED",
+            "incident_category": "MEDICAL",
+            "incident_urgency": "CRITICAL",
+            "latitude": 19.0760,
+            "longitude": 72.8777,
+            "address": "Milan Subway Inundation Zone, Mumbai",
+            "telemetry_payload": {
+                "fall_acceleration_g": 3.8,
+                "heart_rate_bpm": 138,
+                "submersion_sensor": True
+            }
+        }
+    )
+    assert status_disp == 201
+    assert disp_data["status"] == "DISPATCHED_TO_MESH"
+    assert "incident_id" in disp_data
+    assert "flight_recorder_receipt" in disp_data
+    assert disp_data["flight_recorder_receipt"]["sha256_audit_hash"] is not None
+
+    # 5. Sector summary analytics
+    status_sum, sum_data = make_request(f"{api_server}/api/v1/analytics/hazard-summary")
+    assert status_sum == 200
+    assert sum_data["active_hazards"] >= 4
+    assert sum_data["active_ambient_emitters"] >= 8
+    assert sum_data["system_status"] == "PREDICTIVE_HAZARD_ENGINE_ONLINE"
+
