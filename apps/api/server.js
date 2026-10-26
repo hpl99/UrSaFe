@@ -9,9 +9,9 @@ const path = require('path');
 const crypto = require('crypto');
 const { WebSocketServer } = require('ws');
 
-// Auto-load root .env if present
+// Auto-load root .env if present (skip in test mode to isolate test ports and databases)
 const envPath = path.join(__dirname, '../../.env');
-if (fs.existsSync(envPath)) {
+if (fs.existsSync(envPath) && process.env.NODE_ENV !== 'test' && process.env.TESTING !== 'true') {
   try {
     const lines = fs.readFileSync(envPath, 'utf8').split('\n');
     for (const line of lines) {
@@ -43,7 +43,10 @@ const {
   ACK_LEVEL
 } = require('./continuity');
 
-const PORT = process.env.PORT || 4000;
+// For backend API server, default to BACKEND_PORT (4000) when PORT=3000 (which is reserved for frontend)
+const PORT = (process.env.PORT && process.env.PORT !== '3000')
+  ? process.env.PORT
+  : (process.env.BACKEND_PORT || 4000);
 
 // Setup HTTP Server
 function handleApiRequest(req, res) {

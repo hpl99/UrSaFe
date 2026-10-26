@@ -442,6 +442,16 @@ function applyCoordinates(lat, lon, accuracy = 4.2, statusLabel = 'ACTIVE HARDWA
   AppState.location.lon = Number(Number(lon).toFixed(6));
   AppState.location.accuracy = Math.round(accuracy * 10) / 10;
 
+  // Persist to local storage so user location is remembered across refreshes
+  try {
+    localStorage.setItem('ursafe_saved_location', JSON.stringify({
+      lat: AppState.location.lat,
+      lon: AppState.location.lon,
+      accuracy: AppState.location.accuracy,
+      label: statusLabel
+    }));
+  } catch (_) {}
+
   updateLocationDisplay();
 
   const gnssStatus = document.getElementById('modal-gnss-status-text');
@@ -474,6 +484,13 @@ function applyCoordinates(lat, lon, accuracy = 4.2, statusLabel = 'ACTIVE HARDWA
     AppState.maps.orchestration.invalidateSize();
   }
 
+  // Update hazard radar map if initialized
+  if (AppState.maps.hazardRadar) {
+    AppState.maps.hazardRadar.panTo([AppState.location.lat, AppState.location.lon]);
+    AppState.maps.hazardRadar.invalidateSize();
+    if (typeof updateHazardRadarMapLayers === 'function') updateHazardRadarMapLayers();
+  }
+
   // Reverse geocode via backend API
   apiFetch('/api/v1/locations/reverse-geocode', {
     method: 'POST',
@@ -490,19 +507,47 @@ function applyCoordinates(lat, lon, accuracy = 4.2, statusLabel = 'ACTIVE HARDWA
 }
 
 function setupLocationSensors() {
+  // 1. Check if user previously saved / picked a custom location
+  let hasSaved = false;
+  try {
+    const saved = localStorage.getItem('ursafe_saved_location');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.lat && parsed.lon) {
+        hasSaved = true;
+        applyCoordinates(parsed.lat, parsed.lon, parsed.accuracy || 4.2, parsed.label || 'PERSISTED USER LOCATION');
+      }
+    }
+  } catch (_) {}
+
+  // 2. Query hardware / browser geolocation
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       pos => {
         applyCoordinates(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy || 4.2, 'HARDWARE GNSS FIX ACQUIRED');
         console.log(`[UrSafe GNSS] Device GPS locked: ${pos.coords.latitude}, ${pos.coords.longitude}`);
+        showToast(`📍 GPS Position Locked: ${pos.coords.latitude.toFixed(4)}° N, ${pos.coords.longitude.toFixed(4)}° E`);
       },
       err => {
-        console.warn('Direct GPS acquiring fallback to default sector:', err.message);
-        applyCoordinates(AppState.location.lat, AppState.location.lon, AppState.location.accuracy, 'DEFAULT MESH SECTOR');
+        // Fallback: Try standard accuracy (cellular/Wi-Fi positioning, avoids hardware GPS timeout)
+        navigator.geolocation.getCurrentPosition(
+          pos => {
+            applyCoordinates(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy || 20.0, 'NETWORK GEOLOCATION FIX');
+            showToast(`📍 Location Detected: ${pos.coords.latitude.toFixed(4)}° N, ${pos.coords.longitude.toFixed(4)}° E`);
+          },
+          err2 => {
+            console.warn('[UrSafe GNSS] Geolocation fallback note:', err2.message);
+            if (!hasSaved) {
+              applyCoordinates(AppState.location.lat, AppState.location.lon, AppState.location.accuracy, 'DEFAULT MESH SECTOR');
+              showToast('Location permission needed for automatic GPS. Click the 📍 icon in the top bar to set your location.', 6000);
+            }
+          },
+          { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
+        );
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+      { enableHighAccuracy: true, timeout: 6000, maximumAge: 30000 }
     );
-  } else {
+  } else if (!hasSaved) {
     applyCoordinates(AppState.location.lat, AppState.location.lon, AppState.location.accuracy, 'DEFAULT MESH SECTOR');
   }
 
@@ -524,11 +569,22 @@ function setupLocationSensors() {
           pos => {
             applyCoordinates(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy || 3.8, 'HARDWARE GNSS FIX (UPDATED)');
             showToast(`GNSS Fix Acquired: ${pos.coords.latitude.toFixed(4)}° N, ${pos.coords.longitude.toFixed(4)}° E (±${Math.round(pos.coords.accuracy || 4)}m)`);
+            closeModal('modal-where-am-i');
           },
           err => {
-            showToast(`GPS Error: ${err.message}. Check browser location permissions.`);
+            navigator.geolocation.getCurrentPosition(
+              pos => {
+                applyCoordinates(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy || 20.0, 'NETWORK GEOLOCATION FIX');
+                showToast(`Location Detected: ${pos.coords.latitude.toFixed(4)}° N, ${pos.coords.longitude.toFixed(4)}° E`);
+                closeModal('modal-where-am-i');
+              },
+              err2 => {
+                showToast(`GPS Error: ${err.message}. Please allow location permissions in your browser or select a city below.`);
+              },
+              { enableHighAccuracy: false, timeout: 5000 }
+            );
           },
-          { enableHighAccuracy: true, timeout: 12000 }
+          { enableHighAccuracy: true, timeout: 8000 }
         );
       } else {
         showToast('Browser does not support navigator.geolocation API.');
@@ -546,6 +602,7 @@ function setupLocationSensors() {
       if (!isNaN(lat) && !isNaN(lon)) {
         applyCoordinates(lat, lon, 4.0, `TACTICAL PRESET: ${city}`);
         showToast(`Map and coordinates recentered to ${city}`);
+        closeModal('modal-where-am-i');
       }
     });
   });
@@ -561,6 +618,7 @@ function setupLocationSensors() {
       if (!isNaN(lat) && !isNaN(lon)) {
         applyCoordinates(lat, lon, 4.0, 'CUSTOM COORDINATES APPLIED');
         showToast(`Custom Coordinates locked: ${lat.toFixed(4)}° N, ${lon.toFixed(4)}° E`);
+        closeModal('modal-where-am-i');
       } else {
         showToast('Please enter valid numeric latitude and longitude.');
       }
